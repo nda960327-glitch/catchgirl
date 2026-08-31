@@ -1,0 +1,210 @@
+// 캐치걸 — 지정 캐치걸 실시간 예약 시스템
+// 로컬 MVP는 SQLite. Supabase(Postgres)로 옮길 때는 provider = "postgresql" 로 바꾸고
+// DATABASE_URL 만 Supabase 연결 문자열로 교체하면 동일 스키마가 그대로 동작한다.
+// (JSON 배열 컬럼은 SQLite 호환을 위해 String 에 JSON 문자열로 저장)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────── 매장 (멀티테넌트 루트) ─────────────────
+model Store {
+  id                  String   @id @default(cuid())
+  name                String
+  slug                String   @unique
+  tagline             String   @default("")
+  logoUrl             String?
+  coverUrl            String?
+  themeColor          String   @default("#B4586A")
+  openTime            String   @default("15:00") // HH:mm
+  closeTime           String   @default("23:00") // HH:mm
+  slotMinutes         Int      @default(30)
+  closedDays          String   @default("[]")    // JSON: 정기 휴무 요일 [0(일)~6(토)]
+  cancelDeadlineHours Int      @default(2)
+  maxAdvanceDays      Int      @default(14)
+  noshowPolicy        String   @default("노쇼 3회 누적 시 예약이 제한될 수 있어요.")
+  createdAt           DateTime @default(now())
+
+  staff        Staff[]
+  customers    Customer[]
+  reservations Reservation[]
+  admins       AdminUser[]
+  reviews      Review[]
+  comments     Comment[]
+}
+
+model AdminUser {
+  id           String @id @default(cuid())
+  storeId      String
+  email        String @unique
+  passwordHash String
+  name         String @default("관리자")
+  store        Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+// ───────────────── 캐치걸(Staff) ─────────────────
+model Staff {
+  id              String   @id @default(cuid())
+  storeId         String
+  nickname        String
+  realName        String?
+  bio             String   @default("")
+  tags            String   @default("[]") // JSON string[]
+  photos          String   @default("[]") // JSON string[] (url)
+  isActive        Boolean  @default(true)
+  capacityPerSlot Int      @default(1)
+  sortOrder       Int      @default(0)
+  loginId         String?  @unique // 관리자가 발급한 계정
+  passwordHash    String?
+  createdAt       DateTime @default(now())
+
+  store        Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  schedules    StaffSchedule[]
+  offs         StaffOff[]
+  reservations Reservation[]
+  reviews      Review[]
+  comments     Comment[]
+  favorites    Favorite[]
+
+  @@index([storeId, isActive])
+}
+
+model StaffSchedule {
+  id        String @id @default(cuid())
+  staffId   String
+  weekday   Int // 0(일)~6(토)
+  startTime String // HH:mm
+  endTime   String // HH:mm
+  staff     Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, weekday])
+}
+
+model StaffOff {
+  id      String  @id @default(cuid())
+  staffId String
+  date    String // YYYY-MM-DD
+  reason  String?
+  staff   Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date])
+}
+
+// ───────────────── 고객 ─────────────────
+model Customer {
+  id            String   @id @default(cuid())
+  storeId       String
+  nickname      String
+  phone         String // 매장 화면에 전체 노출 (연락·고객관리용)
+  name          String?
+  email         String?
+  birthday      String? // YYYY-MM-DD
+  gender        String? // F | M | N
+  instagram     String?
+  referral      String? // 방문 경로 (인스타/지인소개/검색/기타)
+  adminMemo     String   @default("")
+  isBlacklisted Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+  reviews      Review[]
+  comments     Comment[]
+  favorites    Favorite[]
+
+  @@unique([storeId, phone])
+  @@index([storeId, nickname])
+}
+
+// ───────────────── 예약 ─────────────────
+// 동시성: slotKey = `${staffId}|${startTime ISO}|${seq}` 에 UNIQUE.
+// seq 는 0 ~ capacityPerSlot-1 (동시 접객 N팀). 취소 시 slotKey 를 null 로 비워 자리를 반납한다.
+// capacity=1 이면 사실상 UNIQUE(store_id, staff_id, start_time) 와 동일하게 동작.
+model Reservation {
+  id          String    @id @default(cuid())
+  code        String    @unique // 예약번호 (예: 2608-0231)
+  storeId     String
+  staffId     String
+  customerId  String
+  startTime   DateTime
+  endTime     DateTime
+  partySize   Int       @default(1)
+  requestNote String    @default("")
+  purposeTag  String    @default("")
+  status      String    @default("CONFIRMED") // CONFIRMED | COMPLETED | CANCELLED | NOSHOW
+  createdBy   String    @default("CUSTOMER") // CUSTOMER | ADMIN
+  slotKey     String?   @unique
+  createdAt   DateTime  @default(now())
+  cancelledAt DateTime?
+
+  store    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  staff    Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  review   Review?
+
+  @@index([storeId, startTime])
+  @@index([staffId, startTime])
+  @@index([customerId, startTime])
+}
+
+// ───────────────── 후기 / 댓글 / 찜 ─────────────────
+model Review {
+  id            String    @id @default(cuid())
+  storeId       String
+  reservationId String    @unique
+  staffId       String
+  customerId    String
+  rating        Int
+  content       String
+  photos        String    @default("[]") // JSON string[]
+  isHidden      Boolean   @default(false)
+  isReported    Boolean   @default(false)
+  reportReason  String?
+  reply         String?
+  repliedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  store       Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  staff       Staff       @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  customer    Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, isHidden])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  storeId    String
+  staffId    String
+  customerId String?
+  authorType String   @default("CUSTOMER") // CUSTOMER | STAFF | ADMIN
+  authorName String
+  content    String
+  parentId   String?
+  isHidden   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  store    Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  staff    Staff     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  parent   Comment?  @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("Replies")
+
+  @@index([staffId, createdAt])
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  customerId String
+  staffId    String
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  staff      Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, staffId])
+}

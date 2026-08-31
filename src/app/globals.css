@@ -1,0 +1,55 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
+@import url("https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #b4586a;
+  --brand-dark: #994b5a;
+  --blush: #eebec8;
+  --blush-lt: #f9e7eb;
+  --brand-rgb: 180, 88, 106;
+}
+
+html, body { height: 100%; }
+body {
+  @apply bg-frame text-ink font-sans antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+.skeleton {
+  @apply rounded-xl;
+  background: linear-gradient(90deg, #f3ebec 0%, #faf4f5 40%, #f3ebec 80%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+.cta-grad { background: linear-gradient(135deg, var(--brand), var(--blush)); }
+.hero-grad { background: linear-gradient(160deg, var(--blush-lt), #fbf3f4); }
+.ring-brand { box-shadow: 0 8px 18px rgba(var(--brand-rgb), .22); }
+
+/* 데스크톱에서 모바일 프레임 */
+.phone-frame {
+  @apply relative mx-auto w-full bg-paper min-h-dvh;
+  max-width: 430px;
+}
+@media (min-width: 768px) {
+  .phone-frame {
+    min-height: 0;
+    height: calc(100dvh - 48px);
+    margin-top: 24px;
+    border-radius: 34px;
+    overflow: hidden;
+    border: 6px solid #fff;
+    box-shadow: 0 26px 60px rgba(90, 50, 62, 0.22);
+  }
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
