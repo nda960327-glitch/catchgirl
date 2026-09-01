@@ -67,7 +67,7 @@ export async function createReservation(input: CreateReservationInput) {
   try {
     const created = await prisma.$transaction(
       async (tx) => {
-        // (Postgres) await tx.$executeRaw`SELECT id FROM "Staff" WHERE id = ${staff.id} FOR UPDATE`;
+        await tx.$executeRaw`SELECT id FROM "Staff" WHERE id = ${staff.id} FOR UPDATE`;
         const used = await tx.reservation.count({
           where: { staffId: staff.id, startTime: start, status: { in: ACTIVE_STATUSES } },
         });

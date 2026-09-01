@@ -1,14 +1,13 @@
 // 캐치걸 — 지정 캐치걸 실시간 예약 시스템
-// 로컬 MVP는 SQLite. Supabase(Postgres)로 옮길 때는 provider = "postgresql" 로 바꾸고
-// DATABASE_URL 만 Supabase 연결 문자열로 교체하면 동일 스키마가 그대로 동작한다.
-// (JSON 배열 컬럼은 SQLite 호환을 위해 String 에 JSON 문자열로 저장)
+// Vercel 배포용 Postgres 사용 중. DATABASE_URL 을 Postgres 연결 문자열로 설정하면 동일 스키마가 그대로 동작한다.
+// (JSON 배열 컬럼은 SQLite 호환 흔적으로 String 에 JSON 문자열로 저장)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
