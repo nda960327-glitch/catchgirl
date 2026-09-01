@@ -33,7 +33,7 @@ export default async function SchedulePage({
     prisma.staff.findMany({
       where: { storeId: store.id, isActive: true },
       orderBy: { sortOrder: "asc" },
-      select: { id: true, nickname: true, photos: true, schedules: { select: { weekday: true, startTime: true, endTime: true } } },
+      select: { id: true, nickname: true, photos: true, schedules: { select: { weekday: true, shift: true } } },
     }),
     prisma.shiftAssignment.findMany({ where: { storeId: store.id, date: { in: days } }, select: { id: true, date: true, shift: true, roomId: true, staffId: true, startTime: true, endTime: true } }),
     prisma.staffTimeOff.findMany({ where: { date: { in: days }, staff: { storeId: store.id } }, select: { id: true, staffId: true, date: true, startTime: true, endTime: true, reason: true, createdBy: true } }),
@@ -71,7 +71,7 @@ export default async function SchedulePage({
             id: s.id,
             name: s.nickname,
             photo: parseJsonArray<string>(s.photos)[0] ?? null,
-            availableWeekdays: s.schedules.map((x) => x.weekday),
+            available: s.schedules.map((x) => ({ weekday: x.weekday, shift: x.shift })),
           }))}
           assignments={assignments}
           timeOffs={timeOffs}

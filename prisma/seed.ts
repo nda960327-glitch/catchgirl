@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { LOCKED_NOTICE } from "../src/lib/notices";
 
 const prisma = new PrismaClient();
 
@@ -83,6 +84,14 @@ const REPLY_POOL = [
   "덕분에 저도 즐거운 시간이었어요. 또 뵐게요!",
   "말씀 남겨주셔서 감사합니다. 다음엔 더 편하게 모실게요.",
 ];
+/** 매장이 적어 두는 연락 수단. 데모용이라 실제로 닿지 않는 값만 쓴다. */
+const ROMAN = ["seo","do","si","min","eun","ye","ji","yu","ha","ju","sun","hun","gun","jin","woo","yeon","su","on","run","an"];
+function demoContact(name: string, i: number) {
+  if (i % 7 === 0) return "";                                    // 아직 안 적어 둔 손님
+  if (i % 3 === 0) return `010-0${String(100 + (i * 37) % 900)}-${String(1000 + (i * 613) % 9000)}`;
+  return `@${ROMAN[i % ROMAN.length]}_${name.length}${String(10 + (i * 17) % 90)}`;
+}
+
 const NOTES = ["", "", "", "조용한 자리 부탁드려요", "창가 자리면 좋겠어요", "기념일이라 작게 챙겨주시면 감사하겠습니다", "케이크 반입 가능할까요?", "일행 한 명 더 올 수도 있어요", "늦을 수도 있어요"];
 
 async function main() {
@@ -199,8 +208,11 @@ async function main() {
     throw new Error("코드 생성 실패");
   };
   const customers: { id: string; nickname: string }[] = [];
-  for (const name of CUSTOMER_NAMES) {
-    const c = await prisma.customer.create({ data: { storeId: store.id, nickname: name, passwordHash: pw, inviteCode: newCode() } });
+  for (const [i, name] of CUSTOMER_NAMES.entries()) {
+    const c = await prisma.customer.create({
+      // 손님이 직접 넣는 값이 아니라, 매장이 따로 적어 두는 연락처 (고객 화면엔 안 보인다)
+      data: { storeId: store.id, nickname: name, passwordHash: pw, inviteCode: newCode(), adminContact: demoContact(name, i) },
+    });
     customers.push({ id: c.id, nickname: name });
   }
   // 단골이 될 사람들 — 이들에게 예약을 더 몰아준다
@@ -208,18 +220,20 @@ async function main() {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const firstDay = new Date(today.getFullYear(), 6, 1);  // 7월 1일
+  const lastDay = new Date(today.getFullYear(), 8, 30);  // 9월 30일 — 9월 아무 날에 열어도 앞뒤가 차 있게
 
   // 배치를 먼저 짠다. 예약은 그 사람이 실제로 그 방을 쓰는 시간 안에서만 잡혀야
   // 손님에게 몇 번 룸인지 안내가 나간다.
-  console.log("🗓 출근 배치 (지난주 ~ 다음주)...");
+  console.log("🗓 출근 배치 (7월 1일 ~ 9월 30일)...");
   type Busy = { s: number; e: number }; // 슬롯 인덱스 구간
   const dayShifts = new Map<string, Map<number, Busy[]>>();
-  let assignCount = 0;
-  for (let off = -7; off <= 7; off++) {
-    const day = addDays(today, off);
+  const assignRows: { storeId: string; date: string; roomId: string; shift: string; staffId: string; startTime: string; endTime: string }[] = [];
+  for (let day = new Date(firstDay); day <= lastDay; day = addDays(day, 1)) {
     const date = ymd(day);
     const pool = [...staff.keys()].sort(() => rand() - 0.5);
     const roster = new Map<number, Busy[]>();
+    const usedIn: Record<string, Set<number>> = { DAY: new Set(), NIGHT: new Set() };
     let p = 0;
     // 룸 10개 중 6~9개를 채운다
     const fill = intBetween(6, 9);
@@ -232,28 +246,23 @@ async function main() {
       // 가끔은 한 사람이 그 룸의 주간·야간을 통으로 맡는다
       const nightStaff = chance(0.15) ? dayStaff : pool[p++ % pool.length];
       const shifts = [
-        { shift: "DAY" as const, staffIdx: dayStaff, startTime: dayStart, endTime: handover },
-        { shift: "NIGHT" as const, staffIdx: nightStaff, startTime: handover, endTime: nightEnd },
+        { shift: "DAY", staffIdx: dayStaff, startTime: dayStart, endTime: handover },
+        { shift: "NIGHT", staffIdx: nightStaff, startTime: handover, endTime: nightEnd },
       ];
       for (const s of shifts) {
-        try {
-          await prisma.shiftAssignment.create({
-            data: { storeId: store.id, date, roomId: rooms[r].id, shift: s.shift, staffId: staff[s.staffIdx].id, startTime: s.startTime, endTime: s.endTime },
-          });
-          assignCount++;
-          roster.set(s.staffIdx, [...(roster.get(s.staffIdx) ?? []), { s: slotOf(s.startTime), e: slotOf(s.endTime) }]);
-        } catch {
-          // 같은 조에 이미 배치된 사람이면 건너뛴다
-        }
+        // 한 사람이 같은 조에 두 방을 맡을 수는 없다
+        if (usedIn[s.shift].has(s.staffIdx)) continue;
+        usedIn[s.shift].add(s.staffIdx);
+        assignRows.push({ storeId: store.id, date, roomId: rooms[r].id, shift: s.shift, staffId: staff[s.staffIdx].id, startTime: s.startTime, endTime: s.endTime });
+        roster.set(s.staffIdx, [...(roster.get(s.staffIdx) ?? []), { s: slotOf(s.startTime), e: slotOf(s.endTime) }]);
       }
     }
     dayShifts.set(date, roster);
   }
-  console.log(`   배치 ${assignCount}건`);
+  await prisma.shiftAssignment.createMany({ data: assignRows });
+  console.log(`   배치 ${assignRows.length}건`);
 
   console.log("📅 7~9월 예약 생성...");
-  const firstDay = new Date(today.getFullYear(), 6, 1); // 7월 1일
-  const lastDay = addDays(today, 5); // 오늘 + 5일치 예정 예약
 
   const overlaps = (list: Busy[], s: number, e: number) => list.some((b) => s < b.e && e > b.s);
 
@@ -424,18 +433,60 @@ async function main() {
     data: { inviteCode: "A3K9", passwordHash: null, adminMemo: "카톡으로만 예약하시던 분. 앱 연결코드 안내함." },
   });
 
+  console.log("🙋 근무 가능 요일 선언...");
+  // 캐치걸이 스스로 알리는 값이다. 아무 말 없는 사람, 주간만 되는 사람, 주말만
+  // 되는 사람이 섞여 있어야 배치할 때 "얘한테 물어봐야 하는구나" 가 드러난다.
+  const availRows: { staffId: string; weekday: number; shift: string; startTime: string; endTime: string }[] = [];
+  for (const [i, st] of staff.entries()) {
+    if (i % 8 === 3) continue; // 아직 아무것도 안 적어 낸 사람
+    const style = i % 4; // 0: 거의 다 / 1: 주간만 / 2: 야간만 / 3: 주말 위주
+    for (let wd = 0; wd < 7; wd++) {
+      const weekend = wd === 0 || wd === 5 || wd === 6;
+      if (style === 3 && !weekend) continue;
+      if (style !== 3 && chance(0.22)) continue; // 못 나오는 요일이 사람마다 다르다
+      const shifts =
+        style === 1 ? (["DAY"] as const)
+        : style === 2 ? (["NIGHT"] as const)
+        : chance(0.55) ? (["DAY", "NIGHT"] as const)
+        : chance(0.5) ? (["DAY"] as const) : (["NIGHT"] as const);
+      for (const shift of shifts) {
+        const t = shift === "DAY" ? { startTime: "12:00", endTime: "20:00" } : { startTime: "20:00", endTime: "04:00" };
+        availRows.push({ staffId: st.id, weekday: wd, shift, ...t });
+      }
+    }
+  }
+  await prisma.staffSchedule.createMany({ data: availRows });
+  console.log(`   선언 ${availRows.length}건`);
+
   console.log("🚶 자리 비움(외출)...");
-  const todayStr = ymd(today);
-  await prisma.staffTimeOff.createMany({
-    data: [
-      { staffId: staff[7].id, date: todayStr, startTime: "14:00", endTime: "15:30", reason: "병원", createdBy: "STAFF" },
-      { staffId: staff[2].id, date: todayStr, startTime: "18:00", endTime: "19:00", reason: "잠깐 외출", createdBy: "ADMIN" },
-      { staffId: staff[12].id, date: ymd(addDays(today, 1)), startTime: "12:00", endTime: "14:00", reason: "개인 사정", createdBy: "STAFF" },
-    ],
-  });
+  // 9월 어느 날에 열어도 그날 누가 자리를 비웠는지 보이도록 기간 전체에 흩뿌린다
+  const OFF_REASONS = ["병원", "잠깐 외출", "개인 사정", "은행", "가족 일", "미용실"];
+  const OFF_SLOTS = [
+    { startTime: "14:00", endTime: "15:30" },
+    { startTime: "18:00", endTime: "19:00" },
+    { startTime: "12:00", endTime: "14:00" },
+    { startTime: "21:00", endTime: "22:00" },
+    { startTime: "16:30", endTime: "18:00" },
+  ];
+  const offRows: { staffId: string; date: string; startTime: string; endTime: string; reason: string; createdBy: string }[] = [];
+  for (let day = new Date(firstDay); day <= lastDay; day = addDays(day, 1)) {
+    const date = ymd(day);
+    const roster = [...(dayShifts.get(date)?.keys() ?? [])];
+    if (!roster.length) continue;
+    // 하루에 0~2명 정도가 잠깐 자리를 비운다
+    for (let i = 0, n = chance(0.45) ? 0 : intBetween(1, 2); i < n; i++) {
+      const si = pick(roster);
+      const slot = pick(OFF_SLOTS);
+      if (offRows.some((o) => o.date === date && o.staffId === staff[si].id)) continue;
+      offRows.push({ staffId: staff[si].id, date, ...slot, reason: pick(OFF_REASONS), createdBy: chance(0.65) ? "STAFF" : "ADMIN" });
+    }
+  }
+  await prisma.staffTimeOff.createMany({ data: offRows });
+  console.log(`   자리 비움 ${offRows.length}건`);
 
   console.log("📢 공지사항...");
   const noticeDefs = [
+    LOCKED_NOTICE,
     {
       title: "초대받은 분만 이용하실 수 있어요",
       body:

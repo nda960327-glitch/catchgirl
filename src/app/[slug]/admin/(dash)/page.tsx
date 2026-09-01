@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { businessDayOf, businessDayRange, storeSlotTimes } from "@/lib/slots";
 import { cn, STATUS_LABEL, parseJsonArray, toLocalDate, won, wonShort, STORE_FEE_PER_HOUR } from "@/lib/utils";
+import { completeFinishedReservations } from "@/lib/rollover";
 import { Card, Chip, Eyebrow } from "@/components/ui";
 import { InstallApp } from "@/components/install-app";
 import { Charts } from "./charts";
@@ -13,6 +14,8 @@ import { Timeline } from "./timeline";
 export default async function DashboardPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const store = await getStoreBySlug(slug);
+  // 지난 예약이 계속 "확정"으로 남아 있으면 매출·방문 횟수가 비어 보인다
+  await completeFinishedReservations(store.id);
   const now = new Date();
   // "오늘"은 달력 날짜가 아니라 영업일 — 새벽 2시는 아직 어제 시작한 영업일이다
   const todayStr = businessDayOf(store, now);

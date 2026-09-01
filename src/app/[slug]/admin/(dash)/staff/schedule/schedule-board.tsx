@@ -8,13 +8,16 @@ import { ko } from "date-fns/locale";
 import { Avatar, Button, Card, Chip, Field, Input, Select } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { cn, toLocalDate, SHIFTS, type Shift } from "@/lib/utils";
-import { adminAddTimeOff, adminDeleteTimeOff, assignShift, clearDayAssignments, copyDayAssignments } from "../../../actions";
+import { adminAddTimeOff, adminDeleteTimeOff, assignShift, clearDayAssignments, copyDayAssignments, setStaffAvailability } from "../../../actions";
+
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 /** 30분 단위 시각 — 외출은 영업시간 밖에도 잡힐 수 있으니 하루 전체를 준다 */
 const TIMES = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`);
 
 type Room = { id: string; name: string };
-type StaffLite = { id: string; name: string; photo: string | null; availableWeekdays: number[] };
+/** 캐치걸이 스스로 알린 근무 가능 요일·조. 같은 요일이어도 주간만 되는 사람이 있다. */
+type StaffLite = { id: string; name: string; photo: string | null; available: { weekday: number; shift: string }[] };
 type Assignment = { id: string; date: string; shift: string; roomId: string; staffId: string; startTime: string; endTime: string };
 type TimeOff = { id: string; staffId: string; date: string; startTime: string; endTime: string; reason: string; createdBy: string };
 
@@ -57,8 +60,10 @@ export function ScheduleBoard({
   const offOf = (staffId: string) => offToday.filter((t) => t.staffId === staffId);
   const weekday = toLocalDate(date, "00:00").getDay();
   const assignedIds = new Set(cur.map((a) => a.staffId));
+  const canWork = (s: StaffLite, shift: Shift) => s.available.some((a) => a.weekday === weekday && a.shift === shift);
+  const canWorkAnyShift = (s: StaffLite) => s.available.some((a) => a.weekday === weekday);
   // 가능하다고 알렸는데 아직 어느 룸에도 못 넣은 사람 — 배치할 때 놓치지 않게
-  const availableUnassigned = staff.filter((s) => s.availableWeekdays.includes(weekday) && !assignedIds.has(s.id));
+  const availableUnassigned = staff.filter((s) => canWorkAnyShift(s) && !assignedIds.has(s.id));
 
   const setCell = (shift: Shift, roomId: string, staffId: string, times?: { startTime: string; endTime: string }) =>
     start(async () => {
@@ -104,6 +109,14 @@ export function ScheduleBoard({
     });
 
   const assignedCount = (d: string) => dayOf(d).length;
+
+  // 전화로 "나 목요일 야간 돼요" 하고 마는 경우가 많아 매장에서도 대신 켜 줄 수 있어야 한다
+  const toggleAvail = (staffId: string, wd: number, shift: Shift, on: boolean) =>
+    start(async () => {
+      const r = await setStaffAvailability(slug, staffId, wd, shift, on);
+      if (!r.ok) return toast(r.error, "error");
+      router.refresh();
+    });
 
   return (
     <>
@@ -154,12 +167,17 @@ export function ScheduleBoard({
       {availableUnassigned.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl bg-[#FAF6F7] px-4 py-3">
           <span className="text-[12px] font-bold text-ink">이 요일 가능 · 미배치 {availableUnassigned.length}명</span>
-          {availableUnassigned.map((s) => (
-            <span key={s.id} className="flex items-center gap-1.5 rounded-full border border-line bg-white px-2 py-1 text-[11px] font-semibold text-ink">
-              <Avatar src={s.photo} name={s.name} size={18} rounded={6} />
-              {s.name}
-            </span>
-          ))}
+          {availableUnassigned.map((s) => {
+            // 어느 조가 된다고 했는지까지 보여야 어디에 넣을지 바로 안다
+            const shifts = SHIFTS.filter(([sh]) => canWork(s, sh)).map(([, l]) => l).join("·");
+            return (
+              <span key={s.id} className="flex items-center gap-1.5 rounded-full border border-line bg-white px-2 py-1 text-[11px] font-semibold text-ink">
+                <Avatar src={s.photo} name={s.name} size={18} rounded={6} />
+                {s.name}
+                <span className="text-mute">{shifts}</span>
+              </span>
+            );
+          })}
         </div>
       )}
 
@@ -191,16 +209,25 @@ export function ScheduleBoard({
                         className="h-9 min-w-0 flex-1 text-[12px]"
                       >
                         <option value="">— 비어 있음 —</option>
-                        {/* 그 요일에 가능하다고 알린 사람을 위로 올려 고르기 쉽게 한다 */}
-                        <optgroup label="이 요일 가능">
-                          {staff.filter((s) => s.availableWeekdays.includes(weekday)).map((s) => (
+                        {/* 이 요일 이 조가 된다고 알린 사람을 위로 올린다.
+                            같은 요일이어도 주간만 되는 사람이 있으니 조까지 봐야 한다. */}
+                        <optgroup label={`이 요일 ${label}조 가능`}>
+                          {staff.filter((s) => canWork(s, shift)).map((s) => (
                             <option key={s.id} value={s.id}>
                               {s.name}{taken.has(s.id) && s.id !== sid ? " (다른 룸)" : ""}
                             </option>
                           ))}
                         </optgroup>
-                        <optgroup label="가능 표시 없음">
-                          {staff.filter((s) => !s.availableWeekdays.includes(weekday)).map((s) => (
+                        <optgroup label="다른 조만 가능">
+                          {staff.filter((s) => !canWork(s, shift) && canWorkAnyShift(s)).map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}{taken.has(s.id) && s.id !== sid ? " (다른 룸)" : ""}
+                            </option>
+                          ))}
+                        </optgroup>
+                        {/* 가능하다고 말한 적이 없는 사람. 넣을 수는 있지만 먼저 물어봐야 한다. */}
+                        <optgroup label="이 요일 가능 표시 없음">
+                          {staff.filter((s) => !canWorkAnyShift(s)).map((s) => (
                             <option key={s.id} value={s.id}>
                               {s.name}{taken.has(s.id) && s.id !== sid ? " (다른 룸)" : ""}
                             </option>
@@ -345,6 +372,76 @@ export function ScheduleBoard({
             ))}
           </div>
         )}
+      </Card>
+
+      {/* 근무 가능 요일 — 원래는 본인이 앱에서 알리지만 매장에서도 고칠 수 있다 */}
+      <Card className="mt-4 p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <span className="text-[13px] font-bold text-ink">근무 가능 요일</span>
+          <span className="text-[11px] text-mute">눌러서 켜고 끄면 바로 저장돼요 · 본인이 앱에서 고친 값과 같은 자리예요</span>
+        </div>
+        <div className="scroll-x mt-3 overflow-x-auto pb-2">
+          <table className="w-full min-w-[620px] border-separate border-spacing-0 text-[11px]">
+            <thead>
+              <tr>
+                <th className="sticky left-0 z-10 bg-white px-1 pb-2 text-left font-semibold text-mute">캐치걸</th>
+                {WEEKDAYS.map((d, wd) => (
+                  <th key={d} className={cn("px-1 pb-2 text-center font-semibold", wd === weekday ? "text-brand" : "text-mute")}>{d}</th>
+                ))}
+                <th className="px-1 pb-2 text-right font-semibold text-mute">알림</th>
+              </tr>
+            </thead>
+            <tbody>
+              {staff.map((s) => {
+                const said = s.available.length > 0;
+                return (
+                  <tr key={s.id}>
+                    <td className="sticky left-0 z-10 border-t border-line bg-white py-1.5 pr-2">
+                      <span className="flex items-center gap-1.5">
+                        <Avatar src={s.photo} name={s.name} size={20} rounded={6} />
+                        <span className="font-bold text-ink">{s.name}</span>
+                      </span>
+                    </td>
+                    {WEEKDAYS.map((_, wd) => (
+                      <td key={wd} className={cn("border-t border-line px-0.5 py-1.5", wd === weekday && "bg-blush-lt/30")}>
+                        <span className="flex justify-center gap-0.5">
+                          {SHIFTS.map(([shift, label]) => {
+                            const on = s.available.some((a) => a.weekday === wd && a.shift === shift);
+                            return (
+                              <button
+                                key={shift}
+                                disabled={pending}
+                                onClick={() => toggleAvail(s.id, wd, shift, !on)}
+                                title={`${s.name} · ${WEEKDAYS[wd]}요일 ${label}조 ${on ? "가능 해제" : "가능으로"}`}
+                                aria-pressed={on}
+                                className={cn(
+                                  "h-6 w-6 rounded-md text-[10px] font-bold transition-colors disabled:opacity-40",
+                                  on
+                                    ? shift === "DAY" ? "bg-gold text-white" : "bg-ink text-white"
+                                    : "border border-line bg-white text-mute/50 hover:border-brand",
+                                )}
+                              >
+                                {label[0]}
+                              </button>
+                            );
+                          })}
+                        </span>
+                      </td>
+                    ))}
+                    <td className="border-t border-line py-1.5 pl-2 text-right">
+                      {said ? <span className="text-mute">—</span> : <Chip tone="red">표시 없음</Chip>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-2 px-1 text-[10px] text-mute">
+          <span className="mr-2"><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-gold align-middle" />주간</span>
+          <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-ink align-middle" />야간</span>
+          <span className="ml-2">· 가능 표시가 없어도 배치는 할 수 있어요. 먼저 물어보시라는 표시예요.</span>
+        </div>
       </Card>
     </>
   );

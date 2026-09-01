@@ -262,6 +262,8 @@ model Notice {
   title     String
   body      String
   isPinned  Boolean  @default(false) // 목록 맨 위 고정
+  // 늘 걸려 있어야 하는 안내. 문구는 고칠 수 있지만 지우거나 내릴 수는 없다.
+  isLocked  Boolean  @default(false)
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())

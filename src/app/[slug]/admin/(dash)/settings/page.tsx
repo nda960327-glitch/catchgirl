@@ -12,7 +12,8 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
   const store = await getStoreBySlug(slug);
   const [options, notices, rooms] = await Promise.all([
     prisma.storeOption.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" } }),
-    prisma.notice.findMany({ where: { storeId: store.id }, orderBy: [{ isPinned: "desc" }, { sortOrder: "asc" }] }),
+    // 지울 수 없는 안내가 늘 맨 위에 오도록 잠금 여부부터 본다
+    prisma.notice.findMany({ where: { storeId: store.id }, orderBy: [{ isLocked: "desc" }, { isPinned: "desc" }, { sortOrder: "asc" }] }),
     prisma.room.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { assignments: true } } } }),
   ]);
   return (
@@ -29,7 +30,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
         }}
       />
       <RoomsManager slug={slug} items={rooms.map((r) => ({ id: r.id, name: r.name, isActive: r.isActive, assignedCount: r._count.assignments }))} />
-      <NoticesManager slug={slug} items={notices.map((n) => ({ id: n.id, title: n.title, body: n.body, isPinned: n.isPinned, isActive: n.isActive }))} />
+      <NoticesManager slug={slug} items={notices.map((n) => ({ id: n.id, title: n.title, body: n.body, isPinned: n.isPinned, isActive: n.isActive, isLocked: n.isLocked }))} />
       <OptionsManager slug={slug} items={options.map((o) => ({ id: o.id, name: o.name, price: o.price, isActive: o.isActive }))} />
     </div>
   );

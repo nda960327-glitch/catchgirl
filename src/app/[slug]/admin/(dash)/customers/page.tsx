@@ -21,12 +21,8 @@ export default async function CustomersPage({ params, searchParams }: { params: 
     },
     include: { reservations: { select: { status: true, startTime: true, staffId: true, totalPrice: true, staff: { select: { nickname: true } } } } },
   });
-  // 아직 손님이 안 쓴 초대코드는 목록에 섞지 않고 위에 따로 보여준다
-  const pendingInvites = customers.filter((c) => c.inviteCode && !c.passwordHash);
-  const claimed = customers.filter((c) => !(c.inviteCode && !c.passwordHash));
-
   // 누적 지출 = 취소·노쇼를 뺀 결제 금액 합계
-  let rows = claimed.map((c) => ({
+  let rows = customers.map((c) => ({
     c,
     s: computeCustomerStats(c.reservations),
     spent: c.reservations.filter((r) => r.status === "COMPLETED" || r.status === "CONFIRMED").reduce((a, r) => a + r.totalPrice, 0),
@@ -67,23 +63,10 @@ export default async function CustomersPage({ params, searchParams }: { params: 
         <div>
           <Eyebrow>Customers</Eyebrow>
           <h1 className="mt-1 font-serif text-[22px] font-bold text-ink">고객 관리</h1>
-          <div className="mt-0.5 text-[11px] text-mute">계정은 연결코드로만 만들 수 있어요. 새로 오시는 분은 먼저 초대해 주세요.</div>
+          <div className="mt-0.5 text-[11px] text-mute">새로 오신 분은 여기서 등록하시면 연결코드가 나와요. 손님이 그 코드로 앱을 시작해요.</div>
         </div>
         <InviteButton slug={slug} />
       </div>
-      {pendingInvites.length > 0 && (
-        <Card className="mt-4 p-4">
-          <div className="text-[12px] font-bold text-ink">아직 안 쓴 초대코드 {pendingInvites.length}개</div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {pendingInvites.map((c) => (
-              <Link key={c.id} href={`/${slug}/admin/customers/${c.id}`} className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3 py-1.5 text-[12px] hover:border-brand">
-                <span className="font-serif font-bold tracking-[.15em] text-brand">{c.inviteCode}</span>
-                {c.adminMemo && <span className="max-w-[180px] truncate text-mute">{c.adminMemo}</span>}
-              </Link>
-            ))}
-          </div>
-        </Card>
-      )}
       <Card className="mt-5 flex flex-wrap items-center gap-2 p-3">
         <span className="px-1 text-[11px] font-semibold text-mute">정렬</span>
         {SORTS.map(([k, l]) => (
@@ -101,21 +84,29 @@ export default async function CustomersPage({ params, searchParams }: { params: 
       </Card>
 
       <Card className="mt-3 overflow-hidden">
-        <div className="hidden grid-cols-[1.3fr_90px_100px_90px_110px_80px_80px_90px_1fr] gap-2 border-b border-line bg-[#FAF6F7] px-4 py-2.5 text-[11px] font-semibold text-mute md:grid">
-          <span>고객</span><span>등급</span><span className="text-right">누적 지출</span><span>방문 횟수</span><span>최근 방문일</span><span>취소</span><span>노쇼</span><span>재방문 수</span><span>주 지정 캐치걸</span>
+        <div className="hidden grid-cols-[1.3fr_130px_90px_100px_90px_110px_80px_80px_90px_1fr] gap-2 border-b border-line bg-[#FAF6F7] px-4 py-2.5 text-[11px] font-semibold text-mute md:grid">
+          <span>고객</span><span>연락처·텔레</span><span>등급</span><span className="text-right">누적 지출</span><span>방문 횟수</span><span>최근 방문일</span><span>취소</span><span>노쇼</span><span>재방문 수</span><span>주 지정 캐치걸</span>
         </div>
         {rows.length === 0 && <div className="py-10 text-center text-[12px] text-mute">조건에 맞는 고객이 없어요</div>}
         {pageRows.map(({ c, s, spent }) => (
-          <Link key={c.id} href={`/${slug}/admin/customers/${c.id}`} className="grid grid-cols-2 gap-2 border-b border-line px-4 py-3 text-[12px] transition-colors hover:bg-blush-lt/30 md:grid-cols-[1.3fr_90px_100px_90px_110px_80px_80px_90px_1fr] md:items-center">
+          <Link key={c.id} href={`/${slug}/admin/customers/${c.id}`} className="grid grid-cols-2 gap-2 border-b border-line px-4 py-3 text-[12px] transition-colors hover:bg-blush-lt/30 md:grid-cols-[1.3fr_130px_90px_100px_90px_110px_80px_80px_90px_1fr] md:items-center">
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-ink">{c.nickname}</span>
+                {/* 아직 앱을 시작 안 한 손님 — 이 코드를 알려드리면 된다 */}
+                {!c.passwordHash && c.inviteCode && <Chip>미시작 · 코드 {c.inviteCode}</Chip>}
                 {c.isBlacklisted && <Chip tone="red">블랙리스트</Chip>}
                 {s.noshowCount >= 3 && !c.isBlacklisted && <Chip tone="red">노쇼 경고</Chip>}
                 {s.dormant && s.visitCount > 0 && <Chip tone="mute">휴면</Chip>}
               </div>
-              {c.adminContact && <div className="truncate text-[10px] font-semibold text-ink">{c.adminContact}</div>}
               <div className="truncate text-[10px] text-mute" title={c.adminMemo}>{c.adminMemo || "메모 없음"}</div>
+            </div>
+            {/* 매장이 적어 둔 연락처 — 고객 화면엔 없는 칸이다 */}
+            <div className="truncate" title={c.adminContact}>
+              <span className="text-mute md:hidden">연락처 </span>
+              {c.adminContact
+                ? <span className="font-semibold text-ink">{c.adminContact}</span>
+                : <span className="text-mute/60">—</span>}
             </div>
             <div><GradeChip grade={s.grade} /></div>
             <div className="font-bold text-brand md:text-right"><span className="font-normal text-mute md:hidden">지출 </span>{wonShort(spent)}</div>

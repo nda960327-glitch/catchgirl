@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
+import { completeFinishedReservations } from "@/lib/rollover";
 import { listStaffSummaries } from "@/lib/queries";
 import { businessDayOf, isStoreClosed } from "@/lib/slots";
 import { cn } from "@/lib/utils";
@@ -16,12 +17,15 @@ export const dynamic = "force-dynamic";
 export default async function HomePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const store = await getStoreBySlug(slug);
+  // 끝난 예약은 내 예약 목록에서도 "예정"이 아니라 다녀온 것으로 보여야 한다
+  await completeFinishedReservations(store.id);
   const [staff, me, notices] = await Promise.all([
     listStaffSummaries(store),
     getCustomer(store.id),
     prisma.notice.findMany({
       where: { storeId: store.id, isActive: true },
-      orderBy: [{ isPinned: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
+      // 이 앱이 무엇을 예약하는 곳인지 밝히는 안내가 늘 맨 위에 온다
+      orderBy: [{ isLocked: "desc" }, { isPinned: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
     }),
   ]);
   const today = new Date();
@@ -77,21 +81,28 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
             <h2 className="text-[13px] font-bold text-ink">공지사항</h2>
           </div>
           <div className="flex flex-col gap-2.5">
-            {notices.map((n) => (
-              <div
-                key={n.id}
-                className={cn(
-                  "rounded-[20px] border px-[18px] py-4",
-                  n.isPinned ? "border-brand/30 bg-blush-lt/60" : "border-line bg-white",
-                )}
-              >
-                <div className="flex items-start gap-2">
-                  {n.isPinned && <Chip>필독</Chip>}
-                  <div className="mt-0.5 text-[13px] font-bold text-ink">{n.title}</div>
+            {notices.map((n) =>
+              // 늘 걸려 있는 안내는 공지들 사이에 섞이면 안 된다 — 색을 달리해 못박아 둔다
+              n.isLocked ? (
+                <p key={n.id} className="whitespace-pre-line px-1 text-[12px] leading-[1.9] text-gold">
+                  {n.body}
+                </p>
+              ) : (
+                <div
+                  key={n.id}
+                  className={cn(
+                    "rounded-[20px] border px-[18px] py-4",
+                    n.isPinned ? "border-brand/30 bg-blush-lt/60" : "border-line bg-white",
+                  )}
+                >
+                  <div className="flex items-start gap-2">
+                    {n.isPinned && <Chip>필독</Chip>}
+                    <div className="mt-0.5 text-[13px] font-bold text-ink">{n.title}</div>
+                  </div>
+                  <p className="mt-2 whitespace-pre-line text-[12px] leading-[1.8] text-mute">{n.body}</p>
                 </div>
-                <p className="mt-2 whitespace-pre-line text-[12px] leading-[1.8] text-mute">{n.body}</p>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </section>
       )}

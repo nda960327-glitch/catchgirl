@@ -6,9 +6,9 @@ import { Button, Card, Chip, Eyebrow, Field, Input, Textarea } from "@/component
 import { useToast } from "@/components/providers";
 import { deleteNotice, saveNotice } from "../../actions";
 
-export type NoticeItem = { id: string; title: string; body: string; isPinned: boolean; isActive: boolean };
+export type NoticeItem = { id: string; title: string; body: string; isPinned: boolean; isActive: boolean; isLocked: boolean };
 
-const BLANK: NoticeItem = { id: "", title: "", body: "", isPinned: false, isActive: true };
+const BLANK: NoticeItem = { id: "", title: "", body: "", isPinned: false, isActive: true, isLocked: false };
 
 /** 관리자 — 고객 홈에 뜨는 공지를 직접 쓰고 고친다 */
 export function NoticesManager({ slug, items }: { slug: string; items: NoticeItem[] }) {
@@ -49,11 +49,15 @@ export function NoticesManager({ slug, items }: { slug: string; items: NoticeIte
           <div key={n.id} className="rounded-2xl border border-line bg-white p-3.5">
             <div className="flex flex-wrap items-center gap-1.5">
               {n.isPinned && <Chip>필독</Chip>}
+              {n.isLocked && <Chip tone="mute">항상 노출</Chip>}
               {!n.isActive && <Chip tone="mute">숨김</Chip>}
               <span className="text-[13px] font-bold text-ink">{n.title}</span>
               <div className="ml-auto flex gap-1.5">
                 <Button size="sm" variant="outline" onClick={() => setEditing(n)}>수정</Button>
-                <button onClick={() => remove(n)} disabled={pending} className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-bold text-mute hover:text-[#C0392B]">삭제</button>
+                {/* 늘 걸려 있어야 하는 안내는 삭제 버튼을 아예 두지 않는다 */}
+                {!n.isLocked && (
+                  <button onClick={() => remove(n)} disabled={pending} className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-bold text-mute hover:text-[#C0392B]">삭제</button>
+                )}
               </div>
             </div>
             <p className="mt-1.5 whitespace-pre-line text-[12px] leading-[1.7] text-mute">{n.body}</p>
@@ -70,16 +74,22 @@ export function NoticesManager({ slug, items }: { slug: string; items: NoticeIte
           <Field label="내용" hint="줄바꿈 그대로 보여요">
             <Textarea rows={5} value={editing.body} onChange={(e) => setEditing({ ...editing, body: e.target.value })} maxLength={1000} />
           </Field>
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
-              <input type="checkbox" checked={editing.isPinned} onChange={(e) => setEditing({ ...editing, isPinned: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
-              필독 (맨 위 고정)
-            </label>
-            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
-              <input type="checkbox" checked={editing.isActive} onChange={(e) => setEditing({ ...editing, isActive: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
-              고객에게 노출
-            </label>
-          </div>
+          {editing.isLocked ? (
+            <div className="rounded-xl bg-white/70 px-3.5 py-2.5 text-[11px] leading-[1.7] text-mute">
+              이 안내는 늘 맨 위에 걸려 있어요. 내리거나 지울 수는 없고, <b className="text-ink">문구만</b> 고치실 수 있어요.
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
+                <input type="checkbox" checked={editing.isPinned} onChange={(e) => setEditing({ ...editing, isPinned: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
+                필독 (맨 위 고정)
+              </label>
+              <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
+                <input type="checkbox" checked={editing.isActive} onChange={(e) => setEditing({ ...editing, isActive: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
+                고객에게 노출
+              </label>
+            </div>
+          )}
           <div className="flex gap-2">
             <Button onClick={save} loading={pending} className="flex-1" disabled={!editing.title.trim() || !editing.body.trim()}>저장</Button>
             <Button variant="ghost" onClick={() => setEditing(null)}>취소</Button>

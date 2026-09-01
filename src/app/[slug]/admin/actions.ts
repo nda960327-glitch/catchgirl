@@ -312,6 +312,46 @@ export async function assignShift(
   }
 }
 
+/**
+ * 캐치걸의 근무 가능 요일·조를 관리자가 직접 켜고 끈다.
+ * 원래는 본인이 앱에서 알리는 값이지만, 전화로 말하고 마는 경우가 많아
+ * 매장에서도 대신 적어 둘 수 있어야 한다.
+ */
+export async function setStaffAvailability(
+  slug: string,
+  staffId: string,
+  weekday: number,
+  shift: "DAY" | "NIGHT",
+  on: boolean,
+): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return { ok: false, error: "요일을 확인해 주세요." };
+    if (shift !== "DAY" && shift !== "NIGHT") return { ok: false, error: "조를 확인해 주세요." };
+    const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+    if (!staff || staff.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+
+    if (!on) {
+      await prisma.staffSchedule.deleteMany({ where: { staffId, weekday, shift } });
+    } else {
+      // 시간대는 조에서 정해지므로 매장 설정 값을 그대로 복사해 둔다
+      const hours =
+        shift === "DAY"
+          ? { startTime: store.openTime, endTime: store.shiftSplitTime }
+          : { startTime: store.shiftSplitTime, endTime: store.closeTime };
+      await prisma.$transaction([
+        prisma.staffSchedule.deleteMany({ where: { staffId, weekday, shift } }),
+        prisma.staffSchedule.create({ data: { staffId, weekday, shift, ...hours } }),
+      ]);
+    }
+    revalidatePath(`/${slug}/admin`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 function toMin(t: string) {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
@@ -410,7 +450,9 @@ export async function saveNotice(slug: string, input: z.input<typeof noticeSchem
     if (d.id) {
       const ex = await prisma.notice.findUnique({ where: { id: d.id } });
       if (!ex || ex.storeId !== store.id) return { ok: false, error: "공지를 찾을 수 없어요." };
-      await prisma.notice.update({ where: { id: d.id }, data: { title: d.title, body: d.body, isPinned: d.isPinned, isActive: d.isActive } });
+      // 잠긴 공지는 문구만 고칠 수 있다 — 내리거나 고정을 풀 수는 없다
+      const flags = ex.isLocked ? { isPinned: true, isActive: true } : { isPinned: d.isPinned, isActive: d.isActive };
+      await prisma.notice.update({ where: { id: d.id }, data: { title: d.title, body: d.body, ...flags } });
     } else {
       const count = await prisma.notice.count({ where: { storeId: store.id } });
       await prisma.notice.create({ data: { storeId: store.id, title: d.title, body: d.body, isPinned: d.isPinned, isActive: d.isActive, sortOrder: count } });
@@ -428,6 +470,7 @@ export async function deleteNotice(slug: string, noticeId: string): Promise<R> {
     await requireAdmin(store.id);
     const n = await prisma.notice.findUnique({ where: { id: noticeId } });
     if (!n || n.storeId !== store.id) return { ok: false, error: "공지를 찾을 수 없어요." };
+    if (n.isLocked) return { ok: false, error: "이 안내는 지울 수 없어요. 내용은 고치실 수 있어요." };
     await prisma.notice.delete({ where: { id: noticeId } });
     revalidatePath(`/${slug}`, "layout");
     return { ok: true };
@@ -545,7 +588,7 @@ export async function inviteNewCustomer(slug: string, memo?: string): Promise<R<
       data: {
         storeId: store.id,
         // 손님이 첫 로그인 때 진짜 닉네임으로 바꾼다
-        nickname: `초대-${code}`,
+        nickname: `신규-${code}`,
         inviteCode: code,
         adminMemo: (memo ?? "").trim().slice(0, 500),
       },
