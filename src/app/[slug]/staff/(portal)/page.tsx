@@ -4,9 +4,10 @@ import { ko } from "date-fns/locale";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { requireStaff } from "@/lib/auth";
-import { getSlotsFor } from "@/lib/slots";
+import { businessDayOf, businessDayRange, getSlotsFor } from "@/lib/slots";
 import { cn, startOfDayLocal, toLocalDate, WEEKDAYS_KO, ymd } from "@/lib/utils";
 import { Card, Chip, Empty, StatusChip } from "@/components/ui";
+import { InstallApp } from "@/components/install-app";
 
 export default async function StaffHome({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ date?: string }> }) {
   const { slug } = await params;
@@ -16,15 +17,17 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
   const staff = await prisma.staff.findUniqueOrThrow({ where: { id: me.id }, include: { schedules: true, offs: true } });
 
   const today = startOfDayLocal(new Date());
-  const date = sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : ymd(today);
+  const date = sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : businessDayOf(store);
   const dayStart = toLocalDate(date, "00:00");
-  const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+  const range = businessDayRange(store, date);
 
   // 본인 예약만 조회 (RBAC)
-  const [reservations, slots, upcomingCount] = await Promise.all([
-    prisma.reservation.findMany({ where: { staffId: me.id, startTime: { gte: dayStart, lt: dayEnd } }, orderBy: { startTime: "asc" }, include: { customer: true } }),
+  const [reservations, slots, upcomingCount, myShifts, myOffs] = await Promise.all([
+    prisma.reservation.findMany({ where: { staffId: me.id, startTime: { gte: range.start, lt: range.end } }, orderBy: { startTime: "asc" }, include: { customer: true } }),
     getSlotsFor(store, staff, date),
     prisma.reservation.count({ where: { staffId: me.id, status: "CONFIRMED", startTime: { gte: new Date() } } }),
+    prisma.shiftAssignment.findMany({ where: { staffId: me.id, date }, include: { room: { select: { name: true } } } }),
+    prisma.staffTimeOff.findMany({ where: { staffId: me.id, date }, orderBy: { startTime: "asc" } }),
   ]);
   const days = Array.from({ length: 14 }, (_, i) => new Date(today.getTime() + i * 86_400_000));
   const offSet = new Set(staff.offs.map((o) => o.date));
@@ -34,10 +37,29 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
 
   return (
     <div className="animate-fade">
+      <InstallApp role="staff" className="mb-4" />
+
       <div className="flex items-baseline justify-between">
         <div className="font-serif text-[18px] font-bold text-ink">{format(dayStart, "M월 d일 EEEE", { locale: ko })}</div>
         <div className="text-[11px] text-mute">다가오는 예약 {upcomingCount}건</div>
       </div>
+
+      {/* 오늘 내 자리와 자리 비움 */}
+      {(myShifts.length > 0 || myOffs.length > 0) && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl bg-blush-lt/50 px-4 py-3">
+          {myShifts.map((a) => (
+            <span key={a.id} className="rounded-full bg-brand px-2.5 py-1 text-[11px] font-bold text-white">
+              {a.shift === "DAY" ? "주간" : "야간"} · {a.room.name}
+            </span>
+          ))}
+          {myShifts.length === 0 && <span className="text-[12px] text-mute">이 날은 배치가 없어요</span>}
+          {myOffs.map((o) => (
+            <span key={o.id} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-mute">
+              자리 비움 {o.startTime}~{o.endTime}{o.reason ? ` · ${o.reason}` : ""}
+            </span>
+          ))}
+        </div>
+      )}
       {/* 날짜 스트립 */}
       <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
         {days.map((d) => {

@@ -1,7 +1,7 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
-import { ACTIVE_STATUSES, getSlotsFor, maxHoursAt, MAX_BOOKING_HOURS } from "./slots";
+import { ACTIVE_STATUSES, businessDayOf, getSlotsFor, maxHoursAt, MAX_BOOKING_HOURS, shiftOfTime } from "./slots";
 import { addMinutes, fmtDateTimeKo, genReservationCode, toLocalDate } from "./utils";
 import { notificationService } from "./notifications";
 
@@ -66,11 +66,25 @@ export async function createReservation(input: CreateReservationInput) {
   }
 
   // 옵션은 예약 1건당 1회 부과. 이름·가격은 지금 값을 복사해 둔다.
-  const options = input.optionIds?.length
-    ? await prisma.storeOption.findMany({ where: { id: { in: input.optionIds }, storeId: store.id, isActive: true } })
+  // 캐치걸이 제공하지 않는 옵션은 걸러낸다 (옵션을 연결해 두지 않았으면 전부 허용).
+  const linkedOptions = await prisma.storeOption.findMany({ where: { staff: { some: { id: staff.id } } }, select: { id: true } });
+  const allowed = new Set(linkedOptions.map((o) => o.id));
+  const wanted = (input.optionIds ?? []).filter((id) => allowed.size === 0 || allowed.has(id));
+  const options = wanted.length
+    ? await prisma.storeOption.findMany({ where: { id: { in: wanted }, storeId: store.id, isActive: true } })
     : [];
   const optionsPrice = options.reduce((a, o) => a + o.price, 0);
   const totalPrice = staff.hourlyPrice * hours + optionsPrice;
+
+  // 그날 그 조에 이 캐치걸이 배치된 룸 — 손님에게 "룸1" 로 안내한다.
+  // 이름만 복사해 두므로 나중에 룸이 바뀌거나 지워져도 예약 안내는 그대로 남는다.
+  const day = businessDayOf(store, start);
+  const shift = shiftOfTime(store, start);
+  const assignment = await prisma.shiftAssignment.findFirst({
+    where: { staffId: staff.id, date: day, shift },
+    include: { room: { select: { name: true } } },
+  });
+  const roomName = assignment?.room.name ?? null;
 
   try {
     const created = await prisma.$transaction(
@@ -106,6 +120,7 @@ export async function createReservation(input: CreateReservationInput) {
             hourlyPrice: staff.hourlyPrice,
             optionsPrice,
             totalPrice,
+            roomName,
             options: { create: options.map((o) => ({ optionId: o.id, name: o.name, price: o.price })) },
           },
         });
@@ -119,6 +134,7 @@ export async function createReservation(input: CreateReservationInput) {
       staffName: staff.nickname,
       when: fmtDateTimeKo(start),
       code: created.code,
+      roomName,
     });
     return created;
   } catch (e) {
@@ -171,6 +187,7 @@ export async function sendDueReminders() {
       staffName: r.staff.nickname,
       when: fmtDateTimeKo(r.startTime),
       code: r.code,
+      roomName: r.roomName,
     });
   }
   return due.length;

@@ -9,6 +9,21 @@ export function cn(...inputs: ClassValue[]) {
 
 export const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
 
+/** 주간조 / 야간조 — 값은 DB(ShiftAssignment.shift)와 URL 쿼리에 그대로 쓴다 */
+export const SHIFTS = [
+  ["DAY", "주간"],
+  ["NIGHT", "야간"],
+] as const;
+export type Shift = (typeof SHIFTS)[number][0];
+export const SHIFT_LABEL: Record<string, string> = { DAY: "주간", NIGHT: "야간" };
+
+/** 각 조가 맡는 시간대 문구 (예: 주간 12:00~20:00 / 야간 20:00~04:00) */
+export function shiftHours(store: { openTime: string; closeTime: string; shiftSplitTime: string }, shift: Shift) {
+  return shift === "DAY"
+    ? { start: store.openTime, end: store.shiftSplitTime }
+    : { start: store.shiftSplitTime, end: store.closeTime };
+}
+
 /** 매장이 예약 1시간마다 가져가는 금액 (원). 고객이 내는 캐치걸 요금과는 별개다. */
 export const STORE_FEE_PER_HOUR = 100_000;
 

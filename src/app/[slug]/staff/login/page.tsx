@@ -13,7 +13,7 @@ export default async function StaffLoginPage({ params, searchParams }: { params:
         <div className="mt-1 text-[10px] font-semibold uppercase tracking-[.2em] text-gold">Staff</div>
         <div className="font-serif text-[20px] font-bold text-ink">{store.name} 캐치걸 로그인</div>
         <StaffLoginForm slug={slug} next={next} />
-        <div className="mt-6 text-[10px] text-mute">데모 — junhee / taeri / ain · 비밀번호 1234</div>
+        <div className="mt-6 text-[10px] text-mute">데모 — junhee / yeri / hayoung · 비밀번호 1234</div>
       </div>
     </main>
   );

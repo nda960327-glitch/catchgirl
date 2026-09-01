@@ -5,9 +5,9 @@
  * 알림은 매장 내부(관리자·캐치걸 화면)와 고객 본인의 마이페이지에서 확인하는 용도다.
  */
 export type NotificationEvent =
-  | { type: "RESERVATION_CONFIRMED"; customerName: string; staffName: string; when: string; code: string }
+  | { type: "RESERVATION_CONFIRMED"; customerName: string; staffName: string; when: string; code: string; roomName?: string | null }
   | { type: "RESERVATION_CANCELLED"; customerName: string; staffName: string; when: string; code: string }
-  | { type: "REMINDER_1H"; customerName: string; staffName: string; when: string; code: string };
+  | { type: "REMINDER_1H"; customerName: string; staffName: string; when: string; code: string; roomName?: string | null };
 
 export interface NotificationService {
   send(event: NotificationEvent): Promise<{ ok: boolean; message: string }>;
@@ -16,11 +16,12 @@ export interface NotificationService {
 export function renderMessage(e: NotificationEvent): string {
   switch (e.type) {
     case "RESERVATION_CONFIRMED":
-      return `[캐치걸_어나더] ${e.customerName}님, ${e.when} ${e.staffName} 캐치걸 예약이 확정됐어요. (NO. ${e.code})`;
+      // 어느 자리인지 모르면 도착해서 헤매므로 룸 번호를 함께 알린다
+      return `[캐치걸_어나더] ${e.customerName}님, ${e.when} ${e.staffName} 캐치걸 예약이 확정됐어요.${e.roomName ? ` 자리는 ${e.roomName}입니다.` : ""} (NO. ${e.code})`;
     case "RESERVATION_CANCELLED":
       return `[캐치걸_어나더] ${e.customerName}님, ${e.when} ${e.staffName} 캐치걸 예약이 취소됐어요. (NO. ${e.code})`;
     case "REMINDER_1H":
-      return `[캐치걸_어나더] ${e.customerName}님, 1시간 뒤 ${e.staffName} 캐치걸와의 약속이에요. (${e.when})`;
+      return `[캐치걸_어나더] ${e.customerName}님, 1시간 뒤 ${e.staffName} 캐치걸와의 약속이에요.${e.roomName ? ` 자리는 ${e.roomName}입니다.` : ""} (${e.when})`;
   }
 }
 

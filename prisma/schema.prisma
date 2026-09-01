@@ -22,6 +22,7 @@ model Store {
   themeColor          String   @default("#B4586A")
   openTime            String   @default("15:00") // HH:mm
   closeTime           String   @default("23:00") // HH:mm
+  shiftSplitTime      String   @default("20:00") // 주간조/야간조가 갈리는 시각
   slotMinutes         Int      @default(30)
   closedDays          String   @default("[]")    // JSON: 정기 휴무 요일 [0(일)~6(토)]
   cancelDeadlineHours Int      @default(2)
@@ -38,6 +39,8 @@ model Store {
   customerNotes CustomerNote[]
   options       StoreOption[]
   notices       Notice[]
+  rooms         Room[]
+  assignments   ShiftAssignment[]
 }
 
 model AdminUser {
@@ -60,6 +63,7 @@ model Staff {
   isActive        Boolean  @default(true)
   capacityPerSlot Int      @default(1)
   hourlyPrice     Int      @default(300000) // 시간당 요금 (원)
+  adminMemo       String   @default("") // 관리자 전용 메모 (캐치걸에겐 안 보임)
   sortOrder       Int      @default(0)
   loginId         String?  @unique // 관리자가 발급한 계정
   passwordHash    String?
@@ -73,6 +77,9 @@ model Staff {
   comments     Comment[]
   favorites    Favorite[]
   votes        StaffVote[]
+  assignments  ShiftAssignment[]
+  timeOffs     StaffTimeOff[]
+  options      StoreOption[] // 이 캐치걸이 제공하는 옵션 (본인이 켜고 끈다)
 
   @@index([storeId, isActive])
 }
@@ -101,11 +108,16 @@ model StaffOff {
 // ───────────────── 고객 ─────────────────
 // 개인정보(휴대폰·실명·생일·이메일·SNS)는 수집하지 않는다.
 // 신원은 매장 안에서만 통하는 닉네임 + PIN 이고, 사람에 대한 기억은 adminMemo / CustomerNote 에 남긴다.
+//
+// 카톡·전화로만 오가던 기존 손님은 앱에서 새 닉네임을 만들면 이력이 갈라진다.
+// 그래서 관리자가 기존 고객에게 연결코드를 발급하고, 손님이 첫 로그인 때 그 코드를 넣으면
+// 새 계정이 아니라 그 고객 기록을 이어받는다. 코드는 한 번 쓰면 사라진다.
 model Customer {
   id            String   @id @default(cuid())
   storeId       String
   nickname      String
   passwordHash  String? // 고객이 정한 PIN. 관리자가 대신 만든 고객은 null → 첫 로그인 때 설정
+  inviteCode    String? // 관리자가 발급한 연결코드 (사용 후 null). 중복은 발급할 때 확인한다
   adminMemo     String   @default("") // 상단 고정 메모 (한눈에 보는 핵심)
   isBlacklisted Boolean  @default(false)
   createdAt     DateTime @default(now())
@@ -119,6 +131,7 @@ model Customer {
   votes        StaffVote[]
 
   @@unique([storeId, nickname])
+  @@index([storeId, inviteCode])
 }
 
 /** 관리자가 방문마다 남기는 날짜별 메모 (adminMemo 는 고정 요약, 이쪽은 시간순 기록) */
@@ -158,6 +171,7 @@ model Reservation {
   hourlyPrice  Int       @default(0) // 예약 시점 시급 스냅샷 — 이후 요금이 바뀌어도 과거 금액 보존
   optionsPrice Int       @default(0)
   totalPrice   Int       @default(0) // hourlyPrice * hours + optionsPrice
+  roomName     String? // 예약 시점의 배치 룸 이름 스냅샷 — 손님에게 "룸1" 이라고 안내한다
   createdAt    DateTime  @default(now())
   cancelledAt  DateTime?
 
@@ -170,6 +184,61 @@ model Reservation {
   @@index([storeId, startTime])
   @@index([staffId, startTime])
   @@index([customerId, startTime])
+}
+
+/**
+ * 근무 중 자리 비움 (외출·병원 등). 캐치걸 본인도, 관리자도 넣을 수 있다.
+ * 이 시간대는 예약을 받지 않고, 관리자는 누가 언제 나갔는지 그대로 본다.
+ */
+model StaffTimeOff {
+  id        String   @id @default(cuid())
+  staffId   String
+  date      String // 영업일 YYYY-MM-DD
+  startTime String // HH:mm
+  endTime   String // HH:mm
+  reason    String   @default("")
+  createdBy String   @default("STAFF") // STAFF | ADMIN
+  createdAt DateTime @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, date])
+}
+
+/** 접객 룸 (1번~10번 등). 한 룸에는 한 조당 캐치걸 한 명이 들어간다. */
+model Room {
+  id        String  @id @default(cuid())
+  storeId   String
+  name      String
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  store       Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  assignments ShiftAssignment[]
+
+  @@unique([storeId, name])
+}
+
+/**
+ * 출근 배치 — 어느 영업일, 어느 조(주간/야간), 어느 룸에 누가 들어가는지.
+ * 한 룸에 한 조당 한 명, 한 사람이 같은 조에 두 룸을 맡지 못하도록 DB 가 막는다.
+ */
+model ShiftAssignment {
+  id        String   @id @default(cuid())
+  storeId   String
+  date      String // 영업일 YYYY-MM-DD
+  shift     String // DAY | NIGHT
+  roomId    String
+  staffId   String
+  createdAt DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  room  Room  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, date, shift])
+  @@unique([staffId, date, shift])
+  @@index([storeId, date])
 }
 
 /** 고객 홈에 띄우는 공지 — 관리자에서 직접 쓰고 고칠 수 있다 */
@@ -199,6 +268,7 @@ model StoreOption {
 
   store              Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
   reservationOptions ReservationOption[]
+  staff              Staff[] // 이 옵션을 제공하는 캐치걸들
 
   @@index([storeId, isActive])
 }

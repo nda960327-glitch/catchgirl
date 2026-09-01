@@ -21,7 +21,7 @@ export default async function CustomerLoginPage({ params, searchParams }: { para
         <LoginForm slug={slug} next={next} />
       </div>
       <div className="mt-auto px-6 pb-8 pt-6 text-center text-[10px] leading-[1.7] text-mute/80">
-        데모 계정 — 길동 / PIN 1234 (단골) · 병정 / PIN 1234
+        데모 계정 — 서준 / PIN 1234 · 연결코드 데모 A3K9
       </div>
     </div>
   );

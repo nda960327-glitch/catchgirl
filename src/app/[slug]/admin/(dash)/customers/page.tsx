@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { computeCustomerStats } from "@/lib/metrics";
-import { cn } from "@/lib/utils";
+import { cn, wonShort } from "@/lib/utils";
 import { Card, Chip, Eyebrow, GradeChip } from "@/components/ui";
 
 type SP = { sort?: string; filter?: string; q?: string };
@@ -14,16 +14,22 @@ export default async function CustomersPage({ params, searchParams }: { params: 
   const store = await getStoreBySlug(slug);
   const customers = await prisma.customer.findMany({
     where: { storeId: store.id, ...(sp.q ? { nickname: { contains: sp.q } } : {}) },
-    include: { reservations: { select: { status: true, startTime: true, staffId: true, staff: { select: { nickname: true } } } } },
+    include: { reservations: { select: { status: true, startTime: true, staffId: true, totalPrice: true, staff: { select: { nickname: true } } } } },
   });
-  let rows = customers.map((c) => ({ c, s: computeCustomerStats(c.reservations) }));
+  // 누적 지출 = 취소·노쇼를 뺀 결제 금액 합계
+  let rows = customers.map((c) => ({
+    c,
+    s: computeCustomerStats(c.reservations),
+    spent: c.reservations.filter((r) => r.status === "COMPLETED" || r.status === "CONFIRMED").reduce((a, r) => a + r.totalPrice, 0),
+  }));
   const filter = sp.filter ?? "";
   if (filter === "dormant") rows = rows.filter((r) => r.s.dormant);
   if (filter === "noshow") rows = rows.filter((r) => r.s.noshowCount > 0);
   if (filter === "blacklist") rows = rows.filter((r) => r.c.isBlacklisted);
   if (filter === "vip") rows = rows.filter((r) => r.s.grade !== "신규");
-  const sort = sp.sort ?? "revisit";
+  const sort = sp.sort ?? "spent";
   rows.sort((a, b) => {
+    if (sort === "spent") return b.spent - a.spent || b.s.visitCount - a.s.visitCount;
     if (sort === "revisit") return b.s.revisitCount - a.s.revisitCount || b.s.visitCount - a.s.visitCount;
     if (sort === "noshow") return b.s.noshowCount - a.s.noshowCount;
     if (sort === "recent") return (b.s.lastVisitAt?.getTime() ?? 0) - (a.s.lastVisitAt?.getTime() ?? 0);
@@ -36,7 +42,7 @@ export default async function CustomersPage({ params, searchParams }: { params: 
     Object.entries({ sort, filter, q: sp.q, ...o }).forEach(([k, v]) => v && p.set(k, v));
     return `?${p.toString()}`;
   };
-  const SORTS = [["revisit", "재방문 많은 순"], ["noshow", "노쇼 많은 순"], ["recent", "최근 방문 순"], ["cancel", "취소 많은 순"], ["name", "이름순"]];
+  const SORTS = [["spent", "많이 쓴 순"], ["revisit", "재방문 많은 순"], ["noshow", "노쇼 많은 순"], ["recent", "최근 방문 순"], ["cancel", "취소 많은 순"], ["name", "이름순"]];
   const FILTERS = [["", "전체"], ["vip", "단골·VIP"], ["dormant", "휴면 (3개월 미방문)"], ["noshow", "노쇼 이력"], ["blacklist", "블랙리스트"]];
 
   return (
@@ -60,12 +66,12 @@ export default async function CustomersPage({ params, searchParams }: { params: 
       </Card>
 
       <Card className="mt-3 overflow-hidden">
-        <div className="hidden grid-cols-[1.3fr_90px_90px_110px_80px_80px_90px_1fr] gap-2 border-b border-line bg-[#FAF6F7] px-4 py-2.5 text-[11px] font-semibold text-mute md:grid">
-          <span>고객</span><span>등급</span><span>방문 횟수</span><span>최근 방문일</span><span>취소</span><span>노쇼</span><span>재방문 수</span><span>주 지정 캐치걸</span>
+        <div className="hidden grid-cols-[1.3fr_90px_100px_90px_110px_80px_80px_90px_1fr] gap-2 border-b border-line bg-[#FAF6F7] px-4 py-2.5 text-[11px] font-semibold text-mute md:grid">
+          <span>고객</span><span>등급</span><span className="text-right">누적 지출</span><span>방문 횟수</span><span>최근 방문일</span><span>취소</span><span>노쇼</span><span>재방문 수</span><span>주 지정 캐치걸</span>
         </div>
         {rows.length === 0 && <div className="py-10 text-center text-[12px] text-mute">조건에 맞는 고객이 없어요</div>}
-        {rows.map(({ c, s }) => (
-          <Link key={c.id} href={`/${slug}/admin/customers/${c.id}`} className="grid grid-cols-2 gap-2 border-b border-line px-4 py-3 text-[12px] transition-colors hover:bg-blush-lt/30 md:grid-cols-[1.3fr_90px_90px_110px_80px_80px_90px_1fr] md:items-center">
+        {rows.map(({ c, s, spent }) => (
+          <Link key={c.id} href={`/${slug}/admin/customers/${c.id}`} className="grid grid-cols-2 gap-2 border-b border-line px-4 py-3 text-[12px] transition-colors hover:bg-blush-lt/30 md:grid-cols-[1.3fr_90px_100px_90px_110px_80px_80px_90px_1fr] md:items-center">
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-ink">{c.nickname}</span>

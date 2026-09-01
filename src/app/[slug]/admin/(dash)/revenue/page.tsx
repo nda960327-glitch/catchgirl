@@ -34,7 +34,7 @@ export default async function RevenuePage({
   const [reservations, staff] = await Promise.all([
     prisma.reservation.findMany({
       where: { storeId: store.id, startTime: { gte: rangeStart, lt: rangeEnd } },
-      include: { staff: { select: { id: true, nickname: true, photos: true } }, options: true },
+      include: { staff: { select: { id: true, nickname: true, photos: true } }, customer: { select: { id: true, nickname: true } }, options: true },
       orderBy: { startTime: "asc" },
     }),
     prisma.staff.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" }, select: { id: true, nickname: true, photos: true } }),
@@ -87,6 +87,18 @@ export default async function RevenuePage({
     .filter((x) => x.count > 0)
     .sort((a, b) => b.hours - a.hours);
   const peakStaffHours = Math.max(1, ...byStaff.map((s) => s.hours));
+
+  // ── 큰손 (이번 달 많이 쓴 손님) ──
+  const bySpender = new Map<string, { name: string; spent: number; visits: number; hours: number }>();
+  for (const r of earning) {
+    const v = bySpender.get(r.customerId) ?? { name: r.customer.nickname, spent: 0, visits: 0, hours: 0 };
+    v.spent += r.totalPrice;
+    v.visits += 1;
+    v.hours += r.hours;
+    bySpender.set(r.customerId, v);
+  }
+  const spenders = [...bySpender.entries()].map(([id, v]) => ({ id, ...v })).sort((a, b) => b.spent - a.spent).slice(0, 15);
+  const topSpend = Math.max(1, ...spenders.map((s) => s.spent));
 
   // ── 요일별 ──
   const byWeekday = WEEKDAYS_KO.map((label, wd) => {
@@ -231,6 +243,31 @@ export default async function RevenuePage({
         </Card>
 
         <div className="flex flex-col gap-5">
+          {/* 큰손 */}
+          <Card className="p-5">
+            <div className="text-[13px] font-bold text-ink">많이 쓴 손님</div>
+            <div className="mt-0.5 text-[11px] text-mute">이번 달 결제액 기준 상위 15명</div>
+            {spenders.length === 0 ? (
+              <div className="mt-4 rounded-2xl border border-dashed border-line py-8 text-center text-[12px] text-mute">이 달 예약이 없어요</div>
+            ) : (
+              <div className="mt-3">
+                {spenders.map((s, i) => (
+                  <Link
+                    key={s.id}
+                    href={`/${slug}/admin/customers/${s.id}`}
+                    className="relative flex items-center gap-2 border-b border-line py-2 text-[12px] transition-colors last:border-0 hover:bg-blush-lt/30"
+                  >
+                    <span className="absolute inset-y-0 left-0 -z-0 rounded bg-blush-lt/50" style={{ width: `${(s.spent / topSpend) * 100}%` }} />
+                    <span className="z-10 w-4 text-[10px] text-mute">{i + 1}</span>
+                    <span className="z-10 font-bold text-ink">{s.name}</span>
+                    <span className="z-10 ml-auto text-mute">{s.visits}건 · {s.hours}h</span>
+                    <span className="z-10 w-[72px] text-right font-bold text-brand">{wonShort(s.spent)}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </Card>
+
           {/* 요일별 */}
           <Card className="p-5">
             <div className="text-[13px] font-bold text-ink">요일별 매출</div>

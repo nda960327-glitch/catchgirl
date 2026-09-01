@@ -19,6 +19,7 @@ export default async function DonePage({ params }: { params: Promise<{ slug: str
     ["일시", `${fmtDateKo(r.startTime)} ${fmtTimeKo(r.startTime)}`],
     ["이용 시간", `${r.hours}시간 (~ ${fmtTimeKo(r.endTime)})`],
     ["캐치걸", r.staff.nickname],
+    ...(r.roomName ? ([["자리", r.roomName]] as [string, string][]) : []),
     ["닉네임", r.customer.nickname],
     ...(r.options.length ? ([["옵션", r.options.map((o) => o.name).join(", ")]] as [string, string][]) : []),
     ["결제 예정", won(r.totalPrice)],
@@ -31,6 +32,13 @@ export default async function DonePage({ params }: { params: Promise<{ slug: str
         {r.status === "CANCELLED" ? "예약이 취소됐어요" : "자리를 비워둘게요"}
       </div>
       <div className="mt-1 text-[12px] text-mute">{r.status === "CANCELLED" ? "다음에 또 만나요" : `${store.name}에서 기다릴게요`}</div>
+      {r.status !== "CANCELLED" && r.roomName && (
+        <div className="mt-3 rounded-2xl bg-brand px-5 py-3 text-white shadow-cta">
+          <div className="text-[10px] font-semibold uppercase tracking-[.15em] opacity-85">Your Room</div>
+          <div className="mt-0.5 font-serif text-[22px] font-bold">{r.roomName}</div>
+          <div className="mt-0.5 text-[11px] opacity-85">도착하시면 이 자리로 안내해 드려요</div>
+        </div>
+      )}
 
       <div className="mt-[22px] w-full max-w-[300px] rounded-[22px] border border-line bg-white px-[22px] py-5 shadow-card">
         {rows.map(([k, v], i) => (

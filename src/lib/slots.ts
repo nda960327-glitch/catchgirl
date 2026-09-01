@@ -53,6 +53,15 @@ export function businessDayOf(store: Pick<Store, "openTime" | "closeTime">, now 
   return mins < close ? ymd(new Date(now.getTime() - 86_400_000)) : ymd(now);
 }
 
+/** 그 시각이 주간조인지 야간조인지 */
+export function shiftOfTime(store: Pick<Store, "openTime" | "closeTime" | "shiftSplitTime">, at: Date): "DAY" | "NIGHT" {
+  const openMin = timeToMin(store.openTime);
+  const norm = (m: number) => (m < openMin ? m + 24 * 60 : m);
+  const split = norm(timeToMin(store.shiftSplitTime));
+  const t = norm(at.getHours() * 60 + at.getMinutes());
+  return t < split ? "DAY" : "NIGHT";
+}
+
 /** 해당 영업일이 포함하는 실제 시각 범위 */
 export function businessDayRange(store: Pick<Store, "openTime" | "closeTime">, date: string) {
   const open = timeToMin(store.openTime);
@@ -77,6 +86,8 @@ export async function getSlotsFor(
   const closed = isStoreClosed(store, date);
   const off = await prisma.staffOff.findUnique({ where: { staffId_date: { staffId: staff.id, date } } });
   const scheds = staff.schedules.filter((s) => s.weekday === weekday);
+  // 외출(자리 비움) 구간은 근무 시간이어도 예약을 받지 않는다
+  const timeOffs = await prisma.staffTimeOff.findMany({ where: { staffId: staff.id, date }, select: { startTime: true, endTime: true } });
 
   const dayStart = toLocalDate(date, "00:00");
   const dayEnd = addMinutes(dayStart, 24 * 60 + 6 * 60);
@@ -112,7 +123,18 @@ export async function getSlotsFor(
       return t >= a && t < b;
     });
     const startsAt = startAdj.toISOString();
-    if (closed || off || !inSchedule || !staff.isActive) return { time, status: "off", remaining: 0, maxHours: 0, startsAt };
+    // 외출 구간에 걸치면 근무 외로 본다.
+    // 오픈 시각 이전의 값은 자정을 넘긴 것이므로 하루를 더해 한 줄에 편다.
+    const openMin = timeToMin(store.openTime);
+    const norm = (m: number) => (m < openMin ? m + 24 * 60 : m);
+    const away = timeOffs.some((o) => {
+      const a = norm(timeToMin(o.startTime));
+      const e = norm(timeToMin(o.endTime));
+      const b = e <= a ? e + 24 * 60 : e;
+      const t = norm(timeToMin(time));
+      return t >= a && t < b;
+    });
+    if (closed || off || away || !inSchedule || !staff.isActive) return { time, status: "off", remaining: 0, maxHours: 0, startsAt };
     if (startAdj.getTime() <= now.getTime()) return { time, status: "past", remaining: 0, maxHours: 0, startsAt };
     const used = countByTime.get(startAdj.getTime()) ?? 0;
     const remaining = Math.max(0, staff.capacityPerSlot - used);

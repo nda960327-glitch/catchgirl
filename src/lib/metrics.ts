@@ -62,12 +62,18 @@ export type StaffStats = {
   revisitRate: number; // 0~1 — 완료 고객 중 2회 이상 방문 비율
   upCount: number;
   downCount: number;
+  /** 이 캐치걸을 만난 손님 수 */
+  customerCount: number;
+  /** 그중 두 번 이상 온 손님 수 */
+  repeatCustomers: number;
+  /** 최근 30일 안에 이 캐치걸을 처음 만난 손님 수 */
+  newCustomers30d: number;
 };
 
 export async function staffStats(staffId: string): Promise<StaffStats> {
   const [reviews, rs, votes] = await Promise.all([
     prisma.review.findMany({ where: { staffId, isHidden: false }, select: { rating: true } }),
-    prisma.reservation.findMany({ where: { staffId }, select: { status: true, customerId: true } }),
+    prisma.reservation.findMany({ where: { staffId }, select: { status: true, customerId: true, startTime: true } }),
     prisma.staffVote.findMany({ where: { staffId }, select: { value: true } }),
   ]);
   const rating = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : null;
@@ -78,6 +84,14 @@ export async function staffStats(staffId: string): Promise<StaffStats> {
   for (const r of completed) perCustomer.set(r.customerId, (perCustomer.get(r.customerId) ?? 0) + 1);
   const custN = perCustomer.size;
   const revisitN = [...perCustomer.values()].filter((n) => n >= 2).length;
+  // 이 캐치걸을 "처음" 만난 시점 기준 — 최근 30일 안이면 신규로 본다
+  const firstSeen = new Map<string, Date>();
+  for (const r of completed) {
+    const cur = firstSeen.get(r.customerId);
+    if (!cur || r.startTime < cur) firstSeen.set(r.customerId, r.startTime);
+  }
+  const cutoff = new Date(Date.now() - 30 * 86_400_000);
+  const newRecently = [...firstSeen.values()].filter((d) => d >= cutoff).length;
   return {
     rating: rating ? Math.round(rating * 10) / 10 : null,
     reviewCount: reviews.length,
@@ -87,5 +101,8 @@ export async function staffStats(staffId: string): Promise<StaffStats> {
     revisitRate: custN ? revisitN / custN : 0,
     upCount: votes.filter((v) => v.value === "UP").length,
     downCount: votes.filter((v) => v.value === "DOWN").length,
+    customerCount: custN,
+    repeatCustomers: revisitN,
+    newCustomers30d: newRecently,
   };
 }

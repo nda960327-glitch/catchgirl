@@ -10,7 +10,7 @@ import { useToast } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { cancelMyReservation } from "../actions";
 
-export type HistoryItem = { id: string; code: string; status: string; startTime: string; endTime: string; hours: number; totalPrice: number; partySize: number; staffId: string; staffName: string; staffPhoto: string | null; hasReview: boolean };
+export type HistoryItem = { id: string; code: string; status: string; startTime: string; endTime: string; hours: number; totalPrice: number; roomName: string | null; partySize: number; staffId: string; staffName: string; staffPhoto: string | null; hasReview: boolean };
 
 export function HistoryTabs({ slug, items }: { slug: string; items: HistoryItem[] }) {
   const [tab, setTab] = useState<"upcoming" | "done" | "cancelled">("upcoming");
@@ -56,9 +56,12 @@ export function HistoryTabs({ slug, items }: { slug: string; items: HistoryItem[
                     <Avatar src={r.staffPhoto} name={r.staffName} size={46} rounded={15} />
                   </Link>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-[13px] font-bold text-ink">{r.staffName}</span>
                       <StatusChip status={r.status} />
+                      {r.roomName && r.status === "CONFIRMED" && (
+                        <span className="rounded-full bg-brand px-2 py-[3px] text-[10px] font-bold text-white">{r.roomName}</span>
+                      )}
                     </div>
                     <div className="mt-1 text-[12px] text-mute">
                       {format(d, "M월 d일 (EEE) HH:mm", { locale: ko })} ~ {format(new Date(r.endTime), "HH:mm")} · {r.hours}시간

@@ -9,15 +9,24 @@ import { cn, WEEKDAYS_KO } from "@/lib/utils";
 import { deleteStaff, saveStaff, staffDeletionImpact } from "../../actions";
 
 export type StaffFull = {
-  id: string; nickname: string; bio: string; tags: string[]; photos: string[]; isActive: boolean; capacityPerSlot: number; hourlyPrice: number; loginId: string;
+  id: string; nickname: string; bio: string; tags: string[]; photos: string[]; isActive: boolean; capacityPerSlot: number; hourlyPrice: number; adminMemo: string; loginId: string;
+  optionIds: string[];
   schedules: { weekday: number; startTime: string; endTime: string }[];
   offs: { date: string; reason: string }[];
-  stats: { rating: number | null; reviewCount: number; reservationCount: number; completedCount: number; noshowRate: number; revisitRate: number; upCount: number; downCount: number };
+  stats: {
+    rating: number | null; reviewCount: number; reservationCount: number; completedCount: number; noshowRate: number; revisitRate: number;
+    upCount: number; downCount: number; customerCount: number; repeatCustomers: number; newCustomers30d: number;
+  };
+};
+export type StoreOptionLite = { id: string; name: string; price: number };
+
+const EMPTY: StaffFull = {
+  id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, hourlyPrice: 300000, adminMemo: "", loginId: "", optionIds: [],
+  schedules: [], offs: [],
+  stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0, upCount: 0, downCount: 0, customerCount: 0, repeatCustomers: 0, newCustomers30d: 0 },
 };
 
-const EMPTY: StaffFull = { id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, hourlyPrice: 300000, loginId: "", schedules: [], offs: [], stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0, upCount: 0, downCount: 0 } };
-
-export function StaffManager({ slug, items, storeHours, initialEdit }: { slug: string; items: StaffFull[]; storeHours: { open: string; close: string }; initialEdit?: string }) {
+export function StaffManager({ slug, items, storeOptions, storeHours, initialEdit }: { slug: string; items: StaffFull[]; storeOptions: StoreOptionLite[]; storeHours: { open: string; close: string }; initialEdit?: string }) {
   const [editing, setEditing] = useState<StaffFull | null>(initialEdit === "new" ? EMPTY : items.find((i) => i.id === initialEdit) ?? null);
   return (
     <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_440px]">
@@ -45,15 +54,16 @@ export function StaffManager({ slug, items, storeHours, initialEdit }: { slug: s
               <Button variant="outline" size="sm" onClick={() => setEditing(s)}>수정</Button>
             </div>
             {/* 실적 */}
-            <div className="mt-3 grid grid-cols-4 gap-2 rounded-2xl bg-[#FAF6F7] p-3 text-center md:grid-cols-7">
+            <div className="mt-3 grid grid-cols-4 gap-2 rounded-2xl bg-[#FAF6F7] p-3 text-center md:grid-cols-8">
               {[
                 ["예약 수", `${s.stats.reservationCount}`],
                 ["방문완료", `${s.stats.completedCount}`],
-                ["재방문 유도율", `${s.stats.revisitRate}%`],
+                ["손님 수", `${s.stats.customerCount}명`],
+                ["재방문", `${s.stats.repeatCustomers}명 · ${s.stats.revisitRate}%`],
+                ["신규(30일)", `${s.stats.newCustomers30d}명`],
                 ["평균 별점", s.stats.rating !== null ? `${s.stats.rating.toFixed(1)} (${s.stats.reviewCount})` : "–"],
                 ["노쇼율", `${s.stats.noshowRate}%`],
-                ["👍 추천", `${s.stats.upCount}`],
-                ["👎 비추천", `${s.stats.downCount}`],
+                ["👍 / 👎", `${s.stats.upCount} / ${s.stats.downCount}`],
               ].map(([k, v]) => (
                 <div key={k}>
                   <div className="font-serif text-[15px] font-bold text-brand">{v}</div>
@@ -65,7 +75,7 @@ export function StaffManager({ slug, items, storeHours, initialEdit }: { slug: s
         ))}
       </div>
       <div className="xl:sticky xl:top-6 xl:self-start">
-        {editing ? <StaffEditor key={editing.id || "new"} slug={slug} init={editing} onClose={() => setEditing(null)} /> : (
+        {editing ? <StaffEditor key={editing.id || "new"} slug={slug} init={editing} storeOptions={storeOptions} onClose={() => setEditing(null)} /> : (
           <Card className="flex h-48 items-center justify-center p-6 text-center text-[12px] text-mute">캐치걸를 선택하면 여기서 수정할 수 있어요</Card>
         )}
       </div>
@@ -73,7 +83,7 @@ export function StaffManager({ slug, items, storeHours, initialEdit }: { slug: s
   );
 }
 
-function StaffEditor({ slug, init, onClose }: { slug: string; init: StaffFull; onClose: () => void }) {
+function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init: StaffFull; storeOptions: StoreOptionLite[]; onClose: () => void }) {
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
@@ -101,7 +111,8 @@ function StaffEditor({ slug, init, onClose }: { slug: string; init: StaffFull; o
     start(async () => {
       const r = await saveStaff(slug, {
         id: f.id || undefined, nickname: f.nickname, bio: f.bio, tags: f.tags, photos: f.photos, isActive: f.isActive,
-        capacityPerSlot: f.capacityPerSlot, hourlyPrice: f.hourlyPrice, loginId: f.loginId, password: f.password, schedules: f.schedules, offs: f.offs,
+        capacityPerSlot: f.capacityPerSlot, hourlyPrice: f.hourlyPrice, adminMemo: f.adminMemo, optionIds: f.optionIds,
+        loginId: f.loginId, password: f.password, schedules: f.schedules, offs: f.offs,
       });
       if (!r.ok) return toast(r.error, "error");
       toast("저장했어요", "success");
@@ -143,6 +154,35 @@ function StaffEditor({ slug, init, onClose }: { slug: string; init: StaffFull; o
           </Field>
         </div>
         <Field label="한 줄 소개"><Textarea rows={2} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} /></Field>
+
+        {/* 제공 옵션 — 캐치걸 본인도 '내 설정'에서 바꿀 수 있다 */}
+        <div>
+          <div className="mb-1.5 flex items-baseline justify-between">
+            <span className="text-[12px] font-semibold text-ink">제공 옵션</span>
+            <span className="text-[11px] text-mute">고르지 않으면 예약 화면에 안 뜸</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {storeOptions.length === 0 && <span className="text-[12px] text-mute">매장에 등록된 옵션이 없어요</span>}
+            {storeOptions.map((o) => {
+              const on = f.optionIds.includes(o.id);
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setF({ ...f, optionIds: on ? f.optionIds.filter((x) => x !== o.id) : [...f.optionIds, o.id] })}
+                  className={cn("rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors", on ? "bg-brand text-white" : "bg-[#F4EDEE] text-mute")}
+                >
+                  {o.name} +{o.price.toLocaleString("ko-KR")}원
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <Field label="관리자 메모" hint="캐치걸에겐 안 보임">
+          <Textarea rows={2} value={f.adminMemo} onChange={(e) => setF({ ...f, adminMemo: e.target.value })} placeholder="예: 지명 많음. 주말 야간 고정 선호" />
+        </Field>
         <Field label="태그" hint="Enter로 추가">
           <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-line bg-white px-3 py-2">
             {f.tags.map((t) => (

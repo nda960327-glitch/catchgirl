@@ -122,6 +122,8 @@ const staffSchema = z.object({
   isActive: z.boolean().default(true),
   capacityPerSlot: z.coerce.number().int().min(1).max(10).default(1),
   hourlyPrice: z.coerce.number().int().min(0).max(100_000_000).default(300_000),
+  adminMemo: z.string().max(500).optional().default(""),
+  optionIds: z.array(z.string()).max(20).optional().default([]),
   loginId: z.string().trim().max(30).optional().default(""),
   password: z.string().max(50).optional().default(""),
   schedules: z.array(z.object({ weekday: z.number().int().min(0).max(6), startTime: z.string(), endTime: z.string() })).default([]),
@@ -136,17 +138,19 @@ export async function saveStaff(slug: string, input: z.input<typeof staffSchema>
     const d = p.data;
     const base = {
       nickname: d.nickname, bio: d.bio, tags: JSON.stringify(d.tags), photos: JSON.stringify(d.photos),
-      isActive: d.isActive, capacityPerSlot: d.capacityPerSlot, hourlyPrice: d.hourlyPrice, loginId: d.loginId || null,
+      isActive: d.isActive, capacityPerSlot: d.capacityPerSlot, hourlyPrice: d.hourlyPrice, adminMemo: d.adminMemo, loginId: d.loginId || null,
       ...(d.password ? { passwordHash: await bcrypt.hash(d.password, 10) } : {}),
     };
+    const optionIds = d.optionIds.map((oid) => ({ id: oid }));
     let id = d.id;
     if (id) {
       const ex = await prisma.staff.findUnique({ where: { id } });
       if (!ex || ex.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
-      await prisma.staff.update({ where: { id }, data: base });
+      // set 은 수정할 때만 쓸 수 있다 (생성 시엔 connect)
+      await prisma.staff.update({ where: { id }, data: { ...base, options: { set: optionIds } } });
     } else {
       const count = await prisma.staff.count({ where: { storeId: store.id } });
-      const created = await prisma.staff.create({ data: { ...base, storeId: store.id, sortOrder: count } });
+      const created = await prisma.staff.create({ data: { ...base, storeId: store.id, sortOrder: count, options: { connect: optionIds } } });
       id = created.id;
     }
     await prisma.$transaction([
@@ -191,6 +195,160 @@ export async function deleteStaff(slug: string, staffId: string): Promise<R> {
     const s = await prisma.staff.findUnique({ where: { id: staffId } });
     if (!s || s.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
     await prisma.staff.delete({ where: { id: staffId } });
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/* ─── 룸 · 출근 배치 ─── */
+const roomSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().trim().min(1, "룸 이름을 입력해 주세요").max(20),
+  isActive: z.boolean().default(true),
+});
+export async function saveRoom(slug: string, input: z.input<typeof roomSchema>): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const p = roomSchema.safeParse(input);
+    if (!p.success) return { ok: false, error: p.error.issues[0].message };
+    const d = p.data;
+    if (d.id) {
+      const ex = await prisma.room.findUnique({ where: { id: d.id } });
+      if (!ex || ex.storeId !== store.id) return { ok: false, error: "룸을 찾을 수 없어요." };
+      await prisma.room.update({ where: { id: d.id }, data: { name: d.name, isActive: d.isActive } });
+    } else {
+      const count = await prisma.room.count({ where: { storeId: store.id } });
+      await prisma.room.create({ data: { storeId: store.id, name: d.name, isActive: d.isActive, sortOrder: count } });
+    }
+    revalidatePath(`/${slug}/admin`, "layout");
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof Error && e.message.includes("Unique constraint")) return { ok: false, error: "같은 이름의 룸이 이미 있어요." };
+    return fail(e);
+  }
+}
+
+/** 룸 삭제 — 그 룸에 잡혀 있던 배치도 함께 사라진다 */
+export async function deleteRoom(slug: string, roomId: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const r = await prisma.room.findUnique({ where: { id: roomId } });
+    if (!r || r.storeId !== store.id) return { ok: false, error: "룸을 찾을 수 없어요." };
+    await prisma.room.delete({ where: { id: roomId } });
+    revalidatePath(`/${slug}/admin`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * 룸 한 칸에 캐치걸을 넣거나(staffId) 비운다(staffId = "").
+ * 같은 조에 이미 다른 룸을 맡고 있으면 그 배치를 옮긴다 — 중복 배치를 만들지 않는다.
+ */
+export async function assignShift(
+  slug: string,
+  input: { date: string; shift: "DAY" | "NIGHT"; roomId: string; staffId: string },
+): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const { date, shift, roomId, staffId } = input;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !["DAY", "NIGHT"].includes(shift)) return { ok: false, error: "날짜/조를 확인해 주세요." };
+    const room = await prisma.room.findUnique({ where: { id: roomId } });
+    if (!room || room.storeId !== store.id) return { ok: false, error: "룸을 찾을 수 없어요." };
+
+    if (!staffId) {
+      await prisma.shiftAssignment.deleteMany({ where: { roomId, date, shift } });
+    } else {
+      const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+      if (!staff || staff.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+      await prisma.$transaction([
+        // 이 사람이 같은 조에 맡고 있던 다른 룸을 먼저 비운다 (방 이동)
+        prisma.shiftAssignment.deleteMany({ where: { staffId, date, shift } }),
+        prisma.shiftAssignment.deleteMany({ where: { roomId, date, shift } }),
+        prisma.shiftAssignment.create({ data: { storeId: store.id, date, shift, roomId, staffId } }),
+      ]);
+    }
+    revalidatePath(`/${slug}/admin`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 하루 배치를 통째로 다른 날짜에 복사 — 주간 스케줄을 짤 때 반복 입력을 줄인다 */
+export async function copyDayAssignments(slug: string, fromDate: string, toDate: string): Promise<R<{ count: number }>> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    if (fromDate === toDate) return { ok: false, error: "같은 날짜예요." };
+    const src = await prisma.shiftAssignment.findMany({ where: { storeId: store.id, date: fromDate } });
+    if (src.length === 0) return { ok: false, error: "복사할 배치가 없어요." };
+    await prisma.$transaction([
+      prisma.shiftAssignment.deleteMany({ where: { storeId: store.id, date: toDate } }),
+      prisma.shiftAssignment.createMany({
+        data: src.map((a) => ({ storeId: store.id, date: toDate, shift: a.shift, roomId: a.roomId, staffId: a.staffId })),
+      }),
+    ]);
+    revalidatePath(`/${slug}/admin`, "layout");
+    return { ok: true, data: { count: src.length } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 하루 배치 전체 비우기 */
+export async function clearDayAssignments(slug: string, date: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    await prisma.shiftAssignment.deleteMany({ where: { storeId: store.id, date } });
+    revalidatePath(`/${slug}/admin`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/* ─── 자리 비움(외출) ─── */
+const timeOffSchema = z.object({
+  staffId: z.string().min(1),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/),
+  reason: z.string().trim().max(40).optional().default(""),
+});
+/** 관리자가 "얘 지금 나가 있음" 을 표시 — 그 시간대 예약이 닫힌다 */
+export async function adminAddTimeOff(slug: string, input: z.input<typeof timeOffSchema>): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const p = timeOffSchema.safeParse(input);
+    if (!p.success) return { ok: false, error: "입력값을 확인해 주세요." };
+    const d = p.data;
+    const s = await prisma.staff.findUnique({ where: { id: d.staffId } });
+    if (!s || s.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+    if (d.startTime === d.endTime) return { ok: false, error: "시작과 종료 시각이 같아요." };
+    await prisma.staffTimeOff.create({ data: { ...d, createdBy: "ADMIN" } });
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function adminDeleteTimeOff(slug: string, id: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const t = await prisma.staffTimeOff.findUnique({ where: { id }, include: { staff: true } });
+    if (!t || t.staff.storeId !== store.id) return { ok: false, error: "기록을 찾을 수 없어요." };
+    await prisma.staffTimeOff.delete({ where: { id } });
     revalidatePath(`/${slug}`, "layout");
     return { ok: true };
   } catch (e) {
@@ -314,6 +472,50 @@ export async function saveCustomerInfo(slug: string, customerId: string, input: 
   }
 }
 
+/**
+ * 기존 고객에게 연결코드를 발급한다.
+ * 카톡·전화로만 오가던 손님이 앱에서 새 닉네임을 만들면 이력이 갈라지므로,
+ * 이 코드를 알려주면 첫 로그인 때 기존 기록을 그대로 이어받는다.
+ */
+export async function issueInviteCode(slug: string, customerId: string): Promise<R<{ code: string }>> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const c = await prisma.customer.findUnique({ where: { id: customerId } });
+    if (!c || c.storeId !== store.id) return { ok: false, error: "고객을 찾을 수 없어요." };
+    // 헷갈리는 글자(0/O, 1/I) 는 빼고 4자리
+    const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 12; i++) {
+      code = Array.from({ length: 4 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join("");
+      const dup = await prisma.customer.findFirst({ where: { storeId: store.id, inviteCode: code } });
+      if (!dup) break;
+      code = "";
+    }
+    if (!code) return { ok: false, error: "코드 생성에 실패했어요. 다시 시도해 주세요." };
+    await prisma.customer.update({ where: { id: customerId }, data: { inviteCode: code } });
+    revalidatePath(`/${slug}/admin/customers/${customerId}`);
+    return { ok: true, data: { code } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 고객 PIN 초기화 — 다음 로그인 때 새 PIN 을 정하게 한다 */
+export async function resetCustomerPin(slug: string, customerId: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const c = await prisma.customer.findUnique({ where: { id: customerId } });
+    if (!c || c.storeId !== store.id) return { ok: false, error: "고객을 찾을 수 없어요." };
+    await prisma.customer.update({ where: { id: customerId }, data: { passwordHash: null } });
+    revalidatePath(`/${slug}/admin/customers/${customerId}`);
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 /** 관리자 — 고객 메모 한 줄 추가 (방문마다 쌓이는 시간순 기록) */
 export async function addCustomerNote(slug: string, customerId: string, content: string): Promise<R> {
   try {
@@ -375,8 +577,8 @@ export async function adminCommentAction(slug: string, commentId: string, action
     if (action === "reply") {
       const text = (payload ?? "").trim();
       if (!text) return { ok: false, error: "내용을 입력해 주세요." };
-      await prisma.comment.create({ data: { storeId: store.id, staffId: c.staffId, authorType: "ADMIN", authorName: `${c.staff.nickname} (매장)`, content: text, parentId: c.parentId ?? c.id } });
-      void admin;
+      // 관리자는 관리자 이름으로 단다 — 캐치걸 이름을 빌리지 않는다
+      await prisma.comment.create({ data: { storeId: store.id, staffId: c.staffId, authorType: "ADMIN", authorName: admin.name, content: text, parentId: c.parentId ?? c.id } });
     } else {
       await prisma.comment.update({ where: { id: commentId }, data: { isHidden: action === "hide" } });
     }

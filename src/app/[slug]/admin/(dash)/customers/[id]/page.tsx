@@ -7,7 +7,7 @@ import { getStoreBySlug } from "@/lib/store";
 import { computeCustomerStats } from "@/lib/metrics";
 import { parseJsonArray } from "@/lib/utils";
 import { Avatar, Card, Chip, Eyebrow, GradeChip, StatusChip, Stars } from "@/components/ui";
-import { CustomerInfoForm, CustomerNotes } from "./memo-form";
+import { CustomerAccount, CustomerInfoForm, CustomerNotes } from "./memo-form";
 
 export default async function CustomerDetail({ params }: { params: Promise<{ slug: string; id: string }> }) {
   const { slug, id } = await params;
@@ -106,6 +106,11 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
             <Eyebrow>Customer Info</Eyebrow>
             <div className="mt-1 text-[14px] font-bold text-ink">고객 정보</div>
             <CustomerInfoForm slug={slug} customerId={c.id} init={{ nickname: c.nickname, adminMemo: c.adminMemo, isBlacklisted: c.isBlacklisted }} />
+          </Card>
+          <Card className="p-5">
+            <Eyebrow>Account</Eyebrow>
+            <div className="mt-1 text-[14px] font-bold text-ink">계정 연결</div>
+            <CustomerAccount slug={slug} customerId={c.id} inviteCode={c.inviteCode} hasPin={!!c.passwordHash} />
           </Card>
         </div>
       </div>

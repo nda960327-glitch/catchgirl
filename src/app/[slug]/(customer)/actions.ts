@@ -17,16 +17,31 @@ export type ActionResult<T = undefined> = { ok: true; data?: T } | { ok: false; 
 const loginSchema = z.object({
   nickname: z.string().trim().min(1, "닉네임을 입력해 주세요").max(12, "닉네임은 12자 이하"),
   pin: z.string().trim().regex(/^\d{4,6}$/, "PIN은 숫자 4~6자리예요"),
+  inviteCode: z.string().trim().toUpperCase().max(12).optional().default(""),
 });
 const pick = (fd: FormData, keys: string[]) => Object.fromEntries(keys.map((k) => [k, (fd.get(k) ?? "") as string]));
 
 export async function loginCustomer(slug: string, form: FormData, next?: string): Promise<ActionResult> {
   const store = await getStoreBySlug(slug);
-  const parsed = loginSchema.safeParse(pick(form, ["nickname", "pin"]));
+  const parsed = loginSchema.safeParse(pick(form, ["nickname", "pin", "inviteCode"]));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
-  const { nickname, pin } = parsed.data;
+  const { nickname, pin, inviteCode } = parsed.data;
 
   let customer = await prisma.customer.findUnique({ where: { storeId_nickname: { storeId: store.id, nickname } } });
+
+  // 연결코드를 넣었으면 새 계정을 만들지 않고 기존 고객 기록을 이어받는다
+  if (inviteCode) {
+    const existing = await prisma.customer.findFirst({ where: { storeId: store.id, inviteCode } });
+    if (!existing) return { ok: false, error: "연결코드가 맞지 않아요. 매장에 확인해 주세요." };
+    if (customer && customer.id !== existing.id) return { ok: false, error: "이미 쓰고 있는 닉네임이에요. 다른 닉네임으로 해주세요." };
+    customer = await prisma.customer.update({
+      where: { id: existing.id },
+      data: { nickname, passwordHash: await bcrypt.hash(pin, 10), inviteCode: null },
+    });
+    await setSession({ role: "customer", id: customer.id, storeId: store.id, name: customer.nickname });
+    redirect(next && next.startsWith(`/${slug}`) ? next : `/${slug}/me`);
+  }
+
   if (!customer) {
     customer = await prisma.customer.create({
       data: { storeId: store.id, nickname, passwordHash: await bcrypt.hash(pin, 10) },

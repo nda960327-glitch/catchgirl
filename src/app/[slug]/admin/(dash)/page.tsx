@@ -4,8 +4,9 @@ import { ko } from "date-fns/locale";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { businessDayOf, businessDayRange, storeSlotTimes } from "@/lib/slots";
-import { STATUS_LABEL, parseJsonArray, toLocalDate, won, wonShort, STORE_FEE_PER_HOUR } from "@/lib/utils";
+import { cn, STATUS_LABEL, parseJsonArray, toLocalDate, won, wonShort, STORE_FEE_PER_HOUR } from "@/lib/utils";
 import { Card, Chip, Eyebrow } from "@/components/ui";
+import { InstallApp } from "@/components/install-app";
 import { Charts } from "./charts";
 import { Timeline } from "./timeline";
 
@@ -32,6 +33,18 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
     prisma.customer.count({ where: { storeId: store.id } }),
     prisma.reservation.findMany({ where: { storeId: store.id, startTime: { gte: monthStart, lt: tomorrow0 } }, select: { status: true, hours: true } }),
   ]);
+
+  // 오늘 누가 어느 룸에 출근하는지 + 자리 비운 사람
+  const [todayShifts, todayOffs] = await Promise.all([
+    prisma.shiftAssignment.findMany({
+      where: { storeId: store.id, date: todayStr },
+      include: { room: { select: { name: true, sortOrder: true } }, staff: { select: { id: true, nickname: true, photos: true } } },
+      orderBy: { room: { sortOrder: "asc" } },
+    }),
+    prisma.staffTimeOff.findMany({ where: { date: todayStr, staff: { storeId: store.id } }, include: { staff: { select: { id: true, nickname: true } } }, orderBy: { startTime: "asc" } }),
+  ]);
+  const awayByStaff = new Map<string, typeof todayOffs>();
+  for (const o of todayOffs) awayByStaff.set(o.staffId, [...(awayByStaff.get(o.staffId) ?? []), o]);
 
   // 매장 수익 = 예약된 시간 × 시간당 정액 (캐치걸에게 가는 요금과는 별개)
   const hoursOf = (statuses: string[]) => thisMonthRes.filter((r) => statuses.includes(r.status)).reduce((a, r) => a + r.hours, 0);
@@ -74,6 +87,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
         <Link href={`/${slug}/admin/reservations?new=1`} className="cta-grad rounded-2xl px-4 py-2.5 text-[13px] font-bold text-white shadow-cta">+ 전화 예약 등록</Link>
       </div>
 
+      <InstallApp role="admin" className="mt-4" />
+
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {kpis.map((k) => (
           <Link key={k.label} href={k.href} className="block">
@@ -88,6 +103,67 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
           </Link>
         ))}
       </div>
+
+      {/* 오늘 출근 — 누가 어느 룸인지, 지금 나가 있는 사람은 누구인지 */}
+      <Card className="mt-5 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="text-[13px] font-bold text-ink">오늘 출근</div>
+            <div className="mt-0.5 text-[11px] text-mute">
+              주간 {store.openTime}~{store.shiftSplitTime} · 야간 {store.shiftSplitTime}~익일 {store.closeTime}
+            </div>
+          </div>
+          <Link href={`/${slug}/admin/staff/schedule?date=${todayStr}`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-brand">배치 짜기 ›</Link>
+        </div>
+
+        {todayShifts.length === 0 ? (
+          <div className="mt-3 rounded-2xl border border-dashed border-line py-7 text-center text-[12px] text-mute">
+            오늘 배치가 아직 없어요.
+            <Link href={`/${slug}/admin/staff/schedule?date=${todayStr}`} className="ml-1 font-bold text-brand">지금 짜기 ›</Link>
+          </div>
+        ) : (
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            {(["DAY", "NIGHT"] as const).map((shift) => {
+              const list = todayShifts.filter((a) => a.shift === shift);
+              return (
+                <div key={shift} className="rounded-2xl bg-[#FAF6F7] p-3">
+                  <div className="flex items-center gap-1.5 px-1">
+                    <span className={cn("h-2 w-2 rounded-full", shift === "DAY" ? "bg-gold" : "bg-ink")} />
+                    <span className="text-[12px] font-bold text-ink">{shift === "DAY" ? "주간" : "야간"}조</span>
+                    <span className="text-[11px] text-mute">{list.length}명</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {list.length === 0 && <span className="px-1 text-[11px] text-mute">배치 없음</span>}
+                    {list.map((a) => {
+                      const away = awayByStaff.get(a.staffId) ?? [];
+                      return (
+                        <span key={a.id} className={cn("flex items-center gap-1.5 rounded-full border bg-white px-2 py-1 text-[11px]", away.length ? "border-[#E8C7C7]" : "border-line")}>
+                          <span className="font-bold text-brand">{a.room.name}</span>
+                          <span className="font-semibold text-ink">{a.staff.nickname}</span>
+                          {away.length > 0 && <span className="text-[10px] font-bold text-[#C0392B]">외출 {away[0].startTime}~{away[0].endTime}</span>}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {todayOffs.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl bg-[#FDECEC] px-4 py-3 text-[12px] text-[#C0392B]">
+            <Chip tone="red">자리 비움</Chip>
+            {todayOffs.map((o) => (
+              <span key={o.id}>
+                <b>{o.staff.nickname}</b> {o.startTime}~{o.endTime}
+                {o.reason ? ` (${o.reason})` : ""}
+                <span className="ml-1 text-[10px] opacity-70">{o.createdBy === "ADMIN" ? "매장" : "본인"}</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </Card>
 
       {/* 매출 근거 — 숫자가 어디서 나왔는지 바로 보이게 */}
       <Card className="mt-5 p-5">

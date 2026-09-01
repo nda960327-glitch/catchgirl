@@ -30,6 +30,7 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
     endTime: r.endTime.toISOString(),
     hours: r.hours,
     totalPrice: r.totalPrice,
+    roomName: r.roomName,
     partySize: r.partySize,
     staffId: r.staffId,
     staffName: r.staff.nickname,

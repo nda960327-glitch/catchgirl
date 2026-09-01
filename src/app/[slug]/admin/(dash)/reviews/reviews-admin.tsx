@@ -79,7 +79,7 @@ export function ReviewsAdmin({ slug, reviews, comments }: { slug: string; review
               )}
               {replyFor === r.id && (
                 <div className="mt-2">
-                  <Textarea rows={2} value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder={`${r.staffName} 캐치걸 이름으로 답글`} />
+                  <Textarea rows={2} value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="매장(관리자) 이름으로 답글" />
                   <div className="mt-1.5 flex gap-2">
                     <Button size="sm" onClick={() => act(() => adminReviewAction(slug, r.id, "reply", replyText), "답글을 남겼어요")} loading={pending}>등록</Button>
                     <Button size="sm" variant="ghost" onClick={() => setReplyFor(null)}>취소</Button>
@@ -87,7 +87,7 @@ export function ReviewsAdmin({ slug, reviews, comments }: { slug: string; review
                 </div>
               )}
               <div className="mt-3 flex flex-wrap gap-1.5">
-                <Button size="sm" variant="secondary" onClick={() => { setReplyFor(r.id); setReplyText(r.reply ?? ""); }}>{r.reply ? "답글 수정" : "캐치걸 대신 답글"}</Button>
+                <Button size="sm" variant="secondary" onClick={() => { setReplyFor(r.id); setReplyText(r.reply ?? ""); }}>{r.reply ? "답글 수정" : "매장 답글 달기"}</Button>
                 {r.isReported && <Button size="sm" variant="outline" onClick={() => act(() => adminReviewAction(slug, r.id, "dismiss"), "신고를 기각했어요")} loading={pending}>문제 없음</Button>}
                 {r.isHidden
                   ? <Button size="sm" variant="outline" onClick={() => act(() => adminReviewAction(slug, r.id, "show"), "다시 공개했어요")} loading={pending}>공개</Button>

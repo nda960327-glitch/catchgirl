@@ -8,6 +8,7 @@ import { businessDayOf, isStoreClosed } from "@/lib/slots";
 import { cn } from "@/lib/utils";
 import { getCustomer } from "@/lib/auth";
 import { Chip, Eyebrow, Sticker } from "@/components/ui";
+import { InstallApp } from "@/components/install-app";
 
 // 지금 자리가 있는지는 매 순간 달라지므로 캐시하지 않는다
 export const dynamic = "force-dynamic";
@@ -66,6 +67,8 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
         </div>
         <span className="text-[18px] text-white/90">›</span>
       </Link>
+
+      <InstallApp role="customer" className="mx-4 mt-4" />
 
       {/* 공지사항 */}
       {notices.length > 0 && (
