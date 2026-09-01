@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
-  title: "캐치걸 — 오늘 밤, 당신의 캐치걸",
+  title: "캐치걸_어나더 — 오늘 밤, 당신의 캐치걸",
   description: "캐치걸 지정 실시간 예약",
   icons: { icon: "/assets/icon.webp" },
 };

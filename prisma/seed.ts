@@ -35,7 +35,7 @@ async function main() {
   console.log("🏪 매장 생성...");
   const store = await prisma.store.create({
     data: {
-      name: "캐치걸",
+      name: "캐치걸_어나더",
       slug: "secret-garden",
       tagline: "오늘 밤, 당신의 캐치걸",
       logoUrl: "/assets/icon.webp",

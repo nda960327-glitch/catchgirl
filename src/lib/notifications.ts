@@ -16,11 +16,11 @@ export interface NotificationService {
 export function renderMessage(e: NotificationEvent): string {
   switch (e.type) {
     case "RESERVATION_CONFIRMED":
-      return `[캐치걸] ${e.customerName}님, ${e.when} ${e.staffName} 캐치걸 예약이 확정됐어요. (NO. ${e.code})`;
+      return `[캐치걸_어나더] ${e.customerName}님, ${e.when} ${e.staffName} 캐치걸 예약이 확정됐어요. (NO. ${e.code})`;
     case "RESERVATION_CANCELLED":
-      return `[캐치걸] ${e.customerName}님, ${e.when} ${e.staffName} 캐치걸 예약이 취소됐어요. (NO. ${e.code})`;
+      return `[캐치걸_어나더] ${e.customerName}님, ${e.when} ${e.staffName} 캐치걸 예약이 취소됐어요. (NO. ${e.code})`;
     case "REMINDER_1H":
-      return `[캐치걸] ${e.customerName}님, 1시간 뒤 ${e.staffName} 캐치걸와의 약속이에요. (${e.when})`;
+      return `[캐치걸_어나더] ${e.customerName}님, 1시간 뒤 ${e.staffName} 캐치걸와의 약속이에요. (${e.when})`;
   }
 }
 
