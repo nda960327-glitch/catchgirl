@@ -11,9 +11,13 @@ import { cn, ymd } from "@/lib/utils";
 import { adminCreateReservation, adminSetReservationStatus, adminUpdateReservation } from "../../actions";
 
 export type ResRow = {
-  id: string; code: string; startTime: string; date: string; time: string; staffId: string; staffName: string; customerId: string; customerName: string; memo: string;
+  id: string; code: string; startTime: string; date: string; time: string; endLabel: string; hours: number; totalPrice: number; optionNames: string[];
+  staffId: string; staffName: string; customerId: string; customerName: string; memo: string;
   partySize: number; requestNote: string; purposeTag: string; status: string; createdBy: string; blacklisted: boolean;
 };
+
+const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
+const HOUR_CHOICES = [1, 2, 3, 4, 5, 6, 7, 8];
 type StaffLite = { id: string; nickname: string; isActive: boolean };
 type CustomerLite = { id: string; nickname: string };
 
@@ -90,6 +94,7 @@ export function ReservationsClient({ slug, rows, staff, customers, filters, time
           <div key={r.id} id={r.id} className={cn("grid grid-cols-1 gap-2 border-b border-line px-4 py-3 text-[12px] md:grid-cols-[110px_90px_1fr_1fr_110px_170px] md:items-center", focusId === r.id && "bg-blush-lt/40")}>
             <div>
               <div className="font-bold text-ink">{format(new Date(r.startTime), "M/d (EEE)", { locale: ko })} {r.time}</div>
+              <div className="text-[10px] text-mute">~ {r.endLabel} · {r.hours}시간</div>
               <div className="text-[10px] tracking-wider text-gold">NO. {r.code}</div>
             </div>
             <div className="flex items-center gap-1.5"><Avatar src={staffPhotos[r.staffId]} name={r.staffName} size={22} rounded={7} /><span className="font-semibold text-ink">{r.staffName}</span></div>
@@ -98,7 +103,13 @@ export function ReservationsClient({ slug, rows, staff, customers, filters, time
               {r.blacklisted && <Chip tone="red" className="ml-1">블랙리스트</Chip>}
               <div className="truncate text-[10px] text-mute" title={r.memo}>{r.memo || (r.createdBy === "ADMIN" ? "관리자 등록" : "—")}</div>
             </div>
-            <div className="truncate text-mute" title={r.requestNote}>{r.requestNote || "—"}</div>
+            <div className="min-w-0">
+              <div className="truncate text-mute" title={r.requestNote}>{r.requestNote || "—"}</div>
+              <div className="text-[10px] text-mute">
+                <b className="text-brand">{won(r.totalPrice)}</b>
+                {r.optionNames.length > 0 && ` · ${r.optionNames.join(", ")}`}
+              </div>
+            </div>
             <div><StatusChip status={r.status} /></div>
             <div className="flex flex-wrap justify-end gap-1">
               {r.status === "CONFIRMED" && (
@@ -142,7 +153,7 @@ function NewReservationModal({ slug, staff, customers, times, defaultDate, onClo
   const { toast } = useToast();
   const [pending, start] = useTransition();
   const [mode, setMode] = useState<"existing" | "new">("existing");
-  const [form, setForm] = useState({ staffId: staff[0]?.id ?? "", date: defaultDate, time: times[0] ?? "18:00", partySize: 1, requestNote: "", customerId: customers[0]?.id ?? "", nickname: "" });
+  const [form, setForm] = useState({ staffId: staff[0]?.id ?? "", date: defaultDate, time: times[0] ?? "18:00", hours: 1, partySize: 1, requestNote: "", customerId: customers[0]?.id ?? "", nickname: "" });
   const submit = () => {
     start(async () => {
       const r = await adminCreateReservation(slug, { ...form, customerId: mode === "existing" ? form.customerId : undefined });
@@ -158,7 +169,7 @@ function NewReservationModal({ slug, staff, customers, times, defaultDate, onClo
       <div className="mt-5 flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
           <Field label="캐치걸"><Select value={form.staffId} onChange={(e) => setForm({ ...form, staffId: e.target.value })} className="w-full">{staff.map((s) => <option key={s.id} value={s.id}>{s.nickname}</option>)}</Select></Field>
-          <div />
+          <Field label="이용 시간"><Select value={String(form.hours)} onChange={(e) => setForm({ ...form, hours: Number(e.target.value) })} className="w-full">{HOUR_CHOICES.map((h) => <option key={h} value={h}>{h}시간</option>)}</Select></Field>
           <Field label="날짜"><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="h-11" /></Field>
           <Field label="시간"><Select value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="w-full">{times.map((t) => <option key={t}>{t}</option>)}</Select></Field>
         </div>
@@ -190,8 +201,8 @@ function EditModal({ slug, row, staff, times, onClose }: { slug: string; row: Re
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
-  const [form, setForm] = useState({ staffId: row.staffId, date: row.date, time: row.time, requestNote: row.requestNote });
-  const moved = form.staffId !== row.staffId || form.date !== row.date || form.time !== row.time;
+  const [form, setForm] = useState({ staffId: row.staffId, date: row.date, time: row.time, hours: row.hours, requestNote: row.requestNote });
+  const moved = form.staffId !== row.staffId || form.date !== row.date || form.time !== row.time || form.hours !== row.hours;
   const submit = () => {
     start(async () => {
       const r = await adminUpdateReservation(slug, row.id, moved ? form : { requestNote: form.requestNote });
@@ -206,12 +217,12 @@ function EditModal({ slug, row, staff, times, onClose }: { slug: string; row: Re
       <div className="mt-5 flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
           <Field label="캐치걸"><Select value={form.staffId} onChange={(e) => setForm({ ...form, staffId: e.target.value })} className="w-full">{staff.map((s) => <option key={s.id} value={s.id}>{s.nickname}</option>)}</Select></Field>
-          <div />
+          <Field label="이용 시간"><Select value={String(form.hours)} onChange={(e) => setForm({ ...form, hours: Number(e.target.value) })} className="w-full">{HOUR_CHOICES.map((h) => <option key={h} value={h}>{h}시간</option>)}</Select></Field>
           <Field label="날짜"><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="h-11" /></Field>
           <Field label="시간"><Select value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="w-full">{times.map((t) => <option key={t}>{t}</option>)}</Select></Field>
         </div>
         <Field label="요청사항"><Textarea rows={2} value={form.requestNote} onChange={(e) => setForm({ ...form, requestNote: e.target.value })} /></Field>
-        {moved && <div className="rounded-xl bg-blush-lt px-3 py-2 text-[11px] text-brand">일시/캐치걸를 바꾸면 기존 예약은 취소되고 새 예약번호로 다시 생성돼요.</div>}
+        {moved && <div className="rounded-xl bg-blush-lt px-3 py-2 text-[11px] text-brand">일시/캐치걸/이용 시간을 바꾸면 기존 예약은 취소되고 새 예약번호로 다시 생성돼요. 금액도 지금 요금으로 다시 계산돼요.</div>}
         <Button size="lg" onClick={submit} loading={pending}>저장</Button>
       </div>
     </Modal>

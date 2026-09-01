@@ -15,7 +15,7 @@ export default async function StaffPage({ params, searchParams }: { params: Prom
       const st = await staffStats(s.id);
       return {
         id: s.id, nickname: s.nickname, bio: s.bio, tags: parseJsonArray(s.tags), photos: parseJsonArray(s.photos),
-        isActive: s.isActive, capacityPerSlot: s.capacityPerSlot, loginId: s.loginId ?? "",
+        isActive: s.isActive, capacityPerSlot: s.capacityPerSlot, hourlyPrice: s.hourlyPrice, loginId: s.loginId ?? "",
         schedules: s.schedules.map((x) => ({ weekday: x.weekday, startTime: x.startTime, endTime: x.endTime })),
         offs: s.offs.map((o) => ({ date: o.date, reason: o.reason ?? "" })),
         stats: { rating: st.rating, reviewCount: st.reviewCount, reservationCount: st.reservationCount, completedCount: st.completedCount, noshowRate: Math.round(st.noshowRate * 100), revisitRate: Math.round(st.revisitRate * 100), upCount: st.upCount, downCount: st.downCount },

@@ -11,13 +11,17 @@ export default async function DonePage({ params }: { params: Promise<{ slug: str
   const { slug, id } = await params;
   const store = await getStoreBySlug(slug);
   const me = await getCustomer(store.id);
-  const r = await prisma.reservation.findUnique({ where: { id }, include: { staff: true, customer: true } });
+  const r = await prisma.reservation.findUnique({ where: { id }, include: { staff: true, customer: true, options: true } });
   if (!r || r.storeId !== store.id || (me && r.customerId !== me.id)) notFound();
 
+  const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
   const rows: [string, string][] = [
     ["일시", `${fmtDateKo(r.startTime)} ${fmtTimeKo(r.startTime)}`],
+    ["이용 시간", `${r.hours}시간 (~ ${fmtTimeKo(r.endTime)})`],
     ["캐치걸", r.staff.nickname],
     ["닉네임", r.customer.nickname],
+    ...(r.options.length ? ([["옵션", r.options.map((o) => o.name).join(", ")]] as [string, string][]) : []),
+    ["결제 예정", won(r.totalPrice)],
   ];
 
   return (

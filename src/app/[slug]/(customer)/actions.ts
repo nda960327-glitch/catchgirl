@@ -83,6 +83,8 @@ const bookSchema = z.object({
   staffId: z.string().min(1),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   time: z.string().regex(/^\d{2}:\d{2}$/),
+  hours: z.coerce.number().int().min(1).max(8).default(1),
+  optionIds: z.array(z.string()).max(20).default([]),
   partySize: z.coerce.number().int().min(1).max(8),
   requestNote: z.string().trim().max(200).optional().default(""),
   purposeTag: z.string().trim().max(20).optional().default(""),

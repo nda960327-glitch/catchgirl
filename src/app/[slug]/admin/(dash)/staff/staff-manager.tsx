@@ -6,16 +6,16 @@ import { Avatar, Button, Card, Chip, Field, Input, Textarea } from "@/components
 import { useToast } from "@/components/providers";
 import { uploadImages } from "@/lib/image-client";
 import { cn, WEEKDAYS_KO } from "@/lib/utils";
-import { saveStaff } from "../../actions";
+import { deleteStaff, saveStaff, staffDeletionImpact } from "../../actions";
 
 export type StaffFull = {
-  id: string; nickname: string; bio: string; tags: string[]; photos: string[]; isActive: boolean; capacityPerSlot: number; loginId: string;
+  id: string; nickname: string; bio: string; tags: string[]; photos: string[]; isActive: boolean; capacityPerSlot: number; hourlyPrice: number; loginId: string;
   schedules: { weekday: number; startTime: string; endTime: string }[];
   offs: { date: string; reason: string }[];
   stats: { rating: number | null; reviewCount: number; reservationCount: number; completedCount: number; noshowRate: number; revisitRate: number; upCount: number; downCount: number };
 };
 
-const EMPTY: StaffFull = { id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, loginId: "", schedules: [], offs: [], stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0, upCount: 0, downCount: 0 } };
+const EMPTY: StaffFull = { id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, hourlyPrice: 300000, loginId: "", schedules: [], offs: [], stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0, upCount: 0, downCount: 0 } };
 
 export function StaffManager({ slug, items, storeHours, initialEdit }: { slug: string; items: StaffFull[]; storeHours: { open: string; close: string }; initialEdit?: string }) {
   const [editing, setEditing] = useState<StaffFull | null>(initialEdit === "new" ? EMPTY : items.find((i) => i.id === initialEdit) ?? null);
@@ -101,7 +101,7 @@ function StaffEditor({ slug, init, onClose }: { slug: string; init: StaffFull; o
     start(async () => {
       const r = await saveStaff(slug, {
         id: f.id || undefined, nickname: f.nickname, bio: f.bio, tags: f.tags, photos: f.photos, isActive: f.isActive,
-        capacityPerSlot: f.capacityPerSlot, loginId: f.loginId, password: f.password, schedules: f.schedules, offs: f.offs,
+        capacityPerSlot: f.capacityPerSlot, hourlyPrice: f.hourlyPrice, loginId: f.loginId, password: f.password, schedules: f.schedules, offs: f.offs,
       });
       if (!r.ok) return toast(r.error, "error");
       toast("저장했어요", "success");
@@ -136,7 +136,12 @@ function StaffEditor({ slug, init, onClose }: { slug: string; init: StaffFull; o
             <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
           </div>
         </Field>
-        <Field label="닉네임 (고객 노출)" hint="실명은 저장하지 않아요"><Input value={f.nickname} onChange={(e) => setF({ ...f, nickname: e.target.value })} /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="닉네임 (고객 노출)" hint="실명은 저장하지 않아요"><Input value={f.nickname} onChange={(e) => setF({ ...f, nickname: e.target.value })} /></Field>
+          <Field label="시간당 요금" hint={`${f.hourlyPrice.toLocaleString("ko-KR")}원`}>
+            <Input type="number" min={0} step={10000} value={f.hourlyPrice} onChange={(e) => setF({ ...f, hourlyPrice: Number(e.target.value) })} />
+          </Field>
+        </div>
         <Field label="한 줄 소개"><Textarea rows={2} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} /></Field>
         <Field label="태그" hint="Enter로 추가">
           <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-line bg-white px-3 py-2">
@@ -197,7 +202,44 @@ function StaffEditor({ slug, init, onClose }: { slug: string; init: StaffFull; o
           </div>
         </Field>
         <Button size="lg" onClick={submit} loading={pending} disabled={!f.nickname.trim() || uploading}>{f.id ? "저장" : "등록"}</Button>
+        {f.id && <DeleteStaffButton slug={slug} staffId={f.id} onDeleted={onClose} />}
       </div>
     </Card>
+  );
+}
+
+/** 삭제는 예약·후기까지 함께 지우므로, 무엇이 사라지는지 먼저 보여주고 확인받는다 */
+function DeleteStaffButton({ slug, staffId, onDeleted }: { slug: string; staffId: string; onDeleted: () => void }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [pending, start] = useTransition();
+
+  const onClick = () => {
+    start(async () => {
+      const impact = await staffDeletionImpact(slug, staffId);
+      if (!impact.ok) return toast(impact.error, "error");
+      const { nickname, reservations, reviews } = impact.data!;
+      const lines = [
+        `${nickname} 캐치걸를 삭제할까요?`,
+        "",
+        reservations || reviews
+          ? `예약 ${reservations}건과 후기 ${reviews}건이 함께 영구 삭제됩니다. 매출 이력도 사라져요.`
+          : "삭제할 예약·후기 이력은 없어요.",
+        "",
+        "잠시 출근을 안 하는 것뿐이라면 '활성' 체크를 해제하는 편이 낫습니다.",
+      ];
+      if (!confirm(lines.join("\n"))) return;
+      const r = await deleteStaff(slug, staffId);
+      if (!r.ok) return toast(r.error, "error");
+      toast(`${nickname} 캐치걸를 삭제했어요`, "success");
+      onDeleted();
+      router.refresh();
+    });
+  };
+
+  return (
+    <button onClick={onClick} disabled={pending} className="h-11 rounded-2xl border border-[#E8C7C7] bg-white text-[13px] font-bold text-[#C0392B] transition-colors hover:bg-[#FDECEC] disabled:opacity-50">
+      {pending ? "확인 중…" : "캐치걸 삭제"}
+    </button>
   );
 }

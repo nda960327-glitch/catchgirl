@@ -11,15 +11,26 @@ import { useToast } from "@/components/providers";
 import { cn, toLocalDate, WEEKDAYS_KO } from "@/lib/utils";
 import { bookReservation } from "../../actions";
 
-type Slot = { time: string; status: "open" | "full" | "off" | "past"; remaining: number };
+type Slot = { time: string; status: "open" | "full" | "off" | "past"; remaining: number; maxHours: number };
 type Day = { date: string; weekday: number; disabled: boolean; reason?: string };
+type Opt = { id: string; name: string; price: number };
+
+const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
+/** 시작 시각 + 이용 시간 → 종료 시각 (자정 넘김 표기 포함) */
+function endLabel(time: string, hours: number) {
+  const [h, m] = time.split(":").map(Number);
+  const total = h * 60 + m + hours * 60;
+  const hh = Math.floor(total / 60);
+  return `${String(hh % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}${hh >= 24 ? " (익일)" : ""}`;
+}
 
 export function BookingFlow({
-  slug, staff, store, days, initialDate, initialTime, initialSlots, customer,
+  slug, staff, store, options, days, initialDate, initialTime, initialSlots, customer,
 }: {
   slug: string;
-  staff: { id: string; nickname: string; photo: string | null };
+  staff: { id: string; nickname: string; photo: string | null; hourlyPrice: number };
   store: { name: string; cancelDeadlineHours: number; slotMinutes: number };
+  options: Opt[];
   days: Day[];
   initialDate: string;
   initialTime: string | null;
@@ -31,6 +42,8 @@ export function BookingFlow({
   const [step, setStep] = useState<1 | 2 | 3>(initialTime ? 3 : 1);
   const [date, setDate] = useState(initialDate);
   const [time, setTime] = useState<string | null>(initialTime);
+  const [hours, setHours] = useState(1);
+  const [optIds, setOptIds] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [pending, start] = useTransition();
 
@@ -60,6 +73,16 @@ export function BookingFlow({
 
   const dateObj = useMemo(() => toLocalDate(date, "00:00"), [date]);
   const openCount = slots?.filter((s) => s.status === "open").length ?? 0;
+  const maxHours = slots?.find((s) => s.time === time)?.maxHours ?? 1;
+
+  // 고른 시간이 짧아지면(뒤 자리가 차면) 이용 시간을 가능한 범위로 되돌린다
+  useEffect(() => {
+    if (time && hours > maxHours && maxHours >= 1) setHours(maxHours);
+  }, [time, hours, maxHours]);
+
+  const chosenOpts = options.filter((o) => optIds.includes(o.id));
+  const optionsPrice = chosenOpts.reduce((a, o) => a + o.price, 0);
+  const total = staff.hourlyPrice * hours + optionsPrice;
 
   const submit = () => {
     if (!time) return;
@@ -68,7 +91,7 @@ export function BookingFlow({
       return;
     }
     start(async () => {
-      const r = await bookReservation(slug, { staffId: staff.id, date, time, partySize: 1, requestNote: note });
+      const r = await bookReservation(slug, { staffId: staff.id, date, time, hours, optionIds: optIds, partySize: 1, requestNote: note });
       if (r.ok && r.data) {
         router.push(`/${slug}/done/${r.data.id}`);
         return;
@@ -174,7 +197,7 @@ export function BookingFlow({
                     <button
                       key={s.time}
                       disabled={disabled}
-                      onClick={() => setTime(s.time)}
+                      onClick={() => { setTime(s.time); setHours((h) => Math.min(Math.max(1, h), s.maxHours)); }}
                       className={cn(
                         "h-12 rounded-[14px] border text-[13px] font-semibold transition-all",
                         on && "ring-brand border-brand bg-brand text-white",
@@ -197,6 +220,34 @@ export function BookingFlow({
                 <button onClick={() => setStep(1)} className="mt-1 text-[11px] font-semibold text-brand">다른 날짜 보기 ›</button>
               </div>
             )}
+
+            {/* 이용 시간 — 뒤가 비어 있는 만큼만 이어서 예약할 수 있다 */}
+            {time && (
+              <div className="animate-fade mt-6">
+                <div className="flex items-baseline justify-between px-0.5">
+                  <span className="text-[13px] font-bold text-ink">몇 시간 이용하실까요</span>
+                  <span className="text-[11px] text-mute">{time} ~ {endLabel(time, hours)}</span>
+                </div>
+                <div className="mt-2.5 grid grid-cols-4 gap-2">
+                  {Array.from({ length: maxHours }, (_, i) => i + 1).map((h) => (
+                    <button
+                      key={h}
+                      onClick={() => setHours(h)}
+                      className={cn(
+                        "h-12 rounded-[14px] border text-[13px] font-semibold transition-all",
+                        hours === h ? "border-brand bg-brand text-white" : "border-line bg-white text-ink active:scale-95",
+                      )}
+                    >
+                      {h}시간
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 px-0.5 text-[11px] text-mute">
+                  {staff.nickname} 시간당 {won(staff.hourlyPrice)} · {hours}시간 <b className="text-brand">{won(staff.hourlyPrice * hours)}</b>
+                  {maxHours < 8 && <span className="ml-1">· 이 시간부터는 최대 {maxHours}시간</span>}
+                </div>
+              </div>
+            )}
             <div className="mt-[22px] flex items-center gap-3 rounded-[18px] bg-blush-lt p-4">
               <Sticker k="p3" size={54} />
               <div className="text-[11px] leading-[1.75] text-brand">
@@ -212,9 +263,53 @@ export function BookingFlow({
             <div className="rounded-[18px] border border-line bg-white p-4">
               <div className="text-[11px] text-mute">예약 정보</div>
               <div className="mt-1 font-serif text-[16px] font-bold text-ink">
-                {format(dateObj, "M월 d일 (EEE)", { locale: ko })} {time} · {staff.nickname}
+                {format(dateObj, "M월 d일 (EEE)", { locale: ko })} {time} ~ {time && endLabel(time, hours)}
               </div>
+              <div className="mt-0.5 text-[12px] text-mute">{staff.nickname} · {hours}시간</div>
               <button onClick={() => setStep(2)} className="mt-1 text-[11px] font-semibold text-brand">시간 변경 ›</button>
+            </div>
+
+            {options.length > 0 && (
+              <Field label="추가 옵션" hint="선택 · 예약당 1회">
+                <div className="flex flex-col gap-2">
+                  {options.map((o) => {
+                    const on = optIds.includes(o.id);
+                    return (
+                      <button
+                        key={o.id}
+                        onClick={() => setOptIds((v) => (on ? v.filter((x) => x !== o.id) : [...v, o.id]))}
+                        className={cn(
+                          "flex h-12 items-center gap-3 rounded-2xl border px-4 text-[13px] transition-all active:scale-[.99]",
+                          on ? "border-brand bg-blush-lt" : "border-line bg-white",
+                        )}
+                      >
+                        <span className={cn("flex h-5 w-5 items-center justify-center rounded-md border text-[11px]", on ? "border-brand bg-brand text-white" : "border-line bg-white text-transparent")}>✓</span>
+                        <span className={cn("font-semibold", on ? "text-brand" : "text-ink")}>{o.name}</span>
+                        <span className="ml-auto text-mute">+{won(o.price)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+            )}
+
+            {/* 금액 */}
+            <div className="rounded-[18px] border border-line bg-white p-4">
+              <div className="flex justify-between text-[12px] text-mute">
+                <span>{staff.nickname} {won(staff.hourlyPrice)} × {hours}시간</span>
+                <span className="text-ink">{won(staff.hourlyPrice * hours)}</span>
+              </div>
+              {chosenOpts.map((o) => (
+                <div key={o.id} className="mt-1.5 flex justify-between text-[12px] text-mute">
+                  <span>{o.name}</span>
+                  <span className="text-ink">+{won(o.price)}</span>
+                </div>
+              ))}
+              <div className="mt-3 flex items-baseline justify-between border-t border-line pt-3">
+                <span className="text-[12px] font-semibold text-ink">결제 예정 금액</span>
+                <span className="font-serif text-[20px] font-bold text-brand">{won(total)}</span>
+              </div>
+              <div className="mt-1.5 text-[10px] text-mute">현장에서 결제해요. 예약은 결제 없이 바로 확정됩니다.</div>
             </div>
             <Field label="닉네임">
               {customer ? (
@@ -241,12 +336,12 @@ export function BookingFlow({
         {step === 1 && <Button size="lg" onClick={() => setStep(2)}>{format(dateObj, "M월 d일", { locale: ko })} 시간 보기</Button>}
         {step === 2 && (
           <Button size="lg" disabled={!time} onClick={() => setStep(3)}>
-            {time ? `${format(dateObj, "M월 d일", { locale: ko })} ${time} 예약하기` : "시간을 선택해 주세요"}
+            {time ? `${time}부터 ${hours}시간 · ${won(staff.hourlyPrice * hours)}` : "시간을 선택해 주세요"}
           </Button>
         )}
         {step === 3 && (
           <Button size="lg" onClick={submit} loading={pending}>
-            {customer ? "예약 확정하기" : "닉네임으로 계속하기"}
+            {customer ? `${won(total)} 예약 확정하기` : "닉네임으로 계속하기"}
           </Button>
         )}
         <div className="mt-2 text-center text-[10px] text-mute/80">

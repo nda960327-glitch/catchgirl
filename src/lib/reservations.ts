@@ -1,7 +1,7 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
-import { ACTIVE_STATUSES, getSlotsFor } from "./slots";
+import { ACTIVE_STATUSES, getSlotsFor, maxHoursAt, MAX_BOOKING_HOURS } from "./slots";
 import { addMinutes, fmtDateTimeKo, genReservationCode, toLocalDate } from "./utils";
 import { notificationService } from "./notifications";
 
@@ -12,16 +12,14 @@ export class SlotConflictError extends Error {
   }
 }
 
-export function slotKey(staffId: string, start: Date, seq: number) {
-  return `${staffId}|${start.toISOString()}|${seq}`;
-}
-
 export type CreateReservationInput = {
   storeId: string;
   staffId: string;
   customerId: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
+  hours?: number; // 이용 시간 (1시간 단위, 기본 1)
+  optionIds?: string[];
   partySize: number;
   requestNote?: string;
   purposeTag?: string;
@@ -32,14 +30,11 @@ export type CreateReservationInput = {
 
 /**
  * 예약 생성 — 동시성 제어.
- *  1) 트랜잭션 안에서 해당 슬롯의 활성 예약 수를 센다
- *  2) capacity 미만이면 seq = count 로 slotKey 를 만들어 INSERT
- *  3) 같은 slotKey 가 동시에 들어오면 DB UNIQUE 제약이 막고(P2002) → SlotConflictError
+ *  1) 트랜잭션 안에서 Staff 행을 FOR UPDATE 로 잠가 같은 캐치걸에 대한 예약을 직렬화한다
+ *  2) 요청 구간과 겹치는 활성 예약 수를 센다
+ *  3) capacity 미만이면 INSERT
  *
- * Postgres(Supabase) 에서는 1) 직전에
- *   SELECT id FROM "Staff" WHERE id = $1 FOR UPDATE
- * 로 캐치걸 행을 잠그면 count→insert 사이 레이스를 완전히 직렬화할 수 있다.
- * SQLite 는 쓰기 트랜잭션이 전역 직렬화되므로 UNIQUE 제약만으로 충분하다.
+ * 구간 예약이라 slotKey UNIQUE 로는 막을 수 없다 (겹치는 방식이 여러 가지). 행 잠금이 유일한 방어선.
  */
 export async function createReservation(input: CreateReservationInput) {
   const store = await prisma.store.findUniqueOrThrow({ where: { id: input.storeId } });
@@ -53,23 +48,42 @@ export async function createReservation(input: CreateReservationInput) {
     throw new Error("예약이 제한된 계정이에요. 매장에 문의해 주세요.");
   }
 
+  const hours = Math.max(1, Math.min(MAX_BOOKING_HOURS, Math.floor(input.hours ?? 1)));
   const start = toLocalDate(input.date, input.time);
-  const end = addMinutes(start, store.slotMinutes);
+  const end = addMinutes(start, hours * 60);
 
   if (!input.skipAvailabilityCheck) {
     const slots = await getSlotsFor(store, staff, input.date);
-    const s = slots.find((x) => x.time === input.time);
+    const i = slots.findIndex((x) => x.time === input.time);
+    const s = i >= 0 ? slots[i] : undefined;
     if (!s || s.status === "off") throw new Error("근무 외 시간이에요.");
     if (s.status === "past") throw new Error("이미 지난 시간이에요.");
     if (s.status === "full") throw new SlotConflictError();
+    const max = maxHoursAt(slots, i, store.slotMinutes);
+    if (hours > max) {
+      throw new Error(max === 0 ? "이 시간은 예약할 수 없어요." : `이 시간부터는 최대 ${max}시간까지 예약할 수 있어요.`);
+    }
   }
+
+  // 옵션은 예약 1건당 1회 부과. 이름·가격은 지금 값을 복사해 둔다.
+  const options = input.optionIds?.length
+    ? await prisma.storeOption.findMany({ where: { id: { in: input.optionIds }, storeId: store.id, isActive: true } })
+    : [];
+  const optionsPrice = options.reduce((a, o) => a + o.price, 0);
+  const totalPrice = staff.hourlyPrice * hours + optionsPrice;
 
   try {
     const created = await prisma.$transaction(
       async (tx) => {
         await tx.$executeRaw`SELECT id FROM "Staff" WHERE id = ${staff.id} FOR UPDATE`;
+        // [start, end) 와 겹치는 예약: 기존 시작 < 요청 끝 AND 기존 끝 > 요청 시작
         const used = await tx.reservation.count({
-          where: { staffId: staff.id, startTime: start, status: { in: ACTIVE_STATUSES } },
+          where: {
+            staffId: staff.id,
+            status: { in: ACTIVE_STATUSES },
+            startTime: { lt: end },
+            endTime: { gt: start },
+          },
         });
         if (used >= staff.capacityPerSlot) throw new SlotConflictError();
         let code = genReservationCode(start);
@@ -83,12 +97,16 @@ export async function createReservation(input: CreateReservationInput) {
             customerId: customer.id,
             startTime: start,
             endTime: end,
+            hours,
             partySize: input.partySize,
             requestNote: input.requestNote ?? "",
             purposeTag: input.purposeTag ?? "",
             status: "CONFIRMED",
             createdBy: input.createdBy,
-            slotKey: slotKey(staff.id, start, used),
+            hourlyPrice: staff.hourlyPrice,
+            optionsPrice,
+            totalPrice,
+            options: { create: options.map((o) => ({ optionId: o.id, name: o.name, price: o.price })) },
           },
         });
       },
@@ -125,7 +143,7 @@ export async function cancelReservation(reservationId: string, by: "CUSTOMER" | 
   }
   const updated = await prisma.reservation.update({
     where: { id: r.id },
-    data: { status: "CANCELLED", cancelledAt: new Date(), slotKey: null }, // slotKey 반납 → 자리 즉시 오픈
+    data: { status: "CANCELLED", cancelledAt: new Date() }, // 취소 상태는 점유에서 빠져 자리가 즉시 열린다
   });
   await notificationService().send({
     type: "RESERVATION_CANCELLED",

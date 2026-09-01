@@ -36,6 +36,7 @@ model Store {
   reviews       Review[]
   comments      Comment[]
   customerNotes CustomerNote[]
+  options       StoreOption[]
 }
 
 model AdminUser {
@@ -57,6 +58,7 @@ model Staff {
   photos          String   @default("[]") // JSON string[] (url)
   isActive        Boolean  @default(true)
   capacityPerSlot Int      @default(1)
+  hourlyPrice     Int      @default(300000) // 시간당 요금 (원)
   sortOrder       Int      @default(0)
   loginId         String?  @unique // 관리자가 발급한 계정
   passwordHash    String?
@@ -135,34 +137,68 @@ model CustomerNote {
 }
 
 // ───────────────── 예약 ─────────────────
-// 동시성: slotKey = `${staffId}|${startTime ISO}|${seq}` 에 UNIQUE.
-// seq 는 0 ~ capacityPerSlot-1 (동시 접객 N팀). 취소 시 slotKey 를 null 로 비워 자리를 반납한다.
-// capacity=1 이면 사실상 UNIQUE(store_id, staff_id, start_time) 와 동일하게 동작.
+// 예약 1건이 [startTime, endTime) 구간 전체를 차지한다 (연달아 예약 = 긴 구간 1건).
+// 그래서 3시간을 이어서 예약해도 후기는 Review.reservationId UNIQUE 로 한 번만 달린다.
+// 동시성: 같은 캐치걸의 겹치는 예약 수 < capacityPerSlot 인지 확인 후 INSERT.
+// 확인과 INSERT 사이의 레이스는 트랜잭션 안에서 Staff 행을 FOR UPDATE 로 잠가 직렬화한다.
 model Reservation {
-  id          String    @id @default(cuid())
-  code        String    @unique // 예약번호 (예: 2608-0231)
-  storeId     String
-  staffId     String
-  customerId  String
-  startTime   DateTime
-  endTime     DateTime
-  partySize   Int       @default(1)
-  requestNote String    @default("")
-  purposeTag  String    @default("")
-  status      String    @default("CONFIRMED") // CONFIRMED | COMPLETED | CANCELLED | NOSHOW
-  createdBy   String    @default("CUSTOMER") // CUSTOMER | ADMIN
-  slotKey     String?   @unique
-  createdAt   DateTime  @default(now())
-  cancelledAt DateTime?
+  id           String    @id @default(cuid())
+  code         String    @unique // 예약번호 (예: 2608-0231)
+  storeId      String
+  staffId      String
+  customerId   String
+  startTime    DateTime
+  endTime      DateTime
+  hours        Int       @default(1) // 이용 시간 (1시간 단위)
+  partySize    Int       @default(1)
+  requestNote  String    @default("")
+  purposeTag   String    @default("")
+  status       String    @default("CONFIRMED") // CONFIRMED | COMPLETED | CANCELLED | NOSHOW
+  createdBy    String    @default("CUSTOMER") // CUSTOMER | ADMIN
+  hourlyPrice  Int       @default(0) // 예약 시점 시급 스냅샷 — 이후 요금이 바뀌어도 과거 금액 보존
+  optionsPrice Int       @default(0)
+  totalPrice   Int       @default(0) // hourlyPrice * hours + optionsPrice
+  createdAt    DateTime  @default(now())
+  cancelledAt  DateTime?
 
-  store    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  staff    Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  store    Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  staff    Staff               @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  customer Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
   review   Review?
+  options  ReservationOption[]
 
   @@index([storeId, startTime])
   @@index([staffId, startTime])
   @@index([customerId, startTime])
+}
+
+/** 매장이 관리하는 추가 옵션 (이름·가격을 관리자에서 편집) */
+model StoreOption {
+  id        String  @id @default(cuid())
+  storeId   String
+  name      String
+  price     Int
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  store              Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  reservationOptions ReservationOption[]
+
+  @@index([storeId, isActive])
+}
+
+/** 예약에 붙은 옵션 — 이름·가격은 예약 시점 값을 복사해 둔다 (옵션이 바뀌거나 삭제돼도 영수증은 그대로) */
+model ReservationOption {
+  id            String @id @default(cuid())
+  reservationId String
+  optionId      String?
+  name          String
+  price         Int
+
+  reservation Reservation  @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  option      StoreOption? @relation(fields: [optionId], references: [id], onDelete: SetNull)
+
+  @@index([reservationId])
 }
 
 // ───────────────── 후기 / 댓글 / 찜 ─────────────────

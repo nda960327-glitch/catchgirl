@@ -4,9 +4,13 @@ import { prisma } from "./db";
 import { addMinutes, parseJsonArray, startOfDayLocal, toLocalDate, ymd } from "./utils";
 
 export type SlotStatus = "open" | "full" | "off" | "past";
-export type Slot = { time: string; status: SlotStatus; remaining: number };
+/** maxHours = 이 시각부터 연달아 예약할 수 있는 최대 시간 (마감까지만) */
+export type Slot = { time: string; status: SlotStatus; remaining: number; maxHours: number };
 
 export const ACTIVE_STATUSES = ["CONFIRMED", "COMPLETED", "NOSHOW"];
+
+/** 한 번에 예약할 수 있는 최대 시간 */
+export const MAX_BOOKING_HOURS = 8;
 
 function timeToMin(t: string) {
   const [h, m] = t.split(":").map(Number);
@@ -46,21 +50,26 @@ export async function getSlotsFor(
 
   const dayStart = toLocalDate(date, "00:00");
   const dayEnd = addMinutes(dayStart, 24 * 60 + 6 * 60);
+  // 구간 예약이라 하루 앞에서 시작해 넘어온 예약도 잡아야 한다
   const reservations = await prisma.reservation.findMany({
     where: {
       staffId: staff.id,
       status: { in: ACTIVE_STATUSES },
-      startTime: { gte: dayStart, lt: dayEnd },
+      startTime: { lt: dayEnd },
+      endTime: { gt: dayStart },
     },
-    select: { startTime: true },
+    select: { startTime: true, endTime: true },
   });
+  // 예약이 걸쳐 있는 모든 슬롯을 점유로 센다
   const countByTime = new Map<number, number>();
+  const step = store.slotMinutes * 60_000;
   for (const r of reservations) {
-    const k = r.startTime.getTime();
-    countByTime.set(k, (countByTime.get(k) ?? 0) + 1);
+    for (let t = r.startTime.getTime(); t < r.endTime.getTime(); t += step) {
+      countByTime.set(t, (countByTime.get(t) ?? 0) + 1);
+    }
   }
 
-  return times.map((time) => {
+  const base: Slot[] = times.map((time) => {
     const start = toLocalDate(date, time);
     // 자정 넘김 슬롯 보정
     const startAdj = timeToMin(time) < timeToMin(store.openTime) ? addMinutes(start, 24 * 60) : start;
@@ -72,12 +81,27 @@ export async function getSlotsFor(
       if (t < a) t += 24 * 60;
       return t >= a && t < b;
     });
-    if (closed || off || !inSchedule || !staff.isActive) return { time, status: "off", remaining: 0 };
-    if (startAdj.getTime() <= now.getTime()) return { time, status: "past", remaining: 0 };
+    if (closed || off || !inSchedule || !staff.isActive) return { time, status: "off", remaining: 0, maxHours: 0 };
+    if (startAdj.getTime() <= now.getTime()) return { time, status: "past", remaining: 0, maxHours: 0 };
     const used = countByTime.get(startAdj.getTime()) ?? 0;
     const remaining = Math.max(0, staff.capacityPerSlot - used);
-    return { time, status: remaining > 0 ? "open" : "full", remaining };
+    return { time, status: remaining > 0 ? "open" : "full", remaining, maxHours: 0 };
   });
+  // 연속 예약 가능 시간은 뒤 슬롯들이 정해져야 알 수 있으므로 한 번 더 훑는다
+  for (let i = 0; i < base.length; i++) {
+    if (base[i].status === "open") base[i].maxHours = maxHoursAt(base, i, store.slotMinutes);
+  }
+  // 1시간도 못 채우는 자리는 예약할 수 없으니 마감으로 본다
+  for (const s of base) if (s.status === "open" && s.maxHours === 0) s.status = "full";
+  return base;
+}
+
+/** 예약 가능한 최대 연속 시간(정수 시간). 슬롯 목록이 마감에서 끝나므로 종료 시각은 자동으로 마감 안에 든다. */
+export function maxHoursAt(slots: Slot[], index: number, slotMinutes: number, cap = MAX_BOOKING_HOURS): number {
+  const perHour = 60 / slotMinutes; // 1시간 = 슬롯 몇 칸
+  let run = 0;
+  for (let i = index; i < slots.length && slots[i].status === "open"; i++) run++;
+  return Math.min(cap, Math.floor(run / perHour));
 }
 
 /** 오늘 남은 예약 가능 슬롯 수 */

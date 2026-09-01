@@ -15,12 +15,16 @@ export default async function BookPage({ params, searchParams }: { params: Promi
   const me = await getCustomer(store.id);
   const days = calendarDays(store, staff);
   const initialDate = sp.date && days.some((d) => d.date === sp.date && !d.disabled) ? sp.date : (days.find((d) => !d.disabled)?.date ?? days[0].date);
-  const initialSlots = await getSlotsFor(store, staff, initialDate);
+  const [initialSlots, options] = await Promise.all([
+    getSlotsFor(store, staff, initialDate),
+    prisma.storeOption.findMany({ where: { storeId: store.id, isActive: true }, orderBy: { sortOrder: "asc" } }),
+  ]);
   return (
     <BookingFlow
       slug={slug}
-      staff={{ id: staff.id, nickname: staff.nickname, photo: parseJsonArray(staff.photos)[0] ?? null }}
+      staff={{ id: staff.id, nickname: staff.nickname, photo: parseJsonArray(staff.photos)[0] ?? null, hourlyPrice: staff.hourlyPrice }}
       store={{ name: store.name, cancelDeadlineHours: store.cancelDeadlineHours, slotMinutes: store.slotMinutes }}
+      options={options.map((o) => ({ id: o.id, name: o.name, price: o.price }))}
       days={days}
       initialDate={initialDate}
       initialTime={sp.time ?? null}

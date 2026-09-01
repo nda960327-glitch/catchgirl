@@ -12,7 +12,6 @@ const at = (daysFromToday: number, hhmm: string) => {
   d.setHours(h, m, 0, 0);
   return d;
 };
-const slotKey = (staffId: string, start: Date, seq = 0) => `${staffId}|${start.toISOString()}|${seq}`;
 let codeSeq = 100;
 const code = (d: Date) => `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, "0")}-${String(codeSeq++).padStart(4, "0")}`;
 const PHOTO_POOL = ["/assets/p1.webp", "/assets/p2.webp", "/assets/p3.webp", "/assets/p4.webp", "/assets/p5.webp", "/assets/p6.webp", "/assets/p7.webp", "/assets/p8.webp", "/assets/p9.webp"];
@@ -20,6 +19,8 @@ const photosFor = (i: number) => [PHOTO_POOL[i % 9], PHOTO_POOL[(i + 3) % 9], PH
 
 async function main() {
   console.log("🧹 기존 데이터 정리...");
+  await prisma.reservationOption.deleteMany();
+  await prisma.storeOption.deleteMany();
   await prisma.staffVote.deleteMany();
   await prisma.customerNote.deleteMany();
   await prisma.favorite.deleteMany();
@@ -42,9 +43,9 @@ async function main() {
       logoUrl: "/assets/icon.webp",
       coverUrl: null,
       themeColor: "#B4586A",
-      openTime: "15:00",
-      closeTime: "23:00",
-      slotMinutes: 30,
+      openTime: "12:00",
+      closeTime: "04:00", // 익일 새벽 4시 마감
+      slotMinutes: 30, // 시작 시각 간격 (예약 길이는 1시간 단위)
       closedDays: "[]",
       cancelDeadlineHours: 2,
       maxAdvanceDays: 14,
@@ -59,25 +60,25 @@ async function main() {
 
   console.log("🍸 캐치걸 19명...");
   const staffDefs = [
-    { nickname: "루나", loginId: "luna", bio: "차분하게 분위기를 맞춰드려요. 조용히 한잔하고 싶은 날 편하게 찾아주세요.", tags: ["조용한매력", "눈빛좋음", "분위기있음"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "민서", loginId: "minseo", bio: "밝은 텐션으로 자리를 채워요. 웃을 일이 필요한 날 찾아주세요.", tags: ["애교많음", "밝은텐션", "노래잘함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "섬미", loginId: "seommi", bio: "말수는 적어도 이야기는 끝까지 들어드려요.", tags: ["차분함", "경청잘함", "단정함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "수아", loginId: "sua", bio: "리액션이 좋아서 이야기할 맛이 나요.", tags: ["활발함", "텐션업", "리액션좋음"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "시연", loginId: "siyeon", bio: "말투가 부드러워서 편하게 대화할 수 있어요.", tags: ["다정함", "배려심", "말투부드러움"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "아리", loginId: "ari", bio: "유머 코드가 잘 맞는다는 얘기를 자주 들어요.", tags: ["센스있음", "유머있음", "대화잘통함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "예리", loginId: "yeri", bio: "말을 정말 잘하고 리액션이 좋아요. 오늘 있었던 이야기를 들려주시면 끝까지 들어드릴게요.", tags: ["말잘함", "수다환영", "서비스좋음"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "준희", loginId: "junhee", bio: "처음 오신 분께도 먼저 다가가 편하게 말을 건네요. 조용히 있고 싶은 날엔 옆에서 다정하게 자리를 지켜드려요.", tags: ["상냥함", "청순함", "조용한대화"], days: [0, 2, 3, 4, 5, 6] },
-    { nickname: "지유", loginId: "jiyu", bio: "털털하고 편하게 대해드려서 부담 없어요.", tags: ["털털함", "친근함", "편안함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "지혜", loginId: "jihye", bio: "차분한 대화를 좋아하신다면 잘 맞으실 거예요.", tags: ["지적임", "차분한매력", "깊은대화"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "유빈", loginId: "yubin", bio: "애교 많고 잘 웃어서 자리가 늘 밝아져요.", tags: ["귀여움", "애교", "웃음많음"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "유이", loginId: "yui", bio: "시크해 보여도 대화하다 보면 편해지실 거예요.", tags: ["세련됨", "도시적매력", "시크함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "이슬", loginId: "iseul", bio: "맑고 순수한 느낌으로 편안하게 맞아드려요.", tags: ["청량함", "맑은느낌", "순수함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "지수", loginId: "jisu", bio: "눈을 맞추고 이야기 들어드리는 걸 좋아해요.", tags: ["다정다감", "눈맞춤좋음", "포근함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "지연", loginId: "jiyeon", bio: "재치 있는 입담으로 자리를 즐겁게 만들어요.", tags: ["재치있음", "입담좋음", "분위기메이커"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "진아", loginId: "jina", bio: "단아한 분위기를 좋아하는 분들과 잘 맞아요.", tags: ["단아함", "조용조용", "여운있음"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "채원", loginId: "chaewon", bio: "상큼하고 긍정적인 에너지로 맞아드려요.", tags: ["상큼함", "발랄함", "긍정에너지"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "하영", loginId: "hayoung", bio: "귀여운 외모에 마음씨도 착해요. 기념일이면 작은 이벤트도 직접 챙겨드려요.", tags: ["외모귀여움", "착함", "기념일"], days: [0, 1, 3, 4, 5, 6] },
-    { nickname: "해린", loginId: "haerin", bio: "당당하고 쿨한 매력으로 대화를 이끌어가요.", tags: ["당당함", "자신감", "쿨한매력"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "루나", loginId: "luna", bio: "차분하게 분위기를 맞춰드려요. 조용히 한잔하고 싶은 날 편하게 찾아주세요.", tags: ["조용한매력", "눈빛좋음", "분위기있음"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 350000 },
+    { nickname: "민서", loginId: "minseo", bio: "밝은 텐션으로 자리를 채워요. 웃을 일이 필요한 날 찾아주세요.", tags: ["애교많음", "밝은텐션", "노래잘함"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 300000 },
+    { nickname: "선미", loginId: "seonmi", bio: "말수는 적어도 이야기는 끝까지 들어드려요.", tags: ["차분함", "경청잘함", "단정함"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 350000 },
+    { nickname: "수아", loginId: "sua", bio: "리액션이 좋아서 이야기할 맛이 나요.", tags: ["활발함", "텐션업", "리액션좋음"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 300000 },
+    { nickname: "시연", loginId: "siyeon", bio: "말투가 부드러워서 편하게 대화할 수 있어요.", tags: ["다정함", "배려심", "말투부드러움"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 320000 },
+    { nickname: "아리", loginId: "ari", bio: "유머 코드가 잘 맞는다는 얘기를 자주 들어요.", tags: ["센스있음", "유머있음", "대화잘통함"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 280000 },
+    { nickname: "예리", loginId: "yeri", bio: "말을 정말 잘하고 리액션이 좋아요. 오늘 있었던 이야기를 들려주시면 끝까지 들어드릴게요.", tags: ["말잘함", "수다환영", "서비스좋음"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 400000 },
+    { nickname: "준희", loginId: "junhee", bio: "처음 오신 분께도 먼저 다가가 편하게 말을 건네요. 조용히 있고 싶은 날엔 옆에서 다정하게 자리를 지켜드려요.", tags: ["상냥함", "청순함", "조용한대화"], days: [0, 2, 3, 4, 5, 6], hourlyPrice: 450000 },
+    { nickname: "지유", loginId: "jiyu", bio: "털털하고 편하게 대해드려서 부담 없어요.", tags: ["털털함", "친근함", "편안함"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 300000 },
+    { nickname: "지혜", loginId: "jihye", bio: "차분한 대화를 좋아하신다면 잘 맞으실 거예요.", tags: ["지적임", "차분한매력", "깊은대화"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 330000 },
+    { nickname: "유빈", loginId: "yubin", bio: "애교 많고 잘 웃어서 자리가 늘 밝아져요.", tags: ["귀여움", "애교", "웃음많음"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 280000 },
+    { nickname: "유이", loginId: "yui", bio: "시크해 보여도 대화하다 보면 편해지실 거예요.", tags: ["세련됨", "도시적매력", "시크함"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 350000 },
+    { nickname: "이슬", loginId: "iseul", bio: "맑고 순수한 느낌으로 편안하게 맞아드려요.", tags: ["청량함", "맑은느낌", "순수함"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 250000 },
+    { nickname: "지수", loginId: "jisu", bio: "눈을 맞추고 이야기 들어드리는 걸 좋아해요.", tags: ["다정다감", "눈맞춤좋음", "포근함"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 300000 },
+    { nickname: "지연", loginId: "jiyeon", bio: "재치 있는 입담으로 자리를 즐겁게 만들어요.", tags: ["재치있음", "입담좋음", "분위기메이커"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 280000 },
+    { nickname: "진아", loginId: "jina", bio: "단아한 분위기를 좋아하는 분들과 잘 맞아요.", tags: ["단아함", "조용조용", "여운있음"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 320000 },
+    { nickname: "채원", loginId: "chaewon", bio: "상큼하고 긍정적인 에너지로 맞아드려요.", tags: ["상큼함", "발랄함", "긍정에너지"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 250000 },
+    { nickname: "하영", loginId: "hayoung", bio: "귀여운 외모에 마음씨도 착해요. 기념일이면 작은 이벤트도 직접 챙겨드려요.", tags: ["외모귀여움", "착함", "기념일"], days: [0, 1, 3, 4, 5, 6], hourlyPrice: 420000 },
+    { nickname: "해린", loginId: "haerin", bio: "당당하고 쿨한 매력으로 대화를 이끌어가요.", tags: ["당당함", "자신감", "쿨한매력"], days: [0, 1, 2, 3, 4, 5, 6], hourlyPrice: 380000 },
   ];
   const staff: Record<string, { id: string }> = {};
   for (let i = 0; i < staffDefs.length; i++) {
@@ -90,10 +91,11 @@ async function main() {
         tags: JSON.stringify(s.tags),
         photos: JSON.stringify(photosFor(i)),
         capacityPerSlot: 1,
+        hourlyPrice: s.hourlyPrice,
         sortOrder: i,
         loginId: s.loginId,
         passwordHash: pw,
-        schedules: { create: s.days.map((weekday) => ({ weekday, startTime: "15:00", endTime: "23:00" })) },
+        schedules: { create: s.days.map((weekday) => ({ weekday, startTime: "12:00", endTime: "04:00" })) },
       },
     });
     staff[s.nickname] = created;
@@ -119,45 +121,60 @@ async function main() {
     });
   }
 
-  console.log("📅 예약 생성...");
-  type R = { c: string; s: string; day: number; t: string; status: string; note?: string; by?: string };
-  const rs: R[] = [
-    // ── 오늘 (데모 핵심) ──
-    { c: "길동", s: "준희", day: 0, t: "15:30", status: "CONFIRMED", note: "창가 자리 부탁드려요" },
-    { c: "갑을", s: "준희", day: 0, t: "19:00", status: "CONFIRMED" },
-    { c: "태식", s: "준희", day: 0, t: "21:30", status: "CONFIRMED" },
-    { c: "춘삼", s: "예리", day: 0, t: "18:00", status: "CONFIRMED", note: "케이크 반입 가능할까요?" },
-    { c: "병정", s: "예리", day: 0, t: "20:00", status: "CONFIRMED", by: "ADMIN" },
-    { c: "길동", s: "하영", day: 0, t: "19:30", status: "CONFIRMED" },
-    { c: "철식", s: "지유", day: 0, t: "17:00", status: "CONFIRMED" },
-    // ── 과거: 길동 방문 7회(단골) ──
-    { c: "길동", s: "준희", day: -3, t: "19:00", status: "COMPLETED" },
-    { c: "길동", s: "준희", day: -10, t: "20:00", status: "COMPLETED" },
-    { c: "길동", s: "준희", day: -17, t: "19:30", status: "COMPLETED" },
-    { c: "길동", s: "준희", day: -24, t: "21:00", status: "COMPLETED" },
-    { c: "길동", s: "예리", day: -31, t: "18:30", status: "COMPLETED" },
-    { c: "길동", s: "준희", day: -38, t: "19:00", status: "COMPLETED" },
-    { c: "길동", s: "준희", day: -45, t: "20:30", status: "COMPLETED" },
-    // ── 병정: 노쇼 2회 + 완료 1회 ──
-    { c: "병정", s: "예리", day: -5, t: "20:00", status: "NOSHOW" },
-    { c: "병정", s: "하영", day: -12, t: "19:00", status: "NOSHOW" },
-    { c: "병정", s: "예리", day: -20, t: "21:00", status: "COMPLETED" },
-    // ── 갑을 3회, 춘삼 1회, 태식 1완료 1취소 ──
-    { c: "갑을", s: "예리", day: -2, t: "18:00", status: "COMPLETED" },
-    { c: "갑을", s: "예리", day: -9, t: "19:30", status: "COMPLETED" },
-    { c: "갑을", s: "하영", day: -16, t: "20:00", status: "COMPLETED" },
-    { c: "춘삼", s: "하영", day: -7, t: "19:00", status: "COMPLETED" },
-    { c: "태식", s: "하영", day: -4, t: "21:00", status: "COMPLETED" },
-    { c: "태식", s: "준희", day: -1, t: "18:00", status: "CANCELLED" },
-    // ── 미래 ──
-    { c: "갑을", s: "준희", day: 1, t: "19:00", status: "CONFIRMED" },
-    { c: "춘삼", s: "하영", day: 2, t: "20:00", status: "CONFIRMED" },
-    { c: "길동", s: "준희", day: 4, t: "19:30", status: "CONFIRMED" },
+  console.log("➕ 추가 옵션...");
+  const optionDefs = [
+    { name: "옵션1", price: 50000 },
+    { name: "옵션2", price: 50000 },
   ];
+  const opts: Record<string, { id: string; name: string; price: number }> = {};
+  for (let i = 0; i < optionDefs.length; i++) {
+    const o = await prisma.storeOption.create({ data: { storeId: store.id, ...optionDefs[i], sortOrder: i } });
+    opts[o.name] = o;
+  }
+
+  console.log("📅 예약 생성... (1시간 단위, 연달아 예약 가능)");
+  type R = { c: string; s: string; day: number; t: string; h: number; status: string; note?: string; by?: string; opts?: string[] };
+  const rs: R[] = [
+    // ── 오늘 (데모 핵심) — 연속 예약 섞어서 ──
+    { c: "길동", s: "준희", day: 0, t: "14:00", h: 3, status: "CONFIRMED", note: "창가 자리 부탁드려요", opts: ["옵션1"] },
+    { c: "갑을", s: "준희", day: 0, t: "19:00", h: 2, status: "CONFIRMED" },
+    { c: "태식", s: "준희", day: 0, t: "22:00", h: 1, status: "CONFIRMED" },
+    { c: "춘삼", s: "예리", day: 0, t: "16:30", h: 3, status: "CONFIRMED", note: "케이크 반입 가능할까요?", opts: ["옵션1", "옵션2"] },
+    { c: "병정", s: "예리", day: 0, t: "20:00", h: 2, status: "CONFIRMED", by: "ADMIN" },
+    { c: "길동", s: "하영", day: 0, t: "19:30", h: 2, status: "CONFIRMED" },
+    { c: "철식", s: "지유", day: 0, t: "12:00", h: 1, status: "CONFIRMED" },
+    // ── 과거: 길동 방문 7회(단골) ──
+    { c: "길동", s: "준희", day: -3, t: "19:00", h: 2, status: "COMPLETED", opts: ["옵션1"] },
+    { c: "길동", s: "준희", day: -10, t: "20:00", h: 1, status: "COMPLETED" },
+    { c: "길동", s: "준희", day: -17, t: "19:30", h: 3, status: "COMPLETED" },
+    { c: "길동", s: "준희", day: -24, t: "21:00", h: 1, status: "COMPLETED" },
+    { c: "길동", s: "예리", day: -31, t: "18:30", h: 2, status: "COMPLETED" },
+    { c: "길동", s: "준희", day: -38, t: "19:00", h: 1, status: "COMPLETED" },
+    { c: "길동", s: "준희", day: -45, t: "20:30", h: 2, status: "COMPLETED" },
+    // ── 병정: 노쇼 2회 + 완료 1회 ──
+    { c: "병정", s: "예리", day: -5, t: "20:00", h: 1, status: "NOSHOW" },
+    { c: "병정", s: "하영", day: -12, t: "19:00", h: 2, status: "NOSHOW" },
+    { c: "병정", s: "예리", day: -20, t: "21:00", h: 1, status: "COMPLETED" },
+    // ── 갑을 3회, 춘삼 1회, 태식 1완료 1취소 ──
+    { c: "갑을", s: "예리", day: -2, t: "18:00", h: 2, status: "COMPLETED" },
+    { c: "갑을", s: "예리", day: -9, t: "19:30", h: 1, status: "COMPLETED" },
+    { c: "갑을", s: "하영", day: -16, t: "20:00", h: 3, status: "COMPLETED", opts: ["옵션2"] },
+    { c: "춘삼", s: "하영", day: -7, t: "19:00", h: 2, status: "COMPLETED", opts: ["옵션1", "옵션2"] },
+    { c: "태식", s: "하영", day: -4, t: "21:00", h: 1, status: "COMPLETED" },
+    { c: "태식", s: "준희", day: -1, t: "18:00", h: 1, status: "CANCELLED" },
+    // ── 미래 ──
+    { c: "갑을", s: "준희", day: 1, t: "19:00", h: 2, status: "CONFIRMED" },
+    { c: "춘삼", s: "하영", day: 2, t: "20:00", h: 1, status: "CONFIRMED" },
+    { c: "길동", s: "준희", day: 4, t: "19:30", h: 3, status: "CONFIRMED", opts: ["옵션1"] },
+  ];
+  const priceOf = Object.fromEntries(staffDefs.map((s) => [s.nickname, s.hourlyPrice]));
   const created: Record<string, string> = {}; // key `${c}-${day}` → reservation id
   for (const r of rs) {
     const start = at(r.day, r.t);
-    const end = new Date(start.getTime() + 30 * 60_000);
+    const end = new Date(start.getTime() + r.h * 60 * 60_000);
+    const chosen = (r.opts ?? []).map((n) => opts[n]);
+    const optionsPrice = chosen.reduce((a, o) => a + o.price, 0);
+    const hourlyPrice = priceOf[r.s];
     const res = await prisma.reservation.create({
       data: {
         code: code(start),
@@ -166,13 +183,17 @@ async function main() {
         customerId: cust[r.c].id,
         startTime: start,
         endTime: end,
+        hours: r.h,
         partySize: 1,
         requestNote: r.note ?? "",
         purposeTag: "",
         status: r.status,
         createdBy: r.by ?? "CUSTOMER",
-        slotKey: r.status === "CANCELLED" ? null : slotKey(staff[r.s].id, start),
+        hourlyPrice,
+        optionsPrice,
+        totalPrice: hourlyPrice * r.h + optionsPrice,
         cancelledAt: r.status === "CANCELLED" ? new Date(start.getTime() - 5 * 3600_000) : null,
+        options: { create: chosen.map((o) => ({ optionId: o.id, name: o.name, price: o.price })) },
       },
     });
     created[`${r.c}-${r.day}`] = res.id;

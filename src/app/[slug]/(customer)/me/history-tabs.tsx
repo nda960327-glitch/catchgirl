@@ -10,7 +10,7 @@ import { useToast } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { cancelMyReservation } from "../actions";
 
-export type HistoryItem = { id: string; code: string; status: string; startTime: string; partySize: number; staffId: string; staffName: string; staffPhoto: string | null; hasReview: boolean };
+export type HistoryItem = { id: string; code: string; status: string; startTime: string; endTime: string; hours: number; totalPrice: number; partySize: number; staffId: string; staffName: string; staffPhoto: string | null; hasReview: boolean };
 
 export function HistoryTabs({ slug, items }: { slug: string; items: HistoryItem[] }) {
   const [tab, setTab] = useState<"upcoming" | "done" | "cancelled">("upcoming");
@@ -61,9 +61,12 @@ export function HistoryTabs({ slug, items }: { slug: string; items: HistoryItem[
                       <StatusChip status={r.status} />
                     </div>
                     <div className="mt-1 text-[12px] text-mute">
-                      {format(d, "M월 d일 (EEE) HH:mm", { locale: ko })}
+                      {format(d, "M월 d일 (EEE) HH:mm", { locale: ko })} ~ {format(new Date(r.endTime), "HH:mm")} · {r.hours}시간
                     </div>
-                    <div className="mt-0.5 text-[10px] tracking-wider text-gold">NO. {r.code}</div>
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <span className="text-[10px] tracking-wider text-gold">NO. {r.code}</span>
+                      <span className="text-[11px] font-semibold text-brand">{r.totalPrice.toLocaleString("ko-KR")}원</span>
+                    </div>
                   </div>
                 </div>
                 {(r.status === "CONFIRMED" || (r.status === "COMPLETED" && !r.hasReview)) && (

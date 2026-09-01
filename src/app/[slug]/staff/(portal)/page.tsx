@@ -87,7 +87,10 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
           {reservations.map((r) => (
             <Card key={r.id} className={cn("p-3.5 shadow-none", r.status === "CANCELLED" && "opacity-60")}>
               <div className="flex items-center gap-3">
-                <div className="w-12 font-serif text-[16px] font-bold text-ink">{format(r.startTime, "HH:mm")}</div>
+                <div className="w-14">
+                  <div className="font-serif text-[16px] font-bold text-ink">{format(r.startTime, "HH:mm")}</div>
+                  <div className="text-[10px] text-mute">{r.hours}시간</div>
+                </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[13px]">
                     <span className="font-bold text-ink">{r.customer.nickname}</span>

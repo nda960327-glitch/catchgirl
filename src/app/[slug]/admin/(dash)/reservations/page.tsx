@@ -31,10 +31,11 @@ export default async function ReservationsPage({ params, searchParams }: { param
     ...(sp.q ? { customer: { nickname: { contains: sp.q } } } : {}),
   };
   const list = view === "list"
-    ? await prisma.reservation.findMany({ where, orderBy: { startTime: "asc" }, include: { staff: true, customer: true }, take: 200 })
+    ? await prisma.reservation.findMany({ where, orderBy: { startTime: "asc" }, include: { staff: true, customer: true, options: true }, take: 200 })
     : [];
   const rows: ResRow[] = list.map((r) => ({
     id: r.id, code: r.code, startTime: r.startTime.toISOString(), date: ymd(r.startTime), time: format(r.startTime, "HH:mm"),
+    endLabel: format(r.endTime, "HH:mm"), hours: r.hours, totalPrice: r.totalPrice, optionNames: r.options.map((o) => o.name),
     staffId: r.staffId, staffName: r.staff.nickname, customerId: r.customerId, customerName: r.customer.nickname, memo: r.customer.adminMemo,
     partySize: r.partySize, requestNote: r.requestNote, purposeTag: r.purposeTag, status: r.status, createdBy: r.createdBy, blacklisted: r.customer.isBlacklisted,
   }));

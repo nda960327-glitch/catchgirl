@@ -1,11 +1,14 @@
+import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { parseJsonArray } from "@/lib/utils";
 import { Eyebrow } from "@/components/ui";
 import { SettingsForm } from "./settings-form";
+import { OptionsManager } from "./options-manager";
 
 export default async function SettingsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const store = await getStoreBySlug(slug);
+  const options = await prisma.storeOption.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" } });
   return (
     <div className="animate-fade">
       <Eyebrow>Store Settings</Eyebrow>
@@ -19,6 +22,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
           cancelDeadlineHours: store.cancelDeadlineHours, maxAdvanceDays: store.maxAdvanceDays, noshowPolicy: store.noshowPolicy,
         }}
       />
+      <OptionsManager slug={slug} items={options.map((o) => ({ id: o.id, name: o.name, price: o.price, isActive: o.isActive }))} />
     </div>
   );
 }

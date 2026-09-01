@@ -38,12 +38,7 @@ export async function adminSetReservationStatus(slug: string, id: string, status
     const r = await prisma.reservation.findUnique({ where: { id } });
     if (!r || r.storeId !== store.id) return { ok: false, error: "예약을 찾을 수 없어요." };
     if (status === "CANCELLED") await cancelReservation(id, "ADMIN");
-    else {
-      // 취소 → 복구 시 slotKey 재할당
-      let slotKey = r.slotKey;
-      if (!slotKey) slotKey = `${r.staffId}|${r.startTime.toISOString()}|${Date.now()}`;
-      await prisma.reservation.update({ where: { id }, data: { status, slotKey, cancelledAt: null } });
-    }
+    else await prisma.reservation.update({ where: { id }, data: { status, cancelledAt: null } });
     revalidatePath(`/${slug}/admin`, "layout");
     return { ok: true };
   } catch (e) {
@@ -55,6 +50,7 @@ const adminBook = z.object({
   staffId: z.string().min(1),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   time: z.string().regex(/^\d{2}:\d{2}$/),
+  hours: z.coerce.number().int().min(1).max(8).default(1),
   partySize: z.coerce.number().int().min(1).max(20),
   requestNote: z.string().trim().max(200).optional().default(""),
   nickname: z.string().trim().max(12).optional().default(""),
@@ -78,7 +74,7 @@ export async function adminCreateReservation(slug: string, input: z.input<typeof
       customerId = c.id;
     }
     const r = await createReservation({
-      storeId: store.id, staffId: p.data.staffId, customerId, date: p.data.date, time: p.data.time,
+      storeId: store.id, staffId: p.data.staffId, customerId, date: p.data.date, time: p.data.time, hours: p.data.hours,
       partySize: p.data.partySize, requestNote: p.data.requestNote, purposeTag: "전화예약", createdBy: "ADMIN", skipAvailabilityCheck: true,
     });
     revalidatePath(`/${slug}/admin`, "layout");
@@ -89,19 +85,20 @@ export async function adminCreateReservation(slug: string, input: z.input<typeof
   }
 }
 
-export async function adminUpdateReservation(slug: string, id: string, data: { partySize?: number; requestNote?: string; date?: string; time?: string; staffId?: string }): Promise<R> {
+export async function adminUpdateReservation(slug: string, id: string, data: { partySize?: number; requestNote?: string; date?: string; time?: string; staffId?: string; hours?: number }): Promise<R> {
   try {
     const store = await getStoreBySlug(slug);
     await requireAdmin(store.id);
     const r = await prisma.reservation.findUnique({ where: { id } });
     if (!r || r.storeId !== store.id) return { ok: false, error: "예약을 찾을 수 없어요." };
-    // 일시/캐치걸 변경은 새 예약 생성 + 기존 취소로 처리 (슬롯 고유키 일관성)
-    if ((data.date && data.time) || data.staffId) {
+    // 일시/캐치걸/이용시간 변경은 새 예약 생성 + 기존 취소로 처리 (겹침 검사를 한 곳에서만 하도록)
+    if ((data.date && data.time) || data.staffId || (data.hours && data.hours !== r.hours)) {
       const date = data.date ?? ymd(r.startTime);
       const time = data.time ?? `${String(r.startTime.getHours()).padStart(2, "0")}:${String(r.startTime.getMinutes()).padStart(2, "0")}`;
-      await prisma.reservation.update({ where: { id }, data: { status: "CANCELLED", cancelledAt: new Date(), slotKey: null } });
+      await prisma.reservation.update({ where: { id }, data: { status: "CANCELLED", cancelledAt: new Date() } });
       await createReservation({
         storeId: store.id, staffId: data.staffId ?? r.staffId, customerId: r.customerId, date, time,
+        hours: data.hours ?? r.hours,
         partySize: data.partySize ?? r.partySize, requestNote: data.requestNote ?? r.requestNote, purposeTag: r.purposeTag, createdBy: "ADMIN", skipAvailabilityCheck: true,
       });
     } else {
@@ -124,6 +121,7 @@ const staffSchema = z.object({
   photos: z.array(z.string()).max(10).default([]),
   isActive: z.boolean().default(true),
   capacityPerSlot: z.coerce.number().int().min(1).max(10).default(1),
+  hourlyPrice: z.coerce.number().int().min(0).max(100_000_000).default(300_000),
   loginId: z.string().trim().max(30).optional().default(""),
   password: z.string().max(50).optional().default(""),
   schedules: z.array(z.object({ weekday: z.number().int().min(0).max(6), startTime: z.string(), endTime: z.string() })).default([]),
@@ -138,7 +136,7 @@ export async function saveStaff(slug: string, input: z.input<typeof staffSchema>
     const d = p.data;
     const base = {
       nickname: d.nickname, bio: d.bio, tags: JSON.stringify(d.tags), photos: JSON.stringify(d.photos),
-      isActive: d.isActive, capacityPerSlot: d.capacityPerSlot, loginId: d.loginId || null,
+      isActive: d.isActive, capacityPerSlot: d.capacityPerSlot, hourlyPrice: d.hourlyPrice, loginId: d.loginId || null,
       ...(d.password ? { passwordHash: await bcrypt.hash(d.password, 10) } : {}),
     };
     let id = d.id;
@@ -161,6 +159,85 @@ export async function saveStaff(slug: string, input: z.input<typeof staffSchema>
     return { ok: true, data: { id } };
   } catch (e) {
     if (e instanceof Error && e.message.includes("Unique constraint")) return { ok: false, error: "이미 사용 중인 로그인 ID예요." };
+    return fail(e);
+  }
+}
+
+/** 캐치걸 삭제 전 미리보기 — 같이 지워지는 것들을 UI 가 먼저 보여줄 수 있게 */
+export async function staffDeletionImpact(slug: string, staffId: string): Promise<R<{ nickname: string; reservations: number; reviews: number }>> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const s = await prisma.staff.findUnique({ where: { id: staffId } });
+    if (!s || s.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+    const [reservations, reviews] = await Promise.all([
+      prisma.reservation.count({ where: { staffId } }),
+      prisma.review.count({ where: { staffId } }),
+    ]);
+    return { ok: true, data: { nickname: s.nickname, reservations, reviews } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * 캐치걸 삭제 — 예약·후기·댓글·찜·추천이 함께 사라진다 (스키마상 Cascade).
+ * 매출 이력까지 지워지므로, 잠시 안 나오는 것뿐이라면 '비활성'을 쓰는 편이 낫다.
+ */
+export async function deleteStaff(slug: string, staffId: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const s = await prisma.staff.findUnique({ where: { id: staffId } });
+    if (!s || s.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+    await prisma.staff.delete({ where: { id: staffId } });
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/* ─── 추가 옵션 관리 ─── */
+const optionSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().trim().min(1, "옵션 이름을 입력해 주세요").max(20),
+  price: z.coerce.number().int().min(0).max(100_000_000),
+  isActive: z.boolean().default(true),
+});
+export async function saveStoreOption(slug: string, input: z.input<typeof optionSchema>): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const p = optionSchema.safeParse(input);
+    if (!p.success) return { ok: false, error: p.error.issues[0].message };
+    const d = p.data;
+    if (d.id) {
+      const ex = await prisma.storeOption.findUnique({ where: { id: d.id } });
+      if (!ex || ex.storeId !== store.id) return { ok: false, error: "옵션을 찾을 수 없어요." };
+      await prisma.storeOption.update({ where: { id: d.id }, data: { name: d.name, price: d.price, isActive: d.isActive } });
+    } else {
+      const count = await prisma.storeOption.count({ where: { storeId: store.id } });
+      await prisma.storeOption.create({ data: { storeId: store.id, name: d.name, price: d.price, isActive: d.isActive, sortOrder: count } });
+    }
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 옵션 삭제 — 이미 팔린 예약의 옵션 내역은 이름·가격을 복사해 뒀으므로 그대로 남는다 */
+export async function deleteStoreOption(slug: string, optionId: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const o = await prisma.storeOption.findUnique({ where: { id: optionId } });
+    if (!o || o.storeId !== store.id) return { ok: false, error: "옵션을 찾을 수 없어요." };
+    await prisma.storeOption.delete({ where: { id: optionId } });
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
     return fail(e);
   }
 }

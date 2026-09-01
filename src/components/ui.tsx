@@ -73,9 +73,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
   );
 });
 
-export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+export function Field({ label, hint, children, className }: { label: string; hint?: string; children: ReactNode; className?: string }) {
   return (
-    <label className="block">
+    <label className={cn("block", className)}>
       <div className="mb-1.5 flex items-baseline justify-between">
         <span className="text-[12px] font-semibold text-ink">{label}</span>
         {hint && <span className="text-[11px] text-mute">{hint}</span>}
