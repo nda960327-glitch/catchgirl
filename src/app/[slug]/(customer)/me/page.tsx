@@ -75,7 +75,7 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
         )}
       </div>
       <div className="px-4">
-        <ProfileForm slug={slug} me={{ nickname: me.nickname, referral: me.referral ?? "" }} />
+        <ProfileForm slug={slug} me={{ nickname: me.nickname }} />
       </div>
 
       {/* 예약 히스토리 */}

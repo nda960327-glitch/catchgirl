@@ -2,12 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Field, Input, Select } from "@/components/ui";
+import { Button, Card, Field, Input } from "@/components/ui";
 import { useToast } from "@/components/providers";
-import { REFERRALS } from "@/lib/utils";
 import { changeMyPin, updateMyProfile } from "../actions";
 
-type P = { nickname: string; referral: string };
+type P = { nickname: string };
 
 export function ProfileForm({ slug, me }: { slug: string; me: P }) {
   const [open, setOpen] = useState<"none" | "profile" | "pin">("none");
@@ -18,9 +17,7 @@ export function ProfileForm({ slug, me }: { slug: string; me: P }) {
   if (open === "none") {
     return (
       <Card className="mt-3 flex items-center gap-3 p-4 shadow-none">
-        <div className="min-w-0 flex-1 text-[12px] text-mute">
-          {me.referral ? <>방문 경로 <span className="text-ink">{me.referral}</span></> : "휴대폰 번호·실명 없이 닉네임과 PIN만 저장돼요"}
-        </div>
+        <div className="min-w-0 flex-1 text-[12px] text-mute">휴대폰 번호·실명 없이 닉네임과 PIN만 저장돼요</div>
         <Button size="sm" variant="secondary" onClick={() => setOpen("profile")}>내 정보</Button>
         <Button size="sm" variant="ghost" onClick={() => setOpen("pin")}>PIN 변경</Button>
       </Card>
@@ -71,11 +68,6 @@ export function ProfileForm({ slug, me }: { slug: string; me: P }) {
       >
         <Field label="닉네임" hint="로그인에 쓰는 이름이에요">
           <Input name="nickname" defaultValue={me.nickname} maxLength={12} required />
-        </Field>
-        <Field label="방문 경로">
-          <Select name="referral" defaultValue={me.referral} className="h-12 w-full rounded-2xl">
-            <option value="">선택</option>{REFERRALS.map((r) => <option key={r}>{r}</option>)}
-          </Select>
         </Field>
         <div className="flex gap-2">
           <Button type="submit" loading={pending} className="flex-1">저장</Button>

@@ -2,12 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Field, Input, Select, Textarea } from "@/components/ui";
+import { Button, Field, Input, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
-import { REFERRALS } from "@/lib/utils";
 import { addCustomerNote, deleteCustomerNote, saveCustomerInfo } from "../../../actions";
 
-export type CustomerInfo = { nickname: string; referral: string; adminMemo: string; isBlacklisted: boolean };
+export type CustomerInfo = { nickname: string; adminMemo: string; isBlacklisted: boolean };
 export type NoteItem = { id: string; authorName: string; content: string; createdAt: string };
 
 /** 관리자 — 고객 기본 정보 + 상단 고정 메모 */
@@ -20,14 +19,7 @@ export function CustomerInfoForm({ slug, customerId, init }: { slug: string; cus
 
   return (
     <div className="mt-3 flex flex-col gap-3">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="닉네임"><Input value={f.nickname} onChange={(e) => set("nickname", e.target.value)} className="h-10 text-[13px]" /></Field>
-        <Field label="방문 경로">
-          <Select value={f.referral} onChange={(e) => set("referral", e.target.value)} className="h-10 w-full">
-            <option value="">미입력</option>{REFERRALS.map((r) => <option key={r}>{r}</option>)}
-          </Select>
-        </Field>
-      </div>
+      <Field label="닉네임"><Input value={f.nickname} onChange={(e) => set("nickname", e.target.value)} className="h-10 text-[13px]" /></Field>
       <Field label="고정 메모" hint="고객 목록·예약 화면에 항상 같이 보여요">
         <Textarea rows={3} value={f.adminMemo} onChange={(e) => set("adminMemo", e.target.value)} placeholder="예: 조용한 대화 선호, 창가 자리" />
       </Field>

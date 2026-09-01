@@ -19,7 +19,6 @@ export function parseJsonArray<T = string>(s: string | null | undefined): T[] {
   }
 }
 
-export const REFERRALS = ["인스타그램", "지인 소개", "검색", "지나가다", "기타"];
 
 export function ymd(d: Date) {
   return format(d, "yyyy-MM-dd");

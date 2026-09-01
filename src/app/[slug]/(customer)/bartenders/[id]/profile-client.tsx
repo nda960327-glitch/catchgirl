@@ -15,7 +15,7 @@ export function ProfileClient({
   slug, staff, stats, reviews, comments, loggedIn, favorited, votes,
 }: {
   slug: string;
-  staff: { id: string; nickname: string; bio: string; tags: string[]; photos: string[] };
+  staff: { id: string; nickname: string; bio: string; tags: string[]; photos: string[]; hourlyPrice: number };
   stats: { rating: number | null; reviewCount: number; revisitRate: number };
   reviews: ReviewItem[];
   comments: CommentItem[];
@@ -80,7 +80,12 @@ export function ProfileClient({
           ))}
         </div>
         <div className="mt-3.5 flex items-center justify-between">
-          <div className="font-serif text-[24px] font-bold text-ink">{staff.nickname}</div>
+          <div>
+            <div className="font-serif text-[24px] font-bold text-ink">{staff.nickname}</div>
+            <div className="mt-0.5 text-[13px] font-semibold text-brand">
+              {staff.hourlyPrice.toLocaleString("ko-KR")}원<span className="text-[11px] font-medium text-mute"> / 1시간</span>
+            </div>
+          </div>
           <button
             onClick={onFav}
             disabled={pending}

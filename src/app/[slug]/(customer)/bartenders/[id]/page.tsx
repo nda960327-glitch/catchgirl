@@ -59,7 +59,7 @@ export default async function BartenderDetail({ params }: { params: Promise<{ sl
       <TopBar title={staff.nickname} back={`/${slug}/bartenders`} />
       <ProfileClient
         slug={slug}
-        staff={{ id: staff.id, nickname: staff.nickname, bio: staff.bio, tags: parseJsonArray(staff.tags), photos: parseJsonArray(staff.photos) }}
+        staff={{ id: staff.id, nickname: staff.nickname, bio: staff.bio, tags: parseJsonArray(staff.tags), photos: parseJsonArray(staff.photos), hourlyPrice: staff.hourlyPrice }}
         stats={{ rating: stats.rating, reviewCount: stats.reviewCount, revisitRate: Math.round(stats.revisitRate * 100) }}
         reviews={reviewItems}
         comments={commentItems}

@@ -9,8 +9,9 @@ export function StaffCard({ s, href }: { s: StaffSummary; href: string }) {
       <Card className="flex items-center gap-3.5 p-3.5 transition-transform active:scale-[.99]">
         <Avatar src={s.photos[0]} name={s.nickname} size={76} rounded={20} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="font-serif text-[17px] font-bold text-ink">{s.nickname}</span>
+            <span className="font-semibold text-[12px] text-brand">{s.hourlyPrice.toLocaleString("ko-KR")}원<span className="text-[10px] font-medium text-mute">/1시간</span></span>
             {s.rating !== null && (
               <span className="rounded-full bg-blush-lt px-2 py-[3px] text-[10px] font-semibold text-brand">★ {s.rating.toFixed(1)}</span>
             )}

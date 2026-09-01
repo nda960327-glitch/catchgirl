@@ -17,20 +17,19 @@ export type ActionResult<T = undefined> = { ok: true; data?: T } | { ok: false; 
 const loginSchema = z.object({
   nickname: z.string().trim().min(1, "닉네임을 입력해 주세요").max(12, "닉네임은 12자 이하"),
   pin: z.string().trim().regex(/^\d{4,6}$/, "PIN은 숫자 4~6자리예요"),
-  referral: z.string().trim().max(20).optional().default(""),
 });
 const pick = (fd: FormData, keys: string[]) => Object.fromEntries(keys.map((k) => [k, (fd.get(k) ?? "") as string]));
 
 export async function loginCustomer(slug: string, form: FormData, next?: string): Promise<ActionResult> {
   const store = await getStoreBySlug(slug);
-  const parsed = loginSchema.safeParse(pick(form, ["nickname", "pin", "referral"]));
+  const parsed = loginSchema.safeParse(pick(form, ["nickname", "pin"]));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
-  const { nickname, pin, referral } = parsed.data;
+  const { nickname, pin } = parsed.data;
 
   let customer = await prisma.customer.findUnique({ where: { storeId_nickname: { storeId: store.id, nickname } } });
   if (!customer) {
     customer = await prisma.customer.create({
-      data: { storeId: store.id, nickname, passwordHash: await bcrypt.hash(pin, 10), ...(referral ? { referral } : {}) },
+      data: { storeId: store.id, nickname, passwordHash: await bcrypt.hash(pin, 10) },
     });
   } else if (!customer.passwordHash) {
     // 관리자가 전화예약으로 먼저 만들어 둔 고객 — 첫 로그인에서 PIN 을 정하며 계정을 넘겨받는다
@@ -42,18 +41,18 @@ export async function loginCustomer(slug: string, form: FormData, next?: string)
   redirect(next && next.startsWith(`/${slug}`) ? next : `/${slug}/me`);
 }
 
-/** 마이페이지 — 닉네임/방문 경로 수정 */
+/** 마이페이지 — 닉네임 수정 */
 export async function updateMyProfile(slug: string, form: FormData): Promise<ActionResult> {
   const store = await getStoreBySlug(slug);
   const me = await getCustomer(store.id);
   if (!me) return { ok: false, error: "LOGIN_REQUIRED" };
   const parsed = z
-    .object({ nickname: z.string().trim().min(1, "닉네임을 입력해 주세요").max(12), referral: z.string().trim().max(20).optional().default("") })
-    .safeParse(pick(form, ["nickname", "referral"]));
+    .object({ nickname: z.string().trim().min(1, "닉네임을 입력해 주세요").max(12) })
+    .safeParse(pick(form, ["nickname"]));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const d = parsed.data;
   try {
-    await prisma.customer.update({ where: { id: me.id }, data: { nickname: d.nickname, referral: d.referral || null } });
+    await prisma.customer.update({ where: { id: me.id }, data: { nickname: d.nickname } });
   } catch (e) {
     if (e instanceof Error && e.message.includes("Unique constraint")) return { ok: false, error: "이미 쓰고 있는 닉네임이에요." };
     throw e;

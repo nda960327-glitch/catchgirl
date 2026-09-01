@@ -245,11 +245,10 @@ export async function deleteStoreOption(slug: string, optionId: string): Promise
 /* ─── 고객 관리 ─── */
 const customerInfoSchema = z.object({
   nickname: z.string().trim().min(1).max(12),
-  referral: z.string().trim().max(20).default(""),
   adminMemo: z.string().max(500).default(""),
   isBlacklisted: z.boolean().default(false),
 });
-/** 관리자 — 고객 기본 정보 수정 (닉네임·방문경로·고정 메모·블랙리스트) */
+/** 관리자 — 고객 기본 정보 수정 (닉네임·고정 메모·블랙리스트) */
 export async function saveCustomerInfo(slug: string, customerId: string, input: z.input<typeof customerInfoSchema>): Promise<R> {
   try {
     const store = await getStoreBySlug(slug);
@@ -261,7 +260,7 @@ export async function saveCustomerInfo(slug: string, customerId: string, input: 
     const d = p.data;
     await prisma.customer.update({
       where: { id: customerId },
-      data: { nickname: d.nickname, referral: d.referral || null, adminMemo: d.adminMemo, isBlacklisted: d.isBlacklisted },
+      data: { nickname: d.nickname, adminMemo: d.adminMemo, isBlacklisted: d.isBlacklisted },
     });
     revalidatePath(`/${slug}/admin`, "layout");
     return { ok: true };

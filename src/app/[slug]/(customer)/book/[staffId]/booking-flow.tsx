@@ -270,13 +270,20 @@ export function BookingFlow({
             </div>
 
             {options.length > 0 && (
-              <Field label="추가 옵션" hint="선택 · 예약당 1회">
+              // Field 는 <label> 이라 그 안에 버튼을 두면 클릭이 첫 버튼으로 넘어간다 — 여기선 쓰지 않는다
+              <div>
+                <div className="mb-1.5 flex items-baseline justify-between">
+                  <span className="text-[12px] font-semibold text-ink">추가 옵션</span>
+                  <span className="text-[11px] text-mute">선택 · 예약당 1회</span>
+                </div>
                 <div className="flex flex-col gap-2">
                   {options.map((o) => {
                     const on = optIds.includes(o.id);
                     return (
                       <button
                         key={o.id}
+                        type="button"
+                        aria-pressed={on}
                         onClick={() => setOptIds((v) => (on ? v.filter((x) => x !== o.id) : [...v, o.id]))}
                         className={cn(
                           "flex h-12 items-center gap-3 rounded-2xl border px-4 text-[13px] transition-all active:scale-[.99]",
@@ -290,7 +297,7 @@ export function BookingFlow({
                     );
                   })}
                 </div>
-              </Field>
+              </div>
             )}
 
             {/* 금액 */}

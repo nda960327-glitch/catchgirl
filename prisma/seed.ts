@@ -107,17 +107,17 @@ async function main() {
 
   console.log("👤 고객 6명... (연락처·실명 없이 닉네임 + PIN)");
   const custDefs = [
-    { nickname: "길동", memo: "조용한 대화 선호, 창가 자리. 준희 단골.", referral: "인스타그램" },
-    { nickname: "병정", memo: "노쇼 이력 2회 — 방문 당일 재확인 필요", referral: "지인 소개" },
-    { nickname: "갑을", memo: "", referral: "검색" },
-    { nickname: "춘삼", memo: "기념일 방문. 이벤트 좋아함", referral: "인스타그램" },
-    { nickname: "태식", memo: "", referral: "지나가다" },
-    { nickname: "철식", memo: "", referral: "지인 소개" },
+    { nickname: "길동", memo: "조용한 대화 선호, 창가 자리. 준희 단골." },
+    { nickname: "병정", memo: "노쇼 이력 2회 — 방문 당일 재확인 필요" },
+    { nickname: "갑을", memo: "" },
+    { nickname: "춘삼", memo: "기념일 방문. 이벤트 좋아함" },
+    { nickname: "태식", memo: "" },
+    { nickname: "철식", memo: "" },
   ];
   const cust: Record<string, { id: string }> = {};
   for (const c of custDefs) {
     cust[c.nickname] = await prisma.customer.create({
-      data: { storeId: store.id, nickname: c.nickname, passwordHash: pw, adminMemo: c.memo, referral: c.referral ?? null },
+      data: { storeId: store.id, nickname: c.nickname, passwordHash: pw, adminMemo: c.memo },
     });
   }
 

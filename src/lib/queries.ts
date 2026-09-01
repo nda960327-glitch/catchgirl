@@ -14,6 +14,7 @@ export type StaffSummary = {
   reviewCount: number;
   upCount: number;
   downCount: number;
+  hourlyPrice: number;
   remainingToday: number;
   isActive: boolean;
 };
@@ -25,6 +26,8 @@ export const STAFF_SORTS = [
   ["reviews", "리뷰 많은순"],
   ["up", "추천순"],
   ["down", "비추천순"],
+  ["price-high", "가격 높은순"],
+  ["price-low", "가격 낮은순"],
 ] as const;
 export type StaffSort = (typeof STAFF_SORTS)[number][0];
 
@@ -40,6 +43,10 @@ export function sortStaffSummaries(list: StaffSummary[], sort: string): StaffSum
       return s.sort((a, b) => b.upCount - a.upCount || (b.rating ?? -1) - (a.rating ?? -1));
     case "down":
       return s.sort((a, b) => b.downCount - a.downCount || a.upCount - b.upCount);
+    case "price-high":
+      return s.sort((a, b) => b.hourlyPrice - a.hourlyPrice || a.nickname.localeCompare(b.nickname));
+    case "price-low":
+      return s.sort((a, b) => a.hourlyPrice - b.hourlyPrice || a.nickname.localeCompare(b.nickname));
     default:
       return s;
   }
@@ -66,6 +73,7 @@ export async function listStaffSummaries(store: Store, includeInactive = false):
       reviewCount: s.reviews.length,
       upCount: s.votes.filter((v) => v.value === "UP").length,
       downCount: s.votes.filter((v) => v.value === "DOWN").length,
+      hourlyPrice: s.hourlyPrice,
       remainingToday: s.isActive ? await remainingToday(store, s) : 0,
       isActive: s.isActive,
     })),

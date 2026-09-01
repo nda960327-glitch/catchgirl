@@ -105,7 +105,6 @@ model Customer {
   storeId       String
   nickname      String
   passwordHash  String? // 고객이 정한 PIN. 관리자가 대신 만든 고객은 null → 첫 로그인 때 설정
-  referral      String? // 방문 경로 (인스타/지인소개/검색/기타)
   adminMemo     String   @default("") // 상단 고정 메모 (한눈에 보는 핵심)
   isBlacklisted Boolean  @default(false)
   createdAt     DateTime @default(now())
