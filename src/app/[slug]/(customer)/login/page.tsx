@@ -11,10 +11,10 @@ export default async function CustomerLoginPage({ params, searchParams }: { para
       <TopBar title="시작하기" back={`/${slug}`} />
       <div className="flex flex-col items-center px-6 pt-8 text-center">
         <Sticker k="p7" size={110} />
-        <div className="mt-2 font-serif text-[21px] font-bold text-ink">닉네임으로 충분해요</div>
+        <div className="mt-2 font-serif text-[21px] font-bold text-ink">초대받은 분만 들어와요</div>
         <p className="mt-2 text-[12px] leading-[1.7] text-mute">
           {store.name}은 실명도 휴대폰 번호도 받지 않아요.
-          <br />닉네임과 PIN만 있으면 예약하고, 다음에 다시 찾아올 수 있어요.
+          <br />매장에서 받은 연결코드로 시작하면, 다음부턴 닉네임과 PIN으로 들어오실 수 있어요.
         </p>
       </div>
       <div className="px-6 pt-6">

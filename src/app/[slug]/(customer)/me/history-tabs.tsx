@@ -59,8 +59,12 @@ export function HistoryTabs({ slug, items }: { slug: string; items: HistoryItem[
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-[13px] font-bold text-ink">{r.staffName}</span>
                       <StatusChip status={r.status} />
-                      {r.roomName && r.status === "CONFIRMED" && (
-                        <span className="rounded-full bg-brand px-2 py-[3px] text-[10px] font-bold text-white">{r.roomName}</span>
+                      {r.status === "CONFIRMED" && (
+                        r.roomName ? (
+                          <span className="rounded-full bg-brand px-2 py-[3px] text-[10px] font-bold text-white">{r.roomName}</span>
+                        ) : (
+                          <span className="rounded-full border border-dashed border-blush px-2 py-[3px] text-[10px] font-semibold text-mute">자리 안내 예정</span>
+                        )
                       )}
                     </div>
                     <div className="mt-1 text-[12px] text-mute">

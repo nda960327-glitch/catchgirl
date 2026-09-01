@@ -472,6 +472,17 @@ export async function saveCustomerInfo(slug: string, customerId: string, input: 
   }
 }
 
+/** 헷갈리는 글자(0/O, 1/I)는 빼고 4자리. 매장 안에서 겹치지 않을 때까지 다시 뽑는다. */
+async function freshInviteCode(storeId: string) {
+  const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  for (let i = 0; i < 12; i++) {
+    const code = Array.from({ length: 4 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join("");
+    const dup = await prisma.customer.findFirst({ where: { storeId, inviteCode: code } });
+    if (!dup) return code;
+  }
+  return null;
+}
+
 /**
  * 기존 고객에게 연결코드를 발급한다.
  * 카톡·전화로만 오가던 손님이 앱에서 새 닉네임을 만들면 이력이 갈라지므로,
@@ -483,18 +494,37 @@ export async function issueInviteCode(slug: string, customerId: string): Promise
     await requireAdmin(store.id);
     const c = await prisma.customer.findUnique({ where: { id: customerId } });
     if (!c || c.storeId !== store.id) return { ok: false, error: "고객을 찾을 수 없어요." };
-    // 헷갈리는 글자(0/O, 1/I) 는 빼고 4자리
-    const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let code = "";
-    for (let i = 0; i < 12; i++) {
-      code = Array.from({ length: 4 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join("");
-      const dup = await prisma.customer.findFirst({ where: { storeId: store.id, inviteCode: code } });
-      if (!dup) break;
-      code = "";
-    }
+    const code = await freshInviteCode(store.id);
     if (!code) return { ok: false, error: "코드 생성에 실패했어요. 다시 시도해 주세요." };
     await prisma.customer.update({ where: { id: customerId }, data: { inviteCode: code } });
     revalidatePath(`/${slug}/admin/customers/${customerId}`);
+    return { ok: true, data: { code } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * 아직 기록이 없는 새 손님을 초대한다.
+ * 계정은 코드 없이 만들 수 없으므로, 처음 오시는 분께도 매장이 코드를 먼저 발급해야 한다.
+ * 손님이 코드를 넣으며 정한 닉네임이 이 빈 기록에 붙는다.
+ */
+export async function inviteNewCustomer(slug: string, memo?: string): Promise<R<{ code: string }>> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const code = await freshInviteCode(store.id);
+    if (!code) return { ok: false, error: "코드 생성에 실패했어요. 다시 시도해 주세요." };
+    await prisma.customer.create({
+      data: {
+        storeId: store.id,
+        // 손님이 첫 로그인 때 진짜 닉네임으로 바꾼다
+        nickname: `초대-${code}`,
+        inviteCode: code,
+        adminMemo: (memo ?? "").trim().slice(0, 500),
+      },
+    });
+    revalidatePath(`/${slug}/admin/customers`);
     return { ok: true, data: { code } };
   } catch (e) {
     return fail(e);

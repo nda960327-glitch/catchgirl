@@ -1,9 +1,40 @@
 import "server-only";
-import { Prisma } from "@prisma/client";
+import { Prisma, type Store } from "@prisma/client";
 import { prisma } from "./db";
 import { ACTIVE_STATUSES, businessDayOf, getSlotsFor, maxHoursAt, MAX_BOOKING_HOURS, shiftOfTime } from "./slots";
 import { addMinutes, fmtDateTimeKo, genReservationCode, toLocalDate } from "./utils";
 import { notificationService } from "./notifications";
+
+/**
+ * 예약들이 실제로 앉을 룸을 찾아준다.
+ *
+ * 예약할 때 저장해 둔 roomName 만 믿으면, 배치를 나중에 짜거나 중간에 방을 옮겼을 때
+ * 손님이 엉뚱한 자리를 안내받는다. 그래서 그날 그 조의 배치를 먼저 보고,
+ * 배치가 없을 때만 예약 당시 값으로 되돌아간다.
+ */
+export async function resolveRooms(
+  store: Pick<Store, "openTime" | "closeTime" | "shiftSplitTime">,
+  reservations: { id: string; staffId: string; startTime: Date; roomName: string | null }[],
+): Promise<Map<string, string | null>> {
+  const out = new Map<string, string | null>();
+  if (reservations.length === 0) return out;
+
+  const keyed = reservations.map((r) => ({
+    ...r,
+    date: businessDayOf(store, r.startTime),
+    shift: shiftOfTime(store, r.startTime),
+  }));
+  const assignments = await prisma.shiftAssignment.findMany({
+    where: {
+      staffId: { in: [...new Set(keyed.map((r) => r.staffId))] },
+      date: { in: [...new Set(keyed.map((r) => r.date))] },
+    },
+    include: { room: { select: { name: true } } },
+  });
+  const lookup = new Map(assignments.map((a) => [`${a.staffId}|${a.date}|${a.shift}`, a.room.name]));
+  for (const r of keyed) out.set(r.id, lookup.get(`${r.staffId}|${r.date}|${r.shift}`) ?? r.roomName);
+  return out;
+}
 
 export class SlotConflictError extends Error {
   constructor() {

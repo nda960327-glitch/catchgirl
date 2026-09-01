@@ -11,9 +11,13 @@ import { cancelReservation, createReservation, SlotConflictError } from "@/lib/r
 
 export type ActionResult<T = undefined> = { ok: true; data?: T } | { ok: false; error: string; conflict?: boolean };
 
-/* ─── 고객 로그인: 닉네임 + PIN ───
+/* ─── 고객 로그인: 닉네임 + PIN (+ 첫 시작은 연결코드) ───
    휴대폰·실명 같은 개인정보는 받지 않는다. 매장 안에서만 통하는 닉네임과
-   본인 확인용 PIN 만으로 신원을 잡고, 처음 보는 닉네임이면 그 자리에서 계정을 만든다. */
+   본인 확인용 PIN 만으로 신원을 잡는다.
+
+   계정은 아무나 못 만든다. 초대받은 분만 쓰는 공간이라, 처음 시작할 때는
+   매장이 발급한 연결코드가 반드시 있어야 한다. 한 번 만든 뒤로는
+   닉네임 + PIN 으로 들어온다 (매번 코드를 받으러 갈 필요는 없다). */
 const loginSchema = z.object({
   nickname: z.string().trim().min(1, "닉네임을 입력해 주세요").max(12, "닉네임은 12자 이하"),
   pin: z.string().trim().regex(/^\d{4,6}$/, "PIN은 숫자 4~6자리예요"),
@@ -27,32 +31,31 @@ export async function loginCustomer(slug: string, form: FormData, next?: string)
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const { nickname, pin, inviteCode } = parsed.data;
 
-  let customer = await prisma.customer.findUnique({ where: { storeId_nickname: { storeId: store.id, nickname } } });
+  const byNickname = await prisma.customer.findUnique({ where: { storeId_nickname: { storeId: store.id, nickname } } });
 
-  // 연결코드를 넣었으면 새 계정을 만들지 않고 기존 고객 기록을 이어받는다
-  if (inviteCode) {
-    const existing = await prisma.customer.findFirst({ where: { storeId: store.id, inviteCode } });
-    if (!existing) return { ok: false, error: "연결코드가 맞지 않아요. 매장에 확인해 주세요." };
-    if (customer && customer.id !== existing.id) return { ok: false, error: "이미 쓰고 있는 닉네임이에요. 다른 닉네임으로 해주세요." };
-    customer = await prisma.customer.update({
-      where: { id: existing.id },
-      data: { nickname, passwordHash: await bcrypt.hash(pin, 10), inviteCode: null },
-    });
-    await setSession({ role: "customer", id: customer.id, storeId: store.id, name: customer.nickname });
+  // 이미 만들어 둔 계정이면 코드 없이 닉네임 + PIN 으로 들어온다
+  if (!inviteCode) {
+    if (!byNickname?.passwordHash) {
+      return { ok: false, error: "처음이시라면 매장에서 받은 연결코드를 입력해 주세요." };
+    }
+    if (!(await bcrypt.compare(pin, byNickname.passwordHash))) {
+      return { ok: false, error: "닉네임 또는 PIN이 맞지 않아요." };
+    }
+    await setSession({ role: "customer", id: byNickname.id, storeId: store.id, name: byNickname.nickname });
     redirect(next && next.startsWith(`/${slug}`) ? next : `/${slug}/me`);
   }
 
-  if (!customer) {
-    customer = await prisma.customer.create({
-      data: { storeId: store.id, nickname, passwordHash: await bcrypt.hash(pin, 10) },
-    });
-  } else if (!customer.passwordHash) {
-    // 관리자가 전화예약으로 먼저 만들어 둔 고객 — 첫 로그인에서 PIN 을 정하며 계정을 넘겨받는다
-    customer = await prisma.customer.update({ where: { id: customer.id }, data: { passwordHash: await bcrypt.hash(pin, 10) } });
-  } else if (!(await bcrypt.compare(pin, customer.passwordHash))) {
-    return { ok: false, error: "이미 쓰고 있는 닉네임이거나 PIN이 맞지 않아요." };
+  // 연결코드로 시작 — 매장이 미리 만들어 둔 기록에 닉네임과 PIN 을 붙인다
+  const invited = await prisma.customer.findFirst({ where: { storeId: store.id, inviteCode } });
+  if (!invited) return { ok: false, error: "연결코드가 맞지 않아요. 매장에 확인해 주세요." };
+  if (byNickname && byNickname.id !== invited.id) {
+    return { ok: false, error: "이미 쓰고 있는 닉네임이에요. 다른 닉네임으로 해주세요." };
   }
-  await setSession({ role: "customer", id: customer.id, storeId: store.id, name: customer.nickname });
+  const claimed = await prisma.customer.update({
+    where: { id: invited.id },
+    data: { nickname, passwordHash: await bcrypt.hash(pin, 10), inviteCode: null },
+  });
+  await setSession({ role: "customer", id: claimed.id, storeId: store.id, name: claimed.nickname });
   redirect(next && next.startsWith(`/${slug}`) ? next : `/${slug}/me`);
 }
 

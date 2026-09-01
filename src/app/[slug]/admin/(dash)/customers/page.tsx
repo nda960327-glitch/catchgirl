@@ -5,6 +5,7 @@ import { getStoreBySlug } from "@/lib/store";
 import { computeCustomerStats } from "@/lib/metrics";
 import { cn, wonShort } from "@/lib/utils";
 import { Card, Chip, Eyebrow, GradeChip } from "@/components/ui";
+import { InviteButton } from "./invite-button";
 
 type SP = { sort?: string; filter?: string; q?: string };
 
@@ -16,8 +17,12 @@ export default async function CustomersPage({ params, searchParams }: { params: 
     where: { storeId: store.id, ...(sp.q ? { nickname: { contains: sp.q } } : {}) },
     include: { reservations: { select: { status: true, startTime: true, staffId: true, totalPrice: true, staff: { select: { nickname: true } } } } },
   });
+  // 아직 손님이 안 쓴 초대코드는 목록에 섞지 않고 위에 따로 보여준다
+  const pendingInvites = customers.filter((c) => c.inviteCode && !c.passwordHash);
+  const claimed = customers.filter((c) => !(c.inviteCode && !c.passwordHash));
+
   // 누적 지출 = 취소·노쇼를 뺀 결제 금액 합계
-  let rows = customers.map((c) => ({
+  let rows = claimed.map((c) => ({
     c,
     s: computeCustomerStats(c.reservations),
     spent: c.reservations.filter((r) => r.status === "COMPLETED" || r.status === "CONFIRMED").reduce((a, r) => a + r.totalPrice, 0),
@@ -47,8 +52,27 @@ export default async function CustomersPage({ params, searchParams }: { params: 
 
   return (
     <div className="animate-fade">
-      <Eyebrow>Customers</Eyebrow>
-      <h1 className="mt-1 font-serif text-[22px] font-bold text-ink">고객 관리</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <Eyebrow>Customers</Eyebrow>
+          <h1 className="mt-1 font-serif text-[22px] font-bold text-ink">고객 관리</h1>
+          <div className="mt-0.5 text-[11px] text-mute">계정은 연결코드로만 만들 수 있어요. 새로 오시는 분은 먼저 초대해 주세요.</div>
+        </div>
+        <InviteButton slug={slug} />
+      </div>
+      {pendingInvites.length > 0 && (
+        <Card className="mt-4 p-4">
+          <div className="text-[12px] font-bold text-ink">아직 안 쓴 초대코드 {pendingInvites.length}개</div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {pendingInvites.map((c) => (
+              <Link key={c.id} href={`/${slug}/admin/customers/${c.id}`} className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3 py-1.5 text-[12px] hover:border-brand">
+                <span className="font-serif font-bold tracking-[.15em] text-brand">{c.inviteCode}</span>
+                {c.adminMemo && <span className="max-w-[180px] truncate text-mute">{c.adminMemo}</span>}
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
       <Card className="mt-5 flex flex-wrap items-center gap-2 p-3">
         <span className="px-1 text-[11px] font-semibold text-mute">정렬</span>
         {SORTS.map(([k, l]) => (

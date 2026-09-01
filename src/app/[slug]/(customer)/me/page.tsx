@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { getCustomer } from "@/lib/auth";
 import { computeCustomerStats } from "@/lib/metrics";
+import { resolveRooms } from "@/lib/reservations";
 import { parseJsonArray } from "@/lib/utils";
 import { Avatar, Card, Eyebrow, GradeChip, Stars, TopBar } from "@/components/ui";
 import { HistoryTabs, type HistoryItem } from "./history-tabs";
@@ -22,6 +23,8 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
     prisma.favorite.findMany({ where: { customerId: me.id }, include: { staff: true } }),
   ]);
   const stats = computeCustomerStats(reservations);
+  // 배치가 나중에 정해질 수 있으니 저장값이 아니라 지금 배치를 본다
+  const rooms = await resolveRooms(store, reservations);
   const items: HistoryItem[] = reservations.map((r) => ({
     id: r.id,
     code: r.code,
@@ -30,7 +33,7 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
     endTime: r.endTime.toISOString(),
     hours: r.hours,
     totalPrice: r.totalPrice,
-    roomName: r.roomName,
+    roomName: rooms.get(r.id) ?? null,
     partySize: r.partySize,
     staffId: r.staffId,
     staffName: r.staff.nickname,

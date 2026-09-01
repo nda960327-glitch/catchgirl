@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { getCustomer } from "@/lib/auth";
+import { resolveRooms } from "@/lib/reservations";
 import { fmtDateKo, fmtTimeKo } from "@/lib/utils";
 import { Sticker } from "@/components/ui";
 import { DoneActions } from "./done-actions";
@@ -14,12 +15,15 @@ export default async function DonePage({ params }: { params: Promise<{ slug: str
   const r = await prisma.reservation.findUnique({ where: { id }, include: { staff: true, customer: true, options: true } });
   if (!r || r.storeId !== store.id || (me && r.customerId !== me.id)) notFound();
 
+  // 배치가 나중에 정해지거나 바뀔 수 있으니 지금 배치를 다시 본다
+  const roomName = (await resolveRooms(store, [r])).get(r.id) ?? null;
+
   const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
   const rows: [string, string][] = [
     ["일시", `${fmtDateKo(r.startTime)} ${fmtTimeKo(r.startTime)}`],
     ["이용 시간", `${r.hours}시간 (~ ${fmtTimeKo(r.endTime)})`],
     ["캐치걸", r.staff.nickname],
-    ...(r.roomName ? ([["자리", r.roomName]] as [string, string][]) : []),
+    ["자리", roomName ?? "방문 시 안내"],
     ["닉네임", r.customer.nickname],
     ...(r.options.length ? ([["옵션", r.options.map((o) => o.name).join(", ")]] as [string, string][]) : []),
     ["결제 예정", won(r.totalPrice)],
@@ -32,12 +36,19 @@ export default async function DonePage({ params }: { params: Promise<{ slug: str
         {r.status === "CANCELLED" ? "예약이 취소됐어요" : "자리를 비워둘게요"}
       </div>
       <div className="mt-1 text-[12px] text-mute">{r.status === "CANCELLED" ? "다음에 또 만나요" : `${store.name}에서 기다릴게요`}</div>
-      {r.status !== "CANCELLED" && r.roomName && (
-        <div className="mt-3 rounded-2xl bg-brand px-5 py-3 text-white shadow-cta">
-          <div className="text-[10px] font-semibold uppercase tracking-[.15em] opacity-85">Your Room</div>
-          <div className="mt-0.5 font-serif text-[22px] font-bold">{r.roomName}</div>
-          <div className="mt-0.5 text-[11px] opacity-85">도착하시면 이 자리로 안내해 드려요</div>
-        </div>
+      {r.status !== "CANCELLED" && (
+        roomName ? (
+          <div className="mt-3 rounded-2xl bg-brand px-6 py-3.5 text-white shadow-cta">
+            <div className="text-[10px] font-semibold uppercase tracking-[.15em] opacity-85">Your Room</div>
+            <div className="mt-0.5 font-serif text-[26px] font-bold">{roomName}</div>
+            <div className="mt-0.5 text-[11px] opacity-85">도착하시면 이 자리로 오시면 돼요</div>
+          </div>
+        ) : (
+          <div className="mt-3 rounded-2xl border border-dashed border-blush bg-white px-5 py-3 text-center">
+            <div className="text-[12px] font-bold text-ink">자리는 곧 안내해 드려요</div>
+            <div className="mt-0.5 text-[11px] text-mute">배정되면 이 화면과 예약 내역에 표시돼요</div>
+          </div>
+        )
       )}
 
       <div className="mt-[22px] w-full max-w-[300px] rounded-[22px] border border-line bg-white px-[22px] py-5 shadow-card">

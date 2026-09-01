@@ -259,7 +259,8 @@ async function main() {
             hourlyPrice: st.hourlyPrice,
             optionsPrice,
             totalPrice: st.hourlyPrice * hours + optionsPrice,
-            roomName: `${intBetween(1, 10)}번 룸`,
+            // 배치가 있으면 화면에서 실시간으로 다시 찾으므로 여기선 비워 둔다
+            roomName: null,
             cancelledAt: status === "CANCELLED" ? new Date(start.getTime() - 5 * 3600_000) : null,
             options: { create: optRows },
           },
@@ -403,11 +404,11 @@ async function main() {
       isPinned: true,
     },
     {
-      title: "전에 다녀가셨다면 연결코드를 받아주세요",
+      title: "시작하려면 연결코드가 필요해요",
       body:
-        "카톡·전화로 예약하시던 분이 앱에서 새로 시작하시면 그동안의 방문 기록이 갈라져요.\n" +
-        "매장에 말씀하시면 연결코드를 알려드려요.\n" +
-        "첫 로그인 때 코드를 넣으시면 예전 기록을 그대로 이어받아요.",
+        "계정은 매장에서 받은 연결코드로만 만들 수 있어요.\n" +
+        "카톡·전화로 예약하시던 분은 그동안의 방문 기록을 그대로 이어받으실 수 있어요.\n" +
+        "한 번 시작하신 뒤로는 닉네임과 PIN으로 바로 들어오실 수 있어요.",
       isPinned: true,
     },
     {
