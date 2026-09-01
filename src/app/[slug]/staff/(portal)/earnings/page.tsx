@@ -179,7 +179,7 @@ export default async function StaffEarningsPage({
             const v = byDay.get(ymd(d)) ?? 0;
             return (
               <div key={ymd(d)} className="group flex flex-1 flex-col justify-end" title={`${d.getDate()}일 · ${won(v)}`}>
-                <span className="w-full rounded-t bg-brand/70 transition-colors group-hover:bg-brand" style={{ height: `${Math.max(2, (v / peakDay) * 78)}px` }} />
+                <span className="block w-full rounded-t bg-brand/70 transition-colors group-hover:bg-brand" style={{ height: `${Math.max(2, (v / peakDay) * 78)}px` }} />
               </div>
             );
           })}

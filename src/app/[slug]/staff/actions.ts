@@ -63,6 +63,42 @@ export async function deleteMyTimeOff(slug: string, id: string): Promise<R> {
   }
 }
 
+/**
+ * 내가 일할 수 있는 요일·시간 알리기.
+ * 이건 "가능하다"는 표시일 뿐 실제 근무는 아니다 — 매장이 이걸 보고 룸에 배치하고,
+ * 손님 예약은 배치된 날의 배치된 조에만 잡힌다.
+ */
+export async function setMyAvailability(slug: string, slots: { weekday: number; shift: "DAY" | "NIGHT" }[]): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    const me = await requireStaff(store.id);
+    // 같은 (요일, 조) 가 중복으로 들어오지 않게 한 번 걸러 낸다
+    const seen = new Set<string>();
+    const clean = slots
+      .filter((s) => Number.isInteger(s.weekday) && s.weekday >= 0 && s.weekday <= 6 && (s.shift === "DAY" || s.shift === "NIGHT"))
+      .filter((s) => {
+        const k = `${s.weekday}|${s.shift}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .slice(0, 14);
+    // 시간대는 조에서 정해지므로 매장 설정 값을 그대로 복사해 둔다
+    const hours = (shift: "DAY" | "NIGHT") =>
+      shift === "DAY" ? { startTime: store.openTime, endTime: store.shiftSplitTime } : { startTime: store.shiftSplitTime, endTime: store.closeTime };
+    await prisma.$transaction([
+      prisma.staffSchedule.deleteMany({ where: { staffId: me.id } }),
+      prisma.staffSchedule.createMany({
+        data: clean.map((s) => ({ staffId: me.id, weekday: s.weekday, shift: s.shift, ...hours(s.shift) })),
+      }),
+    ]);
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "권한이 없어요." };
+  }
+}
+
 /** 내가 제공하는 옵션 켜고 끄기 */
 export async function setMyOptions(slug: string, optionIds: string[]): Promise<R> {
   try {

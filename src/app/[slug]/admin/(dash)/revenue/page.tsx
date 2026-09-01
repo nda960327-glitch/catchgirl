@@ -123,12 +123,14 @@ export default async function RevenuePage({
   const next = format(addMonths(mStart, 1), "yyyy-MM");
   const isThisMonth = monthKey === format(now, "yyyy-MM");
 
+  // 매출(손님이 낸 총액)과 매장 몫(수수료)은 다른 돈이다 — 섞어 부르지 않는다
+  const staffPayout = customerPaid - storeRevenue;
   const kpis = [
-    { label: "매장 매출", value: wonShort(storeRevenue), sub: `${totalHours}시간 × ${won(STORE_FEE_PER_HOUR)}`, strong: true },
-    { label: "방문완료 기준", value: wonShort(fee(doneHours)), sub: `${doneHours}시간 · 나머지는 예정` },
-    { label: "예약 건수", value: `${earning.length}건`, sub: `취소·노쇼 제외` },
-    { label: "고객 결제액", value: wonShort(customerPaid), sub: `옵션 ${wonShort(optionRevenue)} 포함` },
-    { label: "건당 평균", value: wonShort(avgPerBooking), sub: "고객이 낸 금액 기준" },
+    { label: "총 매출", value: wonShort(customerPaid), sub: `손님이 낸 금액 · 옵션 ${wonShort(optionRevenue)} 포함` },
+    { label: "매장 몫 (수수료)", value: wonShort(storeRevenue), sub: `${totalHours}시간 × ${won(STORE_FEE_PER_HOUR)}`, strong: true },
+    { label: "캐치걸 몫", value: wonShort(staffPayout), sub: "총 매출 − 매장 몫" },
+    { label: "예약 건수", value: `${earning.length}건`, sub: "취소·노쇼 제외" },
+    { label: "건당 평균", value: wonShort(avgPerBooking), sub: "손님이 낸 금액 기준" },
   ];
 
   return (
@@ -192,7 +194,7 @@ export default async function RevenuePage({
                   inMonth ? "border-line bg-white" : "border-transparent bg-transparent opacity-35",
                   isToday && "border-brand",
                 )}
-                style={v && inMonth ? { background: `rgba(var(--brand-rgb), ${0.06 + heat * 0.26})` } : undefined}
+                style={v && inMonth ? { background: `rgb(var(--brand-rgb) / ${0.06 + heat * 0.26})` } : undefined}
               >
                 <span className={cn("text-[11px] font-bold", isToday ? "text-brand" : "text-ink")}>{d.getDate()}</span>
                 {v && inMonth && (
@@ -275,7 +277,7 @@ export default async function RevenuePage({
               {byWeekday.map((d, i) => (
                 <div key={d.label} className="flex items-center gap-2 text-[12px]">
                   <span className={cn("w-5 font-semibold", i === 0 ? "text-brand" : "text-mute")}>{d.label}</span>
-                  <span className="h-4 flex-1 overflow-hidden rounded bg-[#F4EDEE]">
+                  <span className="block h-4 flex-1 overflow-hidden rounded bg-[#F4EDEE]">
                     <span className="block h-full rounded bg-brand/70" style={{ width: `${(d.hours / peakWeekday) * 100}%` }} />
                   </span>
                   <span className="w-[70px] text-right font-semibold text-ink">{wonShort(fee(d.hours))}</span>
@@ -291,7 +293,7 @@ export default async function RevenuePage({
             <div className="mt-3 flex items-end gap-1" style={{ height: 120 }}>
               {byHour.map((h) => (
                 <div key={h.label} className="group flex flex-1 flex-col items-center justify-end gap-1" title={`${h.label} · ${won(fee(h.hours))}`}>
-                  <span className="w-full rounded-t bg-brand/70 transition-colors group-hover:bg-brand" style={{ height: `${Math.max(2, (h.hours / peakHour) * 96)}px` }} />
+                  <span className="block w-full rounded-t bg-brand/70 transition-colors group-hover:bg-brand" style={{ height: `${Math.max(2, (h.hours / peakHour) * 96)}px` }} />
                   <span className="text-[8px] text-mute">{h.label.slice(0, 2)}</span>
                 </div>
               ))}

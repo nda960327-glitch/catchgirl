@@ -1,35 +1,52 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Button, Card, Chip, Field, Input, Select } from "@/components/ui";
 import { useToast } from "@/components/providers";
-import { cn, toLocalDate, won } from "@/lib/utils";
-import { addMyTimeOff, deleteMyTimeOff, setMyOptions } from "../../actions";
+import { cn, toLocalDate, won, SHIFTS, WEEKDAYS_KO, type Shift } from "@/lib/utils";
+import { addMyTimeOff, deleteMyTimeOff, setMyAvailability, setMyOptions } from "../../actions";
 
 type Opt = { id: string; name: string; price: number };
 type TimeOff = { id: string; date: string; startTime: string; endTime: string; reason: string; createdBy: string };
+type Avail = { weekday: number; shift: Shift };
 
 /** 30분 단위 시각 목록 (영업시간과 무관하게 하루 전체 — 외출은 언제든 잡을 수 있다) */
 const TIMES = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`);
 
 export function StaffSettings({
-  slug, today, storeHours, options, myOptionIds, timeOffs,
+  slug, today, storeHours, options, myOptionIds, timeOffs, availability,
 }: {
   slug: string;
   today: string;
-  storeHours: { open: string; close: string };
+  storeHours: { open: string; close: string; split: string };
   options: Opt[];
   myOptionIds: string[];
   timeOffs: TimeOff[];
+  availability: Avail[];
 }) {
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
   const [optIds, setOptIds] = useState<string[]>(myOptionIds);
   const [form, setForm] = useState({ date: today, startTime: "14:00", endTime: "15:30", reason: "" });
+  const [avail, setAvail] = useState<Avail[]>(availability);
+
+  const toggleSlot = (weekday: number, shift: Shift) =>
+    setAvail((v) =>
+      v.some((a) => a.weekday === weekday && a.shift === shift)
+        ? v.filter((a) => !(a.weekday === weekday && a.shift === shift))
+        : [...v, { weekday, shift }],
+    );
+
+  const saveAvail = () =>
+    start(async () => {
+      const r = await setMyAvailability(slug, avail);
+      toast(r.ok ? "가능한 시간을 알렸어요" : r.error, r.ok ? "success" : "error");
+      if (r.ok) router.refresh();
+    });
 
   const saveOptions = (next: string[]) => {
     const prev = optIds;
@@ -61,6 +78,50 @@ export function StaffSettings({
 
   return (
     <div className="mt-4 flex flex-col gap-3">
+      {/* 출근 가능 표시 — 실제 배치는 매장이 이걸 보고 정한다 */}
+      <Card className="p-4">
+        <div className="text-[13px] font-bold text-ink">출근 가능한 요일 · 조</div>
+        <div className="mt-0.5 text-[11px] leading-[1.7] text-mute">
+          가능한 칸을 눌러 표시해 주세요. 매장이 이걸 보고 룸에 배치해요.
+          <br />표시했다고 출근이 확정되는 건 아니에요 — <b className="text-ink">실제 근무는 매장 배치로 정해져요.</b>
+        </div>
+
+        <div className="mt-3 grid grid-cols-[42px_repeat(7,1fr)] gap-1 text-center">
+          <span />
+          {WEEKDAYS_KO.map((d, wd) => (
+            <span key={d} className={cn("py-1 text-[11px] font-bold", wd === 0 ? "text-brand" : "text-mute")}>{d}</span>
+          ))}
+          {SHIFTS.map(([shift, label]) => (
+            <Fragment key={shift}>
+              <span className="flex items-center justify-end pr-1 text-[11px] font-bold text-ink">{label}</span>
+              {WEEKDAYS_KO.map((_, wd) => {
+                const on = avail.some((a) => a.weekday === wd && a.shift === shift);
+                return (
+                  <button
+                    key={`${shift}-${wd}`}
+                    type="button"
+                    aria-pressed={on}
+                    aria-label={`${WEEKDAYS_KO[wd]}요일 ${label}조`}
+                    onClick={() => toggleSlot(wd, shift)}
+                    className={cn(
+                      "h-11 rounded-xl text-[11px] font-bold transition-colors",
+                      on ? "bg-brand text-white" : "border border-line bg-white text-mute hover:border-brand",
+                    )}
+                  >
+                    {on ? "가능" : "—"}
+                  </button>
+                );
+              })}
+            </Fragment>
+          ))}
+        </div>
+
+        <Button size="sm" onClick={saveAvail} loading={pending} className="mt-3">출근 가능 저장</Button>
+        <div className="mt-1.5 text-[10px] text-mute">
+          주간 {storeHours.open}~{storeHours.split} · 야간 {storeHours.split}~익일 {storeHours.close}
+        </div>
+      </Card>
+
       {/* 제공 옵션 */}
       <Card className="p-4">
         <div className="text-[13px] font-bold text-ink">내가 제공하는 옵션</div>

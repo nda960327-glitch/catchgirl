@@ -58,7 +58,8 @@ export function LoginForm({ slug, next }: { slug: string; next?: string }) {
       ) : (
         <div className="rounded-2xl bg-blush-lt/60 px-4 py-3 text-[11px] leading-[1.7] text-mute">
           한 번 시작하신 뒤로는 <b className="text-ink">닉네임 + PIN</b> 으로 바로 들어오실 수 있어요.
-          <br />PIN을 잊으셨다면 매장에 말씀해 주세요.
+          <br />PIN을 잊으셨다면 매장에 말씀해 주세요. 새 연결코드를 드리면
+          <br /><b className="text-ink">&ldquo;처음이에요&rdquo;</b> 에서 PIN을 다시 정하실 수 있어요.
         </div>
       )}
 

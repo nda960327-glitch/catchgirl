@@ -9,6 +9,7 @@ import { clearSession, requireAdmin, setSession } from "@/lib/auth";
 import { getStoreBySlug } from "@/lib/store";
 import { cancelReservation, createReservation, sendDueReminders, SlotConflictError } from "@/lib/reservations";
 import { ymd } from "@/lib/utils";
+import { ensureInviteCode, freshInviteCode } from "@/lib/invite";
 
 export type R<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 const fail = (e: unknown, fallback = "처리에 실패했어요."): R<never> => ({ ok: false, error: e instanceof Error && e.message !== "UNAUTHORIZED" ? e.message : e instanceof Error ? "권한이 없어요." : fallback });
@@ -72,6 +73,8 @@ export async function adminCreateReservation(slug: string, input: z.input<typeof
         create: { storeId: store.id, nickname: p.data.nickname },
       });
       customerId = c.id;
+      // 등록되는 순간부터 연결코드를 갖고 있어야 매장이 바로 알려줄 수 있다
+      await ensureInviteCode(store.id, customerId);
     }
     const r = await createReservation({
       storeId: store.id, staffId: p.data.staffId, customerId, date: p.data.date, time: p.data.time, hours: p.data.hours,
@@ -252,7 +255,7 @@ export async function deleteRoom(slug: string, roomId: string): Promise<R> {
  */
 export async function assignShift(
   slug: string,
-  input: { date: string; shift: "DAY" | "NIGHT"; roomId: string; staffId: string },
+  input: { date: string; shift: "DAY" | "NIGHT"; roomId: string; staffId: string; startTime?: string; endTime?: string },
 ): Promise<R> {
   try {
     const store = await getStoreBySlug(slug);
@@ -264,21 +267,54 @@ export async function assignShift(
 
     if (!staffId) {
       await prisma.shiftAssignment.deleteMany({ where: { roomId, date, shift } });
-    } else {
-      const staff = await prisma.staff.findUnique({ where: { id: staffId } });
-      if (!staff || staff.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
-      await prisma.$transaction([
-        // 이 사람이 같은 조에 맡고 있던 다른 룸을 먼저 비운다 (방 이동)
-        prisma.shiftAssignment.deleteMany({ where: { staffId, date, shift } }),
-        prisma.shiftAssignment.deleteMany({ where: { roomId, date, shift } }),
-        prisma.shiftAssignment.create({ data: { storeId: store.id, date, shift, roomId, staffId } }),
-      ]);
+      revalidatePath(`/${slug}/admin`, "layout");
+      return { ok: true };
     }
+
+    const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+    if (!staff || staff.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+
+    // 시각을 안 주면 그 조의 기본 시간대로 채운다
+    const preset = shift === "DAY" ? { startTime: store.openTime, endTime: store.shiftSplitTime } : { startTime: store.shiftSplitTime, endTime: store.closeTime };
+    const startTime = /^\d{2}:\d{2}$/.test(input.startTime ?? "") ? input.startTime! : preset.startTime;
+    const endTime = /^\d{2}:\d{2}$/.test(input.endTime ?? "") ? input.endTime! : preset.endTime;
+    if (startTime === endTime) return { ok: false, error: "시작과 종료 시각이 같아요." };
+
+    // 같은 사람이 같은 날 다른 조에도 들어갈 수 있으니, 겹치는지는 시각으로 본다
+    const openMin = toMin(store.openTime);
+    const norm = (m: number) => (m < openMin ? m + 1440 : m);
+    const span = (s: string, e: string) => {
+      const a = norm(toMin(s));
+      const b0 = norm(toMin(e));
+      return { a, b: b0 <= a ? b0 + 1440 : b0 };
+    };
+    const mine = span(startTime, endTime);
+    const sameDay = await prisma.shiftAssignment.findMany({ where: { date, storeId: store.id, OR: [{ staffId }, { roomId }] } });
+    const clash = sameDay.find((o) => {
+      if (o.shift === shift && (o.staffId === staffId || o.roomId === roomId)) return false; // 아래에서 교체된다
+      const other = span(o.startTime, o.endTime);
+      return mine.a < other.b && mine.b > other.a;
+    });
+    if (clash) {
+      return { ok: false, error: clash.staffId === staffId ? "이 캐치걸의 다른 배치와 시간이 겹쳐요." : "이 룸의 다른 배치와 시간이 겹쳐요." };
+    }
+
+    await prisma.$transaction([
+      // 이 사람이 같은 조에 맡고 있던 다른 룸을 먼저 비운다 (방 이동)
+      prisma.shiftAssignment.deleteMany({ where: { staffId, date, shift } }),
+      prisma.shiftAssignment.deleteMany({ where: { roomId, date, shift } }),
+      prisma.shiftAssignment.create({ data: { storeId: store.id, date, shift, roomId, staffId, startTime, endTime } }),
+    ]);
     revalidatePath(`/${slug}/admin`, "layout");
     return { ok: true };
   } catch (e) {
     return fail(e);
   }
+}
+
+function toMin(t: string) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
 }
 
 /** 하루 배치를 통째로 다른 날짜에 복사 — 주간 스케줄을 짤 때 반복 입력을 줄인다 */
@@ -292,7 +328,7 @@ export async function copyDayAssignments(slug: string, fromDate: string, toDate:
     await prisma.$transaction([
       prisma.shiftAssignment.deleteMany({ where: { storeId: store.id, date: toDate } }),
       prisma.shiftAssignment.createMany({
-        data: src.map((a) => ({ storeId: store.id, date: toDate, shift: a.shift, roomId: a.roomId, staffId: a.staffId })),
+        data: src.map((a) => ({ storeId: store.id, date: toDate, shift: a.shift, roomId: a.roomId, staffId: a.staffId, startTime: a.startTime, endTime: a.endTime })),
       }),
     ]);
     revalidatePath(`/${slug}/admin`, "layout");
@@ -447,10 +483,11 @@ export async function deleteStoreOption(slug: string, optionId: string): Promise
 /* ─── 고객 관리 ─── */
 const customerInfoSchema = z.object({
   nickname: z.string().trim().min(1).max(12),
+  adminContact: z.string().trim().max(120).default(""),
   adminMemo: z.string().max(500).default(""),
   isBlacklisted: z.boolean().default(false),
 });
-/** 관리자 — 고객 기본 정보 수정 (닉네임·고정 메모·블랙리스트) */
+/** 관리자 — 고객 기본 정보 수정 (닉네임·연락처·고정 메모·블랙리스트) */
 export async function saveCustomerInfo(slug: string, customerId: string, input: z.input<typeof customerInfoSchema>): Promise<R> {
   try {
     const store = await getStoreBySlug(slug);
@@ -462,7 +499,7 @@ export async function saveCustomerInfo(slug: string, customerId: string, input: 
     const d = p.data;
     await prisma.customer.update({
       where: { id: customerId },
-      data: { nickname: d.nickname, adminMemo: d.adminMemo, isBlacklisted: d.isBlacklisted },
+      data: { nickname: d.nickname, adminContact: d.adminContact, adminMemo: d.adminMemo, isBlacklisted: d.isBlacklisted },
     });
     revalidatePath(`/${slug}/admin`, "layout");
     return { ok: true };
@@ -472,21 +509,10 @@ export async function saveCustomerInfo(slug: string, customerId: string, input: 
   }
 }
 
-/** 헷갈리는 글자(0/O, 1/I)는 빼고 4자리. 매장 안에서 겹치지 않을 때까지 다시 뽑는다. */
-async function freshInviteCode(storeId: string) {
-  const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  for (let i = 0; i < 12; i++) {
-    const code = Array.from({ length: 4 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join("");
-    const dup = await prisma.customer.findFirst({ where: { storeId, inviteCode: code } });
-    if (!dup) return code;
-  }
-  return null;
-}
-
 /**
- * 기존 고객에게 연결코드를 발급한다.
- * 카톡·전화로만 오가던 손님이 앱에서 새 닉네임을 만들면 이력이 갈라지므로,
- * 이 코드를 알려주면 첫 로그인 때 기존 기록을 그대로 이어받는다.
+ * 연결코드를 새 코드로 갈아 끼운다.
+ * 고객은 등록될 때부터 코드를 하나 갖고 있으므로 평소엔 쓸 일이 없고,
+ * 코드가 새어 나갔을 때만 다시 뽑는다.
  */
 export async function issueInviteCode(slug: string, customerId: string): Promise<R<{ code: string }>> {
   try {
@@ -531,16 +557,24 @@ export async function inviteNewCustomer(slug: string, memo?: string): Promise<R<
   }
 }
 
-/** 고객 PIN 초기화 — 다음 로그인 때 새 PIN 을 정하게 한다 */
-export async function resetCustomerPin(slug: string, customerId: string): Promise<R> {
+/**
+ * PIN 을 잊은 손님을 위한 재설정.
+ *
+ * PIN 만 지우면 손님은 다시 들어올 방법이 없다 (계정 생성은 코드로만 열려 있으므로).
+ * 그래서 지우는 동시에 새 연결코드를 발급해, 손님이 그 코드로 새 PIN 을 정하게 한다.
+ */
+export async function resetCustomerPin(slug: string, customerId: string): Promise<R<{ code: string }>> {
   try {
     const store = await getStoreBySlug(slug);
     await requireAdmin(store.id);
     const c = await prisma.customer.findUnique({ where: { id: customerId } });
     if (!c || c.storeId !== store.id) return { ok: false, error: "고객을 찾을 수 없어요." };
+    // PIN 을 비우면 그 계정의 연결코드가 다시 살아난다 (코드는 계정마다 늘 하나씩 있다)
     await prisma.customer.update({ where: { id: customerId }, data: { passwordHash: null } });
+    const code = await ensureInviteCode(store.id, customerId);
+    if (!code) return { ok: false, error: "코드 발급에 실패했어요. 다시 시도해 주세요." };
     revalidatePath(`/${slug}/admin/customers/${customerId}`);
-    return { ok: true };
+    return { ok: true, data: { code } };
   } catch (e) {
     return fail(e);
   }
@@ -623,6 +657,7 @@ export async function adminCommentAction(slug: string, commentId: string, action
 const storeSchema = z.object({
   name: z.string().trim().min(1).max(30),
   tagline: z.string().trim().max(40).default(""),
+  heroTitle: z.string().trim().min(1, "홈 문구를 입력해 주세요").max(60),
   logoUrl: z.string().nullable().default(null),
   coverUrl: z.string().nullable().default(null),
   themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),

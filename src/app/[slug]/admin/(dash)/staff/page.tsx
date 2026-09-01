@@ -11,7 +11,7 @@ export default async function StaffPage({ params, searchParams }: { params: Prom
   const { edit } = await searchParams;
   const store = await getStoreBySlug(slug);
   const [staff, storeOptions] = await Promise.all([
-    prisma.staff.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" }, include: { schedules: { orderBy: { weekday: "asc" } }, offs: { orderBy: { date: "asc" } }, options: { select: { id: true } } } }),
+    prisma.staff.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" }, include: { options: { select: { id: true } } } }),
     prisma.storeOption.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" }, select: { id: true, name: true, price: true } }),
   ]);
   const items: StaffFull[] = await Promise.all(
@@ -21,8 +21,6 @@ export default async function StaffPage({ params, searchParams }: { params: Prom
         id: s.id, nickname: s.nickname, bio: s.bio, tags: parseJsonArray(s.tags), photos: parseJsonArray(s.photos),
         isActive: s.isActive, capacityPerSlot: s.capacityPerSlot, hourlyPrice: s.hourlyPrice, adminMemo: s.adminMemo, loginId: s.loginId ?? "",
         optionIds: s.options.map((o) => o.id),
-        schedules: s.schedules.map((x) => ({ weekday: x.weekday, startTime: x.startTime, endTime: x.endTime })),
-        offs: s.offs.map((o) => ({ date: o.date, reason: o.reason ?? "" })),
         stats: {
           rating: st.rating, reviewCount: st.reviewCount, reservationCount: st.reservationCount, completedCount: st.completedCount,
           noshowRate: Math.round(st.noshowRate * 100), revisitRate: Math.round(st.revisitRate * 100), upCount: st.upCount, downCount: st.downCount,
@@ -40,7 +38,7 @@ export default async function StaffPage({ params, searchParams }: { params: Prom
         </div>
         <Link href={`/${slug}/admin/staff/schedule`} className="cta-grad rounded-2xl px-4 py-2.5 text-[13px] font-bold text-white shadow-cta">출근 · 룸 배치 ›</Link>
       </div>
-      <StaffManager slug={slug} items={items} storeOptions={storeOptions} storeHours={{ open: store.openTime, close: store.closeTime }} initialEdit={edit} />
+      <StaffManager slug={slug} items={items} storeOptions={storeOptions} initialEdit={edit} />
     </div>
   );
 }

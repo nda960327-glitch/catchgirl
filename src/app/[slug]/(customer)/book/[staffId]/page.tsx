@@ -10,10 +10,10 @@ export default async function BookPage({ params, searchParams }: { params: Promi
   const { slug, staffId } = await params;
   const sp = await searchParams;
   const store = await getStoreBySlug(slug);
-  const staff = await prisma.staff.findUnique({ where: { id: staffId }, include: { schedules: true, offs: true } });
+  const staff = await prisma.staff.findUnique({ where: { id: staffId } });
   if (!staff || staff.storeId !== store.id || !staff.isActive) notFound();
   const me = await getCustomer(store.id);
-  const days = calendarDays(store, staff);
+  const days = await calendarDays(store, staff);
   const initialDate = sp.date && days.some((d) => d.date === sp.date && !d.disabled) ? sp.date : (days.find((d) => !d.disabled)?.date ?? days[0].date);
   const [initialSlots, options] = await Promise.all([
     getSlotsFor(store, staff, initialDate),

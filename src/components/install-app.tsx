@@ -10,9 +10,9 @@ type InstallPromptEvent = Event & {
 };
 
 const COPY = {
-  customer: { title: "앱으로 설치하고 더 빠르게 예약하세요", desc: "홈 화면에 추가하면 브라우저 주소를 찾지 않아도 바로 열려요." },
-  staff: { title: "내 일정, 앱으로 바로 확인하세요", desc: "홈 화면에 추가하면 출근·예약·매출을 한 번에 열 수 있어요." },
-  admin: { title: "관리자 화면을 앱처럼 쓰세요", desc: "홈 화면에 추가하면 매장에서 바로 열어 확인할 수 있어요." },
+  customer: { title: "앱으로 설치하고 더 빠르게 예약하세요", desc: "홈 화면에 추가하면 브라우저 주소를 찾지 않아도 바로 열려요.", icon: "/assets/icon-customer-192.png" },
+  staff: { title: "내 일정, 앱으로 바로 확인하세요", desc: "홈 화면에 추가하면 출근·예약·매출을 한 번에 열 수 있어요. 노란 고양이 아이콘이에요.", icon: "/assets/icon-staff-192.png" },
+  admin: { title: "관리자 화면을 앱처럼 쓰세요", desc: "홈 화면에 추가하면 매장에서 바로 열어 확인할 수 있어요. 파란 고양이 아이콘이에요.", icon: "/assets/icon-admin-192.png" },
 } as const;
 
 /**
@@ -66,7 +66,7 @@ export function InstallApp({ role, className }: { role: keyof typeof COPY; class
     <div className={cn("rounded-[20px] border border-brand/30 bg-blush-lt/50 px-4 py-3.5", className)}>
       <div className="flex items-start gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/assets/icon.webp" alt="" className="h-10 w-10 shrink-0 rounded-xl border border-white shadow-card" />
+        <img src={copy.icon} alt="" className="h-10 w-10 shrink-0 rounded-xl border border-white shadow-card" />
         <div className="min-w-0 flex-1">
           <div className="text-[13px] font-bold text-ink">{copy.title}</div>
           <div className="mt-0.5 text-[11px] leading-[1.7] text-mute">{copy.desc}</div>

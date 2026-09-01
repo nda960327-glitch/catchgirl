@@ -43,10 +43,9 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
             {closed ? "오늘 휴무" : `오늘 영업 · ${store.openTime} 오픈`}
           </Chip>
         </div>
-        <h1 className="mt-3 font-serif text-[25px] font-bold leading-[1.5] text-ink">
-          오늘 자리를 지키는
-          <br />
-          {openStaff.length > 0 ? `${openStaff.length === staff.length ? "세" : openStaff.length} 사람` : "사람들"}
+        {/* 매장 설정에서 바꾼 문구. {n} 은 오늘 예약 가능한 캐치걸 수로 채운다 */}
+        <h1 className="mt-3 whitespace-pre-line font-serif text-[25px] font-bold leading-[1.5] text-ink">
+          {store.heroTitle.replaceAll("{n}", String(openStaff.length))}
         </h1>
         <div className="mt-2 text-[12px] text-mute">
           {format(today, "M월 d일 EEEE", { locale: ko })} · {store.tagline}

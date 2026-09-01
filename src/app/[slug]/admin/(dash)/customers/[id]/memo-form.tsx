@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Field, Input, Textarea } from "@/components/ui";
+import { Button, Chip, Field, Input, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { addCustomerNote, deleteCustomerNote, issueInviteCode, resetCustomerPin, saveCustomerInfo } from "../../../actions";
 
-export type CustomerInfo = { nickname: string; adminMemo: string; isBlacklisted: boolean };
+export type CustomerInfo = { nickname: string; adminContact: string; adminMemo: string; isBlacklisted: boolean };
 export type NoteItem = { id: string; authorName: string; content: string; createdAt: string };
 
 /** 관리자 — 고객 기본 정보 + 상단 고정 메모 */
@@ -20,6 +20,14 @@ export function CustomerInfoForm({ slug, customerId, init }: { slug: string; cus
   return (
     <div className="mt-3 flex flex-col gap-3">
       <Field label="닉네임"><Input value={f.nickname} onChange={(e) => set("nickname", e.target.value)} className="h-10 text-[13px]" /></Field>
+      <Field label="연락처" hint="매장 기록용 · 고객 화면엔 안 보임">
+        <Input
+          value={f.adminContact}
+          onChange={(e) => set("adminContact", e.target.value)}
+          placeholder="예: 010-1234-5678 · 텔레 @nickname"
+          className="h-10 text-[13px]"
+        />
+      </Field>
       <Field label="고정 메모" hint="고객 목록·예약 화면에 항상 같이 보여요">
         <Textarea rows={3} value={f.adminMemo} onChange={(e) => set("adminMemo", e.target.value)} placeholder="예: 조용한 대화 선호, 창가 자리" />
       </Field>
@@ -64,39 +72,45 @@ export function CustomerAccount({
 
   const resetPin = () =>
     start(async () => {
-      if (!confirm("PIN을 초기화할까요?\n\n손님이 다음 로그인 때 새 PIN을 정하게 됩니다.")) return;
+      if (!confirm("PIN을 초기화할까요?\n\n손님은 연결코드로 다시 시작해 새 PIN을 정하시면 돼요.")) return;
       const r = await resetCustomerPin(slug, customerId);
       if (!r.ok) return toast(r.error, "error");
-      toast("PIN을 초기화했어요", "success");
+      setCode(r.data!.code);
+      toast("초기화했어요. 연결코드를 알려주세요", "success");
       router.refresh();
     });
 
   return (
     <div className="mt-3 flex flex-col gap-3">
       <div className="rounded-2xl bg-[#FAF6F7] px-4 py-3">
-        <div className="text-[11px] font-semibold text-mute">연결코드</div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold text-mute">연결코드</span>
+          {hasPin ? <Chip tone="mute">사용 완료</Chip> : <Chip>미사용</Chip>}
+        </div>
         {code ? (
           <>
             <div className="mt-1 font-serif text-[26px] font-bold tracking-[.2em] text-brand">{code}</div>
             <div className="mt-1 text-[11px] leading-[1.7] text-mute">
-              손님께 이 코드를 알려주세요. 앱 첫 화면 <b className="text-ink">&ldquo;연결코드 입력&rdquo;</b>에 넣으면
-              지금까지의 방문 기록을 그대로 이어받아요. 한 번 쓰면 사라집니다.
+              {hasPin ? (
+                <>이미 앱을 시작하신 분이에요. 이 코드로는 더 이상 계정을 만들 수 없어요.</>
+              ) : (
+                <>손님께 이 코드를 알려주세요. 앱 첫 화면 <b className="text-ink">&ldquo;처음이에요&rdquo;</b>에서 코드를 넣고 닉네임·PIN을 정하면 시작돼요.</>
+              )}
             </div>
           </>
         ) : (
-          <div className="mt-1 text-[12px] text-mute">아직 발급된 코드가 없어요.</div>
+          <div className="mt-1 text-[12px] text-mute">코드를 만드는 중이에요. 새로고침해 주세요.</div>
         )}
-        <Button size="sm" variant="secondary" onClick={issue} loading={pending} className="mt-2">
-          {code ? "새 코드로 다시 발급" : "연결코드 발급"}
-        </Button>
+        <Button size="sm" variant="secondary" onClick={issue} loading={pending} className="mt-2">새 코드로 교체</Button>
       </div>
 
       <div className="flex items-center gap-2 rounded-2xl bg-[#FAF6F7] px-4 py-3">
         <div className="min-w-0 flex-1">
           <div className="text-[11px] font-semibold text-mute">PIN</div>
-          <div className="mt-0.5 text-[12px] text-ink">{hasPin ? "설정됨 (매장은 볼 수 없어요)" : "미설정 — 다음 로그인 때 정해요"}</div>
+          <div className="mt-0.5 text-[12px] text-ink">{hasPin ? "설정됨 (매장은 볼 수 없어요)" : "미설정 — 연결코드로 새로 정해요"}</div>
+          <div className="mt-0.5 text-[11px] text-mute">잊으셨다면 초기화 후 위 코드를 다시 알려주세요</div>
         </div>
-        <Button size="sm" variant="outline" onClick={resetPin} loading={pending} disabled={!hasPin}>초기화</Button>
+        <Button size="sm" variant="outline" onClick={resetPin} loading={pending}>PIN 재설정</Button>
       </div>
     </div>
   );

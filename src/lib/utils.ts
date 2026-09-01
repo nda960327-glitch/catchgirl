@@ -118,7 +118,10 @@ export function themeVars(hex: string) {
     "--brand-dark": rgb(Math.round(r * 0.85), Math.round(g * 0.85), Math.round(b * 0.85)),
     "--blush": rgb(mix(0.5), mixG(0.5), mixB(0.5)),
     "--blush-lt": rgb(mix(0.88), mixG(0.88), mixB(0.88)),
-    "--brand-rgb": `${r},${g},${b}`,
+    // Tailwind 투명도 표기용 — 채널을 공백으로 분리한다
+    "--brand-rgb": `${r} ${g} ${b}`,
+    "--blush-rgb": `${mix(0.5)} ${mixG(0.5)} ${mixB(0.5)}`,
+    "--blush-lt-rgb": `${mix(0.88)} ${mixG(0.88)} ${mixB(0.88)}`,
   } as Record<string, string>;
 }
 

@@ -6,3 +6,4 @@ public/uploads/*
 install.log
 .env
 .env.local
+.claude/

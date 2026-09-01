@@ -46,9 +46,9 @@ export function RoomsManager({ slug, items }: { slug: string; items: RoomItem[] 
     });
 
   return (
-    <Card className="mt-5 p-5">
+    <Card id="rooms" className="mt-5 scroll-mt-6 p-5">
       <Eyebrow>Rooms</Eyebrow>
-      <div className="mt-1 text-[14px] font-bold text-ink">접객 룸</div>
+      <div className="mt-1 text-[14px] font-bold text-ink">접객 룸 {rows.length}개</div>
       <p className="mt-1 text-[12px] text-mute">
         <Link href={`/${slug}/admin/staff/schedule`} className="font-bold text-brand">출근 배치 ›</Link>
         에서 이 룸에 캐치걸을 한 명씩 넣어요. 예약이 잡히면 손님에게 룸 번호가 안내돼요.

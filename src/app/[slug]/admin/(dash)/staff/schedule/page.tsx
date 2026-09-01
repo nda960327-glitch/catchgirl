@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
-import { businessDayOf } from "@/lib/slots";
+import { businessDayOf, storeSlotTimes } from "@/lib/slots";
 import { parseJsonArray, ymd } from "@/lib/utils";
 import { Eyebrow } from "@/components/ui";
 import { ScheduleBoard } from "./schedule-board";
@@ -29,8 +29,13 @@ export default async function SchedulePage({
 
   const [rooms, staff, assignments, timeOffs] = await Promise.all([
     prisma.room.findMany({ where: { storeId: store.id, isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.staff.findMany({ where: { storeId: store.id, isActive: true }, orderBy: { sortOrder: "asc" }, select: { id: true, nickname: true, photos: true } }),
-    prisma.shiftAssignment.findMany({ where: { storeId: store.id, date: { in: days } }, select: { id: true, date: true, shift: true, roomId: true, staffId: true } }),
+    // 캐치걸이 스스로 알린 "가능한 요일·시간" 을 함께 가져와 배치할 때 참고한다
+    prisma.staff.findMany({
+      where: { storeId: store.id, isActive: true },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, nickname: true, photos: true, schedules: { select: { weekday: true, startTime: true, endTime: true } } },
+    }),
+    prisma.shiftAssignment.findMany({ where: { storeId: store.id, date: { in: days } }, select: { id: true, date: true, shift: true, roomId: true, staffId: true, startTime: true, endTime: true } }),
     prisma.staffTimeOff.findMany({ where: { date: { in: days }, staff: { storeId: store.id } }, select: { id: true, staffId: true, date: true, startTime: true, endTime: true, reason: true, createdBy: true } }),
   ]);
 
@@ -44,7 +49,10 @@ export default async function SchedulePage({
             주간 {store.openTime}~{store.shiftSplitTime} · 야간 {store.shiftSplitTime}~익일 {store.closeTime} · 2주치를 미리 짤 수 있어요
           </div>
         </div>
-        <Link href={`/${slug}/admin/staff`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink">캐치걸 목록 ›</Link>
+        <div className="flex gap-2">
+          <Link href={`/${slug}/admin/settings#rooms`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink">룸 이름·개수 ›</Link>
+          <Link href={`/${slug}/admin/staff`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink">캐치걸 목록 ›</Link>
+        </div>
       </div>
 
       {rooms.length === 0 ? (
@@ -59,9 +67,15 @@ export default async function SchedulePage({
           date={date}
           days={days}
           rooms={rooms.map((r) => ({ id: r.id, name: r.name }))}
-          staff={staff.map((s) => ({ id: s.id, name: s.nickname, photo: parseJsonArray<string>(s.photos)[0] ?? null }))}
+          staff={staff.map((s) => ({
+            id: s.id,
+            name: s.nickname,
+            photo: parseJsonArray<string>(s.photos)[0] ?? null,
+            availableWeekdays: s.schedules.map((x) => x.weekday),
+          }))}
           assignments={assignments}
           timeOffs={timeOffs}
+          track={storeSlotTimes(store).filter((_, i) => i % (60 / store.slotMinutes) === 0)}
         />
       )}
     </div>

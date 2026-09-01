@@ -18,12 +18,26 @@ export type ResRow = {
 
 const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
 const HOUR_CHOICES = [1, 2, 3, 4, 5, 6, 7, 8];
+
+/** 페이지가 많아도 버튼이 넘치지 않게 현재 주변만 보여준다 (0 은 말줄임표) */
+function pageWindow(page: number, count: number): number[] {
+  if (count <= 7) return Array.from({ length: count }, (_, i) => i + 1);
+  const out = new Set([1, count, page, page - 1, page + 1]);
+  const list = [...out].filter((n) => n >= 1 && n <= count).sort((a, b) => a - b);
+  const withGaps: number[] = [];
+  list.forEach((n, i) => {
+    if (i > 0 && n - list[i - 1] > 1) withGaps.push(0);
+    withGaps.push(n);
+  });
+  return withGaps;
+}
 type StaffLite = { id: string; nickname: string; isActive: boolean };
 type CustomerLite = { id: string; nickname: string };
 
-export function ReservationsClient({ slug, rows, staff, customers, filters, times, openNew, focusId, staffPhotos }: {
+export function ReservationsClient({ slug, rows, staff, customers, filters, times, openNew, focusId, staffPhotos, page, pageCount, totalCount }: {
   slug: string; rows: ResRow[]; staff: StaffLite[]; customers: CustomerLite[];
   filters: { date: string; staffId: string; q: string; status: string }; times: string[]; openNew: boolean; focusId?: string; staffPhotos: Record<string, string | null>;
+  page: number; pageCount: number; totalCount: number;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -34,11 +48,19 @@ export function ReservationsClient({ slug, rows, staff, customers, filters, time
 
   useEffect(() => setF(filters), [filters]);
 
+  // 필터가 바뀌면 1페이지로 돌아간다
   const apply = (next: Partial<typeof f>) => {
     const v = { ...f, ...next };
     const p = new URLSearchParams({ view: "list" });
     Object.entries(v).forEach(([k, val]) => val && p.set(k, val));
     router.push(`?${p.toString()}`);
+  };
+
+  const goPage = (n: number) => {
+    const p = new URLSearchParams({ view: "list" });
+    Object.entries(f).forEach(([k, val]) => val && p.set(k, val));
+    if (n > 1) p.set("page", String(n));
+    router.push(`?${p.toString()}`, { scroll: true });
   };
 
   const setStatus = (id: string, status: "COMPLETED" | "NOSHOW" | "CANCELLED" | "CONFIRMED") => {
@@ -127,6 +149,45 @@ export function ReservationsClient({ slug, rows, staff, customers, filters, time
           </div>
         ))}
       </Card>
+
+      {/* 페이지 이동 — 목록이 길어도 끝없이 스크롤하지 않도록 */}
+      {pageCount > 1 && (
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+          <button
+            disabled={page <= 1}
+            onClick={() => goPage(page - 1)}
+            className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink disabled:opacity-35"
+          >
+            ‹ 이전
+          </button>
+          {pageWindow(page, pageCount).map((n, i) =>
+            n === 0 ? (
+              <span key={`gap-${i}`} className="px-1 text-[12px] text-mute">…</span>
+            ) : (
+              <button
+                key={n}
+                onClick={() => goPage(n)}
+                className={cn(
+                  "min-w-[36px] rounded-xl px-2.5 py-2 text-[12px] font-bold transition-colors",
+                  n === page ? "bg-brand text-white" : "border border-line bg-white text-mute hover:border-brand",
+                )}
+              >
+                {n}
+              </button>
+            ),
+          )}
+          <button
+            disabled={page >= pageCount}
+            onClick={() => goPage(page + 1)}
+            className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink disabled:opacity-35"
+          >
+            다음 ›
+          </button>
+        </div>
+      )}
+      {totalCount > 0 && (
+        <div className="mt-2 text-center text-[11px] text-mute">전체 {totalCount}건 · {page}/{pageCount} 페이지</div>
+      )}
 
       {showNew && <NewReservationModal slug={slug} staff={staff.filter((s) => s.isActive)} customers={customers} times={times} defaultDate={filters.date || ymd(new Date())} onClose={() => { setShowNew(false); router.replace("?view=list" + (filters.date ? `&date=${filters.date}` : "")); }} />}
       {editing && <EditModal slug={slug} row={editing} staff={staff.filter((s) => s.isActive)} times={times} onClose={() => setEditing(null)} />}

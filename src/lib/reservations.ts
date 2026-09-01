@@ -19,11 +19,7 @@ export async function resolveRooms(
   const out = new Map<string, string | null>();
   if (reservations.length === 0) return out;
 
-  const keyed = reservations.map((r) => ({
-    ...r,
-    date: businessDayOf(store, r.startTime),
-    shift: shiftOfTime(store, r.startTime),
-  }));
+  const keyed = reservations.map((r) => ({ ...r, date: businessDayOf(store, r.startTime) }));
   const assignments = await prisma.shiftAssignment.findMany({
     where: {
       staffId: { in: [...new Set(keyed.map((r) => r.staffId))] },
@@ -31,9 +27,27 @@ export async function resolveRooms(
     },
     include: { room: { select: { name: true } } },
   });
-  const lookup = new Map(assignments.map((a) => [`${a.staffId}|${a.date}|${a.shift}`, a.room.name]));
-  for (const r of keyed) out.set(r.id, lookup.get(`${r.staffId}|${r.date}|${r.shift}`) ?? r.roomName);
+
+  // 배치가 실제 시각을 갖고 있으므로, 예약 시작 시각을 품는 배치를 찾는다
+  const openMin = timeToMin(store.openTime);
+  const norm = (m: number) => (m < openMin ? m + 24 * 60 : m);
+  for (const r of keyed) {
+    const t = norm(r.startTime.getHours() * 60 + r.startTime.getMinutes());
+    const hit = assignments.find((a) => {
+      if (a.staffId !== r.staffId || a.date !== r.date) return false;
+      const s = norm(timeToMin(a.startTime));
+      const e0 = norm(timeToMin(a.endTime));
+      const e = e0 <= s ? e0 + 24 * 60 : e0;
+      return t >= s && t < e;
+    });
+    out.set(r.id, hit?.room.name ?? r.roomName);
+  }
   return out;
+}
+
+function timeToMin(t: string) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
 }
 
 export class SlotConflictError extends Error {

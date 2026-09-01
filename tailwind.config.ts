@@ -5,10 +5,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: "var(--brand)",
+        // 채널 변수로 두어야 bg-brand/70 같은 투명도 표기가 동작한다
+        brand: "rgb(var(--brand-rgb) / <alpha-value>)",
         "brand-dark": "var(--brand-dark)",
-        blush: "var(--blush)",
-        "blush-lt": "var(--blush-lt)",
+        blush: "rgb(var(--blush-rgb) / <alpha-value>)",
+        "blush-lt": "rgb(var(--blush-lt-rgb) / <alpha-value>)",
         gold: "#C8A46A",
         "gold-lt": "#F2C399",
         ink: "#3A2830",

@@ -182,10 +182,20 @@ async function main() {
     staff.push({ id: created.id, nickname: s.nickname, hourlyPrice: s.hourlyPrice, opts: optIds });
   }
 
-  console.log("👤 고객 100명...");
+  console.log("👤 고객 100명... (등록과 동시에 연결코드 발급)");
+  // 코드는 계정마다 하나씩 늘 갖고 있다. 이미 가입한 계정엔 코드가 먹히지 않으므로 남아 있어도 안전하다.
+  const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const usedCodes = new Set<string>();
+  const newCode = () => {
+    for (let i = 0; i < 50; i++) {
+      const c = Array.from({ length: 4 }, () => ALPHABET[Math.floor(rand() * ALPHABET.length)]).join("");
+      if (!usedCodes.has(c)) { usedCodes.add(c); return c; }
+    }
+    throw new Error("코드 생성 실패");
+  };
   const customers: { id: string; nickname: string }[] = [];
   for (const name of CUSTOMER_NAMES) {
-    const c = await prisma.customer.create({ data: { storeId: store.id, nickname: name, passwordHash: pw } });
+    const c = await prisma.customer.create({ data: { storeId: store.id, nickname: name, passwordHash: pw, inviteCode: newCode() } });
     customers.push({ id: c.id, nickname: name });
   }
   // 단골이 될 사람들 — 이들에게 예약을 더 몰아준다
@@ -355,7 +365,8 @@ async function main() {
   // 연결코드 데모 — 카톡으로만 오가던 손님 한 명
   await prisma.customer.update({
     where: { id: customers[99].id },
-    data: { inviteCode: "A3K9", adminMemo: "카톡으로만 예약하시던 분. 앱 연결코드 발급함." },
+    // 아직 앱을 시작하지 않은 손님 — 이 코드로 시작할 수 있다
+    data: { inviteCode: "A3K9", passwordHash: null, adminMemo: "카톡으로만 예약하시던 분. 앱 연결코드 안내함." },
   });
 
   console.log("🗓 출근 배치 (지난주 ~ 다음주)...");

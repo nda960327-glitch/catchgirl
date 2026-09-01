@@ -44,7 +44,7 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
     <input
       ref={ref}
       className={cn(
-        "h-12 w-full rounded-2xl border border-line bg-white px-4 text-[14px] text-ink outline-none placeholder:text-mute/70 focus:border-brand focus:ring-2 focus:ring-[rgba(var(--brand-rgb),.15)]",
+        "h-12 w-full rounded-2xl border border-line bg-white px-4 text-[14px] text-ink outline-none placeholder:text-mute/70 focus:border-brand focus:ring-2 focus:ring-[rgb(var(--brand-rgb)/.15)]",
         className,
       )}
       {...rest}
@@ -56,7 +56,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
     <textarea
       ref={ref}
       className={cn(
-        "w-full rounded-2xl border border-line bg-white px-4 py-3 text-[14px] text-ink outline-none placeholder:text-mute/70 focus:border-brand focus:ring-2 focus:ring-[rgba(var(--brand-rgb),.15)]",
+        "w-full rounded-2xl border border-line bg-white px-4 py-3 text-[14px] text-ink outline-none placeholder:text-mute/70 focus:border-brand focus:ring-2 focus:ring-[rgb(var(--brand-rgb)/.15)]",
         className,
       )}
       {...rest}
@@ -86,9 +86,9 @@ export function Field({ label, hint, children, className }: { label: string; hin
 }
 
 /* ─── 카드/칩/기타 ─── */
-export function Card({ className, children, onClick }: { className?: string; children: ReactNode; onClick?: () => void }) {
+export function Card({ id, className, children, onClick }: { id?: string; className?: string; children: ReactNode; onClick?: () => void }) {
   return (
-    <div onClick={onClick} className={cn("rounded-[22px] border border-line bg-white shadow-card", onClick && "cursor-pointer", className)}>
+    <div id={id} onClick={onClick} className={cn("rounded-[22px] border border-line bg-white shadow-card", onClick && "cursor-pointer", className)}>
       {children}
     </div>
   );

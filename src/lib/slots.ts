@@ -74,20 +74,20 @@ export function businessDayRange(store: Pick<Store, "openTime" | "closeTime">, d
   return { start, end: addMinutes(start, 24 * 60) };
 }
 
-/** 특정 캐치걸의 특정 날짜 슬롯 상태 계산 */
-export async function getSlotsFor(
-  store: Store,
-  staff: Staff & { schedules: StaffSchedule[] },
-  date: string,
-  now = new Date(),
-): Promise<Slot[]> {
+/**
+ * 특정 캐치걸의 특정 날짜 슬롯 상태 계산.
+ *
+ * 근무 시간의 기준은 관리자가 짠 출근 배치 하나뿐이다. 배치되지 않은 날은 예약을 받지 않고,
+ * 주간조만 배치됐으면 주간 시간대만 열린다. (요일별 근무표를 따로 두면 기준이 둘이 되어 어긋난다)
+ */
+export async function getSlotsFor(store: Store, staff: Staff, date: string, now = new Date()): Promise<Slot[]> {
   const times = storeSlotTimes(store);
-  const weekday = toLocalDate(date, "00:00").getDay();
   const closed = isStoreClosed(store, date);
-  const off = await prisma.staffOff.findUnique({ where: { staffId_date: { staffId: staff.id, date } } });
-  const scheds = staff.schedules.filter((s) => s.weekday === weekday);
-  // 외출(자리 비움) 구간은 근무 시간이어도 예약을 받지 않는다
-  const timeOffs = await prisma.staffTimeOff.findMany({ where: { staffId: staff.id, date }, select: { startTime: true, endTime: true } });
+  const [assignments, timeOffs] = await Promise.all([
+    prisma.shiftAssignment.findMany({ where: { staffId: staff.id, date }, select: { startTime: true, endTime: true } }),
+    // 외출(자리 비움) 구간은 배치된 시간이어도 예약을 받지 않는다
+    prisma.staffTimeOff.findMany({ where: { staffId: staff.id, date }, select: { startTime: true, endTime: true } }),
+  ]);
 
   const dayStart = toLocalDate(date, "00:00");
   const dayEnd = addMinutes(dayStart, 24 * 60 + 6 * 60);
@@ -114,27 +114,22 @@ export async function getSlotsFor(
     const start = toLocalDate(date, time);
     // 자정 넘김 슬롯 보정
     const startAdj = timeToMin(time) < timeToMin(store.openTime) ? addMinutes(start, 24 * 60) : start;
-    const inSchedule = scheds.some((s) => {
-      const a = timeToMin(s.startTime);
-      let b = timeToMin(s.endTime);
-      let t = timeToMin(time);
-      if (b <= a) b += 24 * 60;
-      if (t < a) t += 24 * 60;
-      return t >= a && t < b;
-    });
     const startsAt = startAdj.toISOString();
-    // 외출 구간에 걸치면 근무 외로 본다.
     // 오픈 시각 이전의 값은 자정을 넘긴 것이므로 하루를 더해 한 줄에 편다.
     const openMin = timeToMin(store.openTime);
     const norm = (m: number) => (m < openMin ? m + 24 * 60 : m);
-    const away = timeOffs.some((o) => {
-      const a = norm(timeToMin(o.startTime));
-      const e = norm(timeToMin(o.endTime));
+    const covers = (range: { startTime: string; endTime: string }) => {
+      const a = norm(timeToMin(range.startTime));
+      const e = norm(timeToMin(range.endTime));
       const b = e <= a ? e + 24 * 60 : e;
       const t = norm(timeToMin(time));
       return t >= a && t < b;
-    });
-    if (closed || off || away || !inSchedule || !staff.isActive) return { time, status: "off", remaining: 0, maxHours: 0, startsAt };
+    };
+    // 배치된 실제 시각 안에 드는지 (같은 날 두 건이면 둘 중 하나만 들어도 근무)
+    const onShift = assignments.some(covers);
+    // 외출 구간에 걸치면 근무 외로 본다
+    const away = timeOffs.some(covers);
+    if (closed || away || !onShift || !staff.isActive) return { time, status: "off", remaining: 0, maxHours: 0, startsAt };
     if (startAdj.getTime() <= now.getTime()) return { time, status: "past", remaining: 0, maxHours: 0, startsAt };
     const used = countByTime.get(startAdj.getTime()) ?? 0;
     const remaining = Math.max(0, staff.capacityPerSlot - used);
@@ -157,22 +152,20 @@ export function maxHoursAt(slots: Slot[], index: number, slotMinutes: number, ca
   return Math.min(cap, Math.floor(run / perHour));
 }
 
-/** 예약 가능 날짜 목록 (오늘 ~ maxAdvanceDays) — 매장 휴무/캐치걸 휴무/근무 없는 요일은 disabled */
-export function calendarDays(store: Store, staff: Staff & { schedules: StaffSchedule[]; offs: { date: string }[] }) {
+/** 예약 가능 날짜 목록 (오늘 ~ maxAdvanceDays) — 매장 휴무일과 배치가 없는 날은 disabled */
+export async function calendarDays(store: Store, staff: Staff) {
   // 새벽 2시에도 "오늘"은 어제 시작한 영업일이어야 한다
   const today = toLocalDate(businessDayOf(store), "00:00");
-  const out: { date: string; weekday: number; disabled: boolean; reason?: string }[] = [];
-  const offSet = new Set(staff.offs.map((o) => o.date));
-  for (let i = 0; i <= store.maxAdvanceDays; i++) {
-    const d = new Date(today.getTime() + i * 86_400_000);
-    const date = ymd(d);
-    const wd = d.getDay();
+  const dates = Array.from({ length: store.maxAdvanceDays + 1 }, (_, i) => ymd(new Date(today.getTime() + i * 86_400_000)));
+  const assigned = new Set(
+    (await prisma.shiftAssignment.findMany({ where: { staffId: staff.id, date: { in: dates } }, select: { date: true } })).map((a) => a.date),
+  );
+  return dates.map((date) => {
+    const d = toLocalDate(date, "00:00");
     let disabled = false;
     let reason: string | undefined;
     if (isStoreClosed(store, date)) (disabled = true), (reason = "매장 휴무");
-    else if (offSet.has(date)) (disabled = true), (reason = "휴무");
-    else if (!staff.schedules.some((s) => s.weekday === wd)) (disabled = true), (reason = "근무 없음");
-    out.push({ date, weekday: wd, disabled, reason });
-  }
-  return out;
+    else if (!assigned.has(date)) (disabled = true), (reason = "출근 없음");
+    return { date, weekday: d.getDay(), disabled, reason };
+  });
 }

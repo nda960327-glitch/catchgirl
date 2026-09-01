@@ -48,12 +48,16 @@ export async function loginCustomer(slug: string, form: FormData, next?: string)
   // 연결코드로 시작 — 매장이 미리 만들어 둔 기록에 닉네임과 PIN 을 붙인다
   const invited = await prisma.customer.findFirst({ where: { storeId: store.id, inviteCode } });
   if (!invited) return { ok: false, error: "연결코드가 맞지 않아요. 매장에 확인해 주세요." };
+  // 코드는 계정마다 계속 남지만, 이미 시작한 계정은 코드로 가로챌 수 없다
+  if (invited.passwordHash) {
+    return { ok: false, error: "이미 시작된 계정이에요. 닉네임과 PIN으로 들어와 주세요." };
+  }
   if (byNickname && byNickname.id !== invited.id) {
     return { ok: false, error: "이미 쓰고 있는 닉네임이에요. 다른 닉네임으로 해주세요." };
   }
   const claimed = await prisma.customer.update({
     where: { id: invited.id },
-    data: { nickname, passwordHash: await bcrypt.hash(pin, 10), inviteCode: null },
+    data: { nickname, passwordHash: await bcrypt.hash(pin, 10) },
   });
   await setSession({ role: "customer", id: claimed.id, storeId: store.id, name: claimed.nickname });
   redirect(next && next.startsWith(`/${slug}`) ? next : `/${slug}/me`);

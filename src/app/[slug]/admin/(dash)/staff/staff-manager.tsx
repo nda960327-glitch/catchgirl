@@ -1,18 +1,17 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Avatar, Button, Card, Chip, Field, Input, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { uploadImages } from "@/lib/image-client";
-import { cn, WEEKDAYS_KO } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { deleteStaff, saveStaff, staffDeletionImpact } from "../../actions";
 
 export type StaffFull = {
   id: string; nickname: string; bio: string; tags: string[]; photos: string[]; isActive: boolean; capacityPerSlot: number; hourlyPrice: number; adminMemo: string; loginId: string;
   optionIds: string[];
-  schedules: { weekday: number; startTime: string; endTime: string }[];
-  offs: { date: string; reason: string }[];
   stats: {
     rating: number | null; reviewCount: number; reservationCount: number; completedCount: number; noshowRate: number; revisitRate: number;
     upCount: number; downCount: number; customerCount: number; repeatCustomers: number; newCustomers30d: number;
@@ -22,17 +21,16 @@ export type StoreOptionLite = { id: string; name: string; price: number };
 
 const EMPTY: StaffFull = {
   id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, hourlyPrice: 300000, adminMemo: "", loginId: "", optionIds: [],
-  schedules: [], offs: [],
   stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0, upCount: 0, downCount: 0, customerCount: 0, repeatCustomers: 0, newCustomers30d: 0 },
 };
 
-export function StaffManager({ slug, items, storeOptions, storeHours, initialEdit }: { slug: string; items: StaffFull[]; storeOptions: StoreOptionLite[]; storeHours: { open: string; close: string }; initialEdit?: string }) {
+export function StaffManager({ slug, items, storeOptions, initialEdit }: { slug: string; items: StaffFull[]; storeOptions: StoreOptionLite[]; initialEdit?: string }) {
   const [editing, setEditing] = useState<StaffFull | null>(initialEdit === "new" ? EMPTY : items.find((i) => i.id === initialEdit) ?? null);
   return (
     <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_440px]">
       <div className="flex flex-col gap-3">
         <div className="flex justify-end">
-          <Button size="sm" onClick={() => setEditing({ ...EMPTY, schedules: [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({ weekday, startTime: storeHours.open, endTime: storeHours.close })) })}>+ 캐치걸 등록</Button>
+          <Button size="sm" onClick={() => setEditing(EMPTY)}>+ 캐치걸 등록</Button>
         </div>
         {items.map((s) => (
           <Card key={s.id} className={cn("p-4", editing?.id === s.id && "border-brand")}>
@@ -46,10 +44,7 @@ export function StaffManager({ slug, items, storeOptions, storeHours, initialEdi
                   <Chip tone="mute">슬롯당 {s.capacityPerSlot}팀</Chip>
                 </div>
                 <div className="mt-1 truncate text-[11px] text-mute">{s.tags.map((t) => `#${t}`).join(" ") || "태그 없음"}</div>
-                <div className="mt-1 text-[10px] text-mute">
-                  근무: {s.schedules.length ? s.schedules.map((x) => WEEKDAYS_KO[x.weekday]).join("·") : "없음"} {s.schedules[0] ? `${s.schedules[0].startTime}–${s.schedules[0].endTime}` : ""}
-                  {s.offs.length > 0 && ` · 휴무 ${s.offs.length}일`}
-                </div>
+                {s.adminMemo && <div className="mt-1 truncate text-[10px] text-mute" title={s.adminMemo}>📝 {s.adminMemo}</div>}
               </div>
               <Button variant="outline" size="sm" onClick={() => setEditing(s)}>수정</Button>
             </div>
@@ -91,13 +86,6 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const toggleDay = (wd: number) => {
-    const has = f.schedules.some((s) => s.weekday === wd);
-    const tpl = f.schedules[0] ?? { startTime: "15:00", endTime: "23:00" };
-    setF({ ...f, schedules: has ? f.schedules.filter((s) => s.weekday !== wd) : [...f.schedules, { weekday: wd, startTime: tpl.startTime, endTime: tpl.endTime }].sort((a, b) => a.weekday - b.weekday) });
-  };
-  const setSched = (wd: number, k: "startTime" | "endTime", v: string) => setF({ ...f, schedules: f.schedules.map((s) => (s.weekday === wd ? { ...s, [k]: v } : s)) });
-
   const onFiles = async (files: FileList | null) => {
     if (!files?.length) return;
     setUploading(true);
@@ -112,7 +100,7 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
       const r = await saveStaff(slug, {
         id: f.id || undefined, nickname: f.nickname, bio: f.bio, tags: f.tags, photos: f.photos, isActive: f.isActive,
         capacityPerSlot: f.capacityPerSlot, hourlyPrice: f.hourlyPrice, adminMemo: f.adminMemo, optionIds: f.optionIds,
-        loginId: f.loginId, password: f.password, schedules: f.schedules, offs: f.offs,
+        loginId: f.loginId, password: f.password,
       });
       if (!r.ok) return toast(r.error, "error");
       toast("저장했어요", "success");
@@ -208,39 +196,12 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
           <input type="checkbox" checked={f.isActive} onChange={(e) => setF({ ...f, isActive: e.target.checked })} className="h-4 w-4 accent-[var(--brand)]" /> 활성 (고객 화면에 노출)
         </label>
 
-        {/* 근무 스케줄 */}
-        <Field label="요일별 근무 시간">
-          <div className="flex gap-1">
-            {WEEKDAYS_KO.map((d, wd) => {
-              const on = f.schedules.some((s) => s.weekday === wd);
-              return <button key={d} onClick={() => toggleDay(wd)} className={cn("h-9 flex-1 rounded-xl text-[12px] font-bold", on ? "bg-brand text-white" : "border border-line bg-white text-mute")}>{d}</button>;
-            })}
-          </div>
-          <div className="mt-2 flex flex-col gap-1.5">
-            {f.schedules.map((s) => (
-              <div key={s.weekday} className="flex items-center gap-2 text-[12px]">
-                <span className="w-6 font-bold text-ink">{WEEKDAYS_KO[s.weekday]}</span>
-                <Input type="time" value={s.startTime} onChange={(e) => setSched(s.weekday, "startTime", e.target.value)} className="h-9 w-[110px] text-[12px]" />
-                <span className="text-mute">–</span>
-                <Input type="time" value={s.endTime} onChange={(e) => setSched(s.weekday, "endTime", e.target.value)} className="h-9 w-[110px] text-[12px]" />
-              </div>
-            ))}
-          </div>
-        </Field>
+        {/* 근무일은 출근 배치가 곧 근무표다 — 여기서 따로 짜면 기준이 둘이 되어 어긋난다 */}
+        <div className="rounded-2xl bg-[#FAF6F7] px-4 py-3 text-[11px] leading-[1.7] text-mute">
+          근무일과 시간대는 <Link href={`/${slug}/admin/staff/schedule`} className="font-bold text-brand">출근 · 룸 배치</Link>에서 정해요.
+          <br />배치된 날의 배치된 조(주간/야간)에만 손님이 예약할 수 있어요.
+        </div>
 
-        {/* 특정일 휴무 */}
-        <Field label="특정일 휴무">
-          <div className="flex flex-col gap-1.5">
-            {f.offs.map((o, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Input type="date" value={o.date} onChange={(e) => setF({ ...f, offs: f.offs.map((x, j) => (j === i ? { ...x, date: e.target.value } : x)) })} className="h-9 w-[150px] text-[12px]" />
-                <Input value={o.reason} onChange={(e) => setF({ ...f, offs: f.offs.map((x, j) => (j === i ? { ...x, reason: e.target.value } : x)) })} placeholder="사유" className="h-9 flex-1 text-[12px]" />
-                <button onClick={() => setF({ ...f, offs: f.offs.filter((_, j) => j !== i) })} className="text-[12px] text-mute">✕</button>
-              </div>
-            ))}
-            <button onClick={() => setF({ ...f, offs: [...f.offs, { date: "", reason: "" }] })} className="self-start text-[11px] font-bold text-brand">+ 휴무일 추가</button>
-          </div>
-        </Field>
         <Button size="lg" onClick={submit} loading={pending} disabled={!f.nickname.trim() || uploading}>{f.id ? "저장" : "등록"}</Button>
         {f.id && <DeleteStaffButton slug={slug} staffId={f.id} onDeleted={onClose} />}
       </div>

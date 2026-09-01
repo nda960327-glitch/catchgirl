@@ -17,6 +17,8 @@ model Store {
   name                String
   slug                String   @unique
   tagline             String   @default("")
+  // 고객 홈 상단 큰 문구. {n} 자리에 오늘 예약 가능한 캐치걸 수가 들어간다.
+  heroTitle           String   @default("오늘 자리를 지키는\n{n} 사람")
   logoUrl             String?
   coverUrl            String?
   themeColor          String   @default("#B4586A")
@@ -84,12 +86,17 @@ model Staff {
   @@index([storeId, isActive])
 }
 
+/**
+ * 캐치걸이 스스로 알리는 "이 요일 이 조는 출근 가능해요".
+ * 실제 근무가 아니라 희망 표시다 — 매장이 이걸 보고 ShiftAssignment 로 룸에 넣어야 확정된다.
+ */
 model StaffSchedule {
   id        String @id @default(cuid())
   staffId   String
   weekday   Int // 0(일)~6(토)
-  startTime String // HH:mm
-  endTime   String // HH:mm
+  shift     String @default("DAY") // DAY | NIGHT
+  startTime String // 남겨두지만 조 시간대를 그대로 쓴다
+  endTime   String
   staff     Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
   @@index([staffId, weekday])
@@ -118,6 +125,9 @@ model Customer {
   nickname      String
   passwordHash  String? // 고객이 정한 PIN. 관리자가 대신 만든 고객은 null → 첫 로그인 때 설정
   inviteCode    String? // 관리자가 발급한 연결코드 (사용 후 null). 중복은 발급할 때 확인한다
+  // 매장이 직접 적어 두는 연락처 (전화·텔레그램 등). 손님이 입력하는 값이 아니고
+  // 고객 화면에는 절대 나가지 않는다 — 매장 운영용 기록이다.
+  adminContact  String   @default("")
   adminMemo     String   @default("") // 상단 고정 메모 (한눈에 보는 핵심)
   isBlacklisted Boolean  @default(false)
   createdAt     DateTime @default(now())
@@ -227,9 +237,13 @@ model ShiftAssignment {
   id        String   @id @default(cuid())
   storeId   String
   date      String // 영업일 YYYY-MM-DD
-  shift     String // DAY | NIGHT
+  shift     String // DAY | NIGHT — 조는 묶음 이름일 뿐, 실제 근무는 아래 시각이 정한다
   roomId    String
   staffId   String
+  // 조 안에서도 몇 시부터 몇 시까지인지가 사람마다 다르다 (주간이지만 14:00 출근 등).
+  // 예약 가능 시간과 룸 안내는 이 시각을 기준으로 한다.
+  startTime String   @default("12:00")
+  endTime   String   @default("20:00")
   createdAt DateTime @default(now())
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)

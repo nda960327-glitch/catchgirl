@@ -23,7 +23,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
       <SettingsForm
         slug={slug}
         init={{
-          name: store.name, tagline: store.tagline, logoUrl: store.logoUrl, coverUrl: store.coverUrl, themeColor: store.themeColor,
+          name: store.name, tagline: store.tagline, heroTitle: store.heroTitle, logoUrl: store.logoUrl, coverUrl: store.coverUrl, themeColor: store.themeColor,
           openTime: store.openTime, closeTime: store.closeTime, slotMinutes: store.slotMinutes, closedDays: parseJsonArray<number>(store.closedDays),
           cancelDeadlineHours: store.cancelDeadlineHours, maxAdvanceDays: store.maxAdvanceDays, noshowPolicy: store.noshowPolicy,
         }}

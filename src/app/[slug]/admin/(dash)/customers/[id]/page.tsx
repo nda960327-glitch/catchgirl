@@ -42,7 +42,10 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
             {c.isBlacklisted && <Chip tone="red">블랙리스트</Chip>}
             {s.noshowCount >= 3 && <Chip tone="red">노쇼 {s.noshowCount}회 경고</Chip>}
           </div>
-          <div className="text-[11px] text-mute">가입 {format(c.createdAt, "yyyy.MM.dd")}</div>
+          <div className="text-[11px] text-mute">
+            가입 {format(c.createdAt, "yyyy.MM.dd")}
+            {c.adminContact && <> · <span className="font-semibold text-ink">{c.adminContact}</span></>}
+          </div>
         </div>
       </div>
 
@@ -105,7 +108,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
           <Card className="p-5">
             <Eyebrow>Customer Info</Eyebrow>
             <div className="mt-1 text-[14px] font-bold text-ink">고객 정보</div>
-            <CustomerInfoForm slug={slug} customerId={c.id} init={{ nickname: c.nickname, adminMemo: c.adminMemo, isBlacklisted: c.isBlacklisted }} />
+            <CustomerInfoForm slug={slug} customerId={c.id} init={{ nickname: c.nickname, adminContact: c.adminContact, adminMemo: c.adminMemo, isBlacklisted: c.isBlacklisted }} />
           </Card>
           <Card className="p-5">
             <Eyebrow>Account</Eyebrow>

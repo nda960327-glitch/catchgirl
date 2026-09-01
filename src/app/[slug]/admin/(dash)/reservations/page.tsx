@@ -9,7 +9,7 @@ import { Card, Eyebrow } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { ReservationsClient, type ResRow } from "./reservations-client";
 
-type SP = { view?: string; date?: string; month?: string; staffId?: string; q?: string; status?: string; new?: string; focus?: string };
+type SP = { view?: string; date?: string; month?: string; staffId?: string; q?: string; status?: string; new?: string; focus?: string; page?: string };
 
 export default async function ReservationsPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<SP> }) {
   const { slug } = await params;
@@ -32,8 +32,19 @@ export default async function ReservationsPage({ params, searchParams }: { param
     ...(sp.status ? { status: sp.status } : {}),
     ...(sp.q ? { customer: { nickname: { contains: sp.q } } } : {}),
   };
+  // 목록이 길어지면 끝없이 스크롤하게 되므로 페이지로 끊는다
+  const PER_PAGE = 30;
+  const page = Math.max(1, Number(sp.page ?? 1) || 1);
+  const totalCount = view === "list" ? await prisma.reservation.count({ where }) : 0;
+  const pageCount = Math.max(1, Math.ceil(totalCount / PER_PAGE));
   const list = view === "list"
-    ? await prisma.reservation.findMany({ where, orderBy: { startTime: "asc" }, include: { staff: true, customer: true, options: true }, take: 200 })
+    ? await prisma.reservation.findMany({
+        where,
+        orderBy: { startTime: "asc" },
+        include: { staff: true, customer: true, options: true },
+        skip: (Math.min(page, pageCount) - 1) * PER_PAGE,
+        take: PER_PAGE,
+      })
     : [];
   const rows: ResRow[] = list.map((r) => ({
     id: r.id, code: r.code, startTime: r.startTime.toISOString(), date: ymd(r.startTime), time: format(r.startTime, "HH:mm"),
@@ -119,6 +130,9 @@ export default async function ReservationsPage({ params, searchParams }: { param
         <ReservationsClient
           slug={slug}
           rows={rows}
+          page={Math.min(page, pageCount)}
+          pageCount={pageCount}
+          totalCount={totalCount}
           staff={staffLite}
           customers={customers}
           filters={{ date, staffId: sp.staffId ?? "", q: sp.q ?? "", status: sp.status ?? "" }}

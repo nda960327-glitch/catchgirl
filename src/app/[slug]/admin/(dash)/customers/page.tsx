@@ -7,14 +7,18 @@ import { cn, wonShort } from "@/lib/utils";
 import { Card, Chip, Eyebrow, GradeChip } from "@/components/ui";
 import { InviteButton } from "./invite-button";
 
-type SP = { sort?: string; filter?: string; q?: string };
+type SP = { sort?: string; filter?: string; q?: string; page?: string };
 
 export default async function CustomersPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<SP> }) {
   const { slug } = await params;
   const sp = await searchParams;
   const store = await getStoreBySlug(slug);
   const customers = await prisma.customer.findMany({
-    where: { storeId: store.id, ...(sp.q ? { nickname: { contains: sp.q } } : {}) },
+    where: {
+      storeId: store.id,
+      // 닉네임뿐 아니라 매장이 적어 둔 연락처로도 찾을 수 있게
+      ...(sp.q ? { OR: [{ nickname: { contains: sp.q } }, { adminContact: { contains: sp.q } }] } : {}),
+    },
     include: { reservations: { select: { status: true, startTime: true, staffId: true, totalPrice: true, staff: { select: { nickname: true } } } } },
   });
   // 아직 손님이 안 쓴 초대코드는 목록에 섞지 않고 위에 따로 보여준다
@@ -41,6 +45,13 @@ export default async function CustomersPage({ params, searchParams }: { params: 
     if (sort === "cancel") return b.s.cancelCount - a.s.cancelCount;
     return a.c.nickname.localeCompare(b.c.nickname);
   });
+
+  // 고객이 100명을 넘어가면 한 화면에 다 쏟지 않고 끊어 보여준다
+  const PER_PAGE = 30;
+  const page = Math.max(1, Number(sp.page ?? 1) || 1);
+  const pageCount = Math.max(1, Math.ceil(rows.length / PER_PAGE));
+  const totalRows = rows.length;
+  const pageRows = rows.slice((Math.min(page, pageCount) - 1) * PER_PAGE, Math.min(page, pageCount) * PER_PAGE);
 
   const qs = (o: Partial<SP>) => {
     const p = new URLSearchParams();
@@ -85,7 +96,7 @@ export default async function CustomersPage({ params, searchParams }: { params: 
         <form className="ml-auto" action="">
           <input type="hidden" name="sort" value={sort} />
           <input type="hidden" name="filter" value={filter} />
-          <input name="q" defaultValue={sp.q ?? ""} placeholder="닉네임 검색" className="h-9 w-[160px] rounded-xl border border-line px-3 text-[12px] outline-none focus:border-brand" />
+          <input name="q" defaultValue={sp.q ?? ""} placeholder="닉네임·연락처 검색" className="h-9 w-[160px] rounded-xl border border-line px-3 text-[12px] outline-none focus:border-brand" />
         </form>
       </Card>
 
@@ -94,7 +105,7 @@ export default async function CustomersPage({ params, searchParams }: { params: 
           <span>고객</span><span>등급</span><span className="text-right">누적 지출</span><span>방문 횟수</span><span>최근 방문일</span><span>취소</span><span>노쇼</span><span>재방문 수</span><span>주 지정 캐치걸</span>
         </div>
         {rows.length === 0 && <div className="py-10 text-center text-[12px] text-mute">조건에 맞는 고객이 없어요</div>}
-        {rows.map(({ c, s, spent }) => (
+        {pageRows.map(({ c, s, spent }) => (
           <Link key={c.id} href={`/${slug}/admin/customers/${c.id}`} className="grid grid-cols-2 gap-2 border-b border-line px-4 py-3 text-[12px] transition-colors hover:bg-blush-lt/30 md:grid-cols-[1.3fr_90px_100px_90px_110px_80px_80px_90px_1fr] md:items-center">
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-1.5">
@@ -103,9 +114,11 @@ export default async function CustomersPage({ params, searchParams }: { params: 
                 {s.noshowCount >= 3 && !c.isBlacklisted && <Chip tone="red">노쇼 경고</Chip>}
                 {s.dormant && s.visitCount > 0 && <Chip tone="mute">휴면</Chip>}
               </div>
+              {c.adminContact && <div className="truncate text-[10px] font-semibold text-ink">{c.adminContact}</div>}
               <div className="truncate text-[10px] text-mute" title={c.adminMemo}>{c.adminMemo || "메모 없음"}</div>
             </div>
             <div><GradeChip grade={s.grade} /></div>
+            <div className="font-bold text-brand md:text-right"><span className="font-normal text-mute md:hidden">지출 </span>{wonShort(spent)}</div>
             <div className="text-ink"><span className="md:hidden text-mute">방문 </span>{s.visitCount}회</div>
             <div className="text-mute">{s.lastVisitAt ? format(s.lastVisitAt, "yyyy.MM.dd") : "—"}</div>
             <div className="text-mute"><span className="md:hidden">취소 </span>{s.cancelCount}</div>
@@ -115,6 +128,20 @@ export default async function CustomersPage({ params, searchParams }: { params: 
           </Link>
         ))}
       </Card>
+      {pageCount > 1 && (
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+          {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
+            <Link
+              key={n}
+              href={qs({ page: n === 1 ? undefined : String(n) })}
+              className={cn("min-w-[36px] rounded-xl px-2.5 py-2 text-center text-[12px] font-bold transition-colors", n === Math.min(page, pageCount) ? "bg-brand text-white" : "border border-line bg-white text-mute hover:border-brand")}
+            >
+              {n}
+            </Link>
+          ))}
+        </div>
+      )}
+      <div className="mt-2 text-center text-[11px] text-mute">전체 {totalRows}명 · {Math.min(page, pageCount)}/{pageCount} 페이지</div>
       <div className="mt-2 px-1 text-[10px] text-mute">재방문 수 = 방문완료 건수 − 1 · 등급: 1~4회 신규 / 5~9회 단골 / 10회↑ VIP · 노쇼 3회 이상 자동 경고</div>
     </div>
   );
