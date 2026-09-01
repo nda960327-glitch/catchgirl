@@ -25,7 +25,9 @@ export type TimelineItem = {
 };
 export type TimelineRow = { id: string; name: string; photo: string | null; items: TimelineItem[] };
 
-const COL = 52; // 슬롯 한 칸 너비(px)
+// 12:00~익일 04:00 = 32칸이라, 칸을 좁혀야 새벽 시간대까지 한 화면에 들어온다
+const COL = 38;
+const NAME_W = 96;
 const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
 
 /** 간트 차트형 타임라인: 행 = 캐치걸, 열 = 슬롯.
@@ -46,18 +48,25 @@ export function Timeline({
   return (
     <>
       <div className="mt-4 overflow-x-auto">
-        <div style={{ minWidth: 120 + times.length * COL }}>
+        <div style={{ minWidth: NAME_W + times.length * COL }}>
           <div className="flex">
-            <div className="w-[120px] shrink-0" />
+            <div className="shrink-0" style={{ width: NAME_W }} />
             {times.map((t, i) => (
-              <div key={t} className={cn("shrink-0 text-center text-[10px]", i === nowIdx ? "font-bold text-brand" : "text-mute")} style={{ width: COL }}>{t}</div>
+              <div
+                key={t}
+                className={cn("shrink-0 text-center text-[10px]", i === nowIdx ? "font-bold text-brand" : "text-mute")}
+                style={{ width: COL }}
+              >
+                {/* 30분 칸마다 다 적으면 겹치니 정시에만 표시 */}
+                {i % perHour === 0 ? t : ""}
+              </div>
             ))}
           </div>
 
           {rows.map((row) => (
             <div key={row.id} className="mt-2 flex items-center">
-              <div className="flex w-[120px] shrink-0 items-center gap-2 pr-2">
-                <Avatar src={row.photo} name={row.name} size={28} rounded={9} />
+              <div className="flex shrink-0 items-center gap-1.5 pr-2" style={{ width: NAME_W }}>
+                <Avatar src={row.photo} name={row.name} size={26} rounded={9} />
                 <span className="truncate text-[12px] font-bold text-ink">{row.name}</span>
               </div>
 
@@ -66,7 +75,12 @@ export function Timeline({
                 {times.map((t, i) => (
                   <div
                     key={t}
-                    className={cn("absolute inset-y-0 border-l border-line/70", i === nowIdx && "bg-blush-lt/40")}
+                    className={cn(
+                      "absolute inset-y-0",
+                      // 정시 경계는 진하게, 30분은 흐리게 — 칸이 좁아도 시간을 읽을 수 있게
+                      i % perHour === 0 ? "border-l border-line" : "border-l border-line/40",
+                      i === nowIdx && "bg-blush-lt/40",
+                    )}
                     style={{ left: i * COL, width: COL }}
                   />
                 ))}

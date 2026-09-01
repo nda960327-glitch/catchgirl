@@ -4,8 +4,8 @@ import { ko } from "date-fns/locale";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { listStaffSummaries } from "@/lib/queries";
-import { isStoreClosed } from "@/lib/slots";
-import { cn, ymd } from "@/lib/utils";
+import { businessDayOf, isStoreClosed } from "@/lib/slots";
+import { cn } from "@/lib/utils";
 import { getCustomer } from "@/lib/auth";
 import { Chip, Eyebrow, Sticker } from "@/components/ui";
 
@@ -24,7 +24,7 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
     }),
   ]);
   const today = new Date();
-  const closed = isStoreClosed(store, ymd(today));
+  const closed = isStoreClosed(store, businessDayOf(store, today));
   const openStaff = staff.filter((s) => s.remainingHoursToday > 0);
   const nowStaff = staff.filter((s) => s.availableNow);
 

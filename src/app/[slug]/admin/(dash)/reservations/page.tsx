@@ -3,8 +3,8 @@ import { addMonths, endOfMonth, format, startOfMonth } from "date-fns";
 import { ko } from "date-fns/locale";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
-import { storeSlotTimes } from "@/lib/slots";
-import { parseJsonArray, startOfDayLocal, toLocalDate, ymd } from "@/lib/utils";
+import { businessDayOf, businessDayRange, storeSlotTimes } from "@/lib/slots";
+import { parseJsonArray, toLocalDate, ymd } from "@/lib/utils";
 import { Card, Eyebrow } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { ReservationsClient, type ResRow } from "./reservations-client";
@@ -20,12 +20,14 @@ export default async function ReservationsPage({ params, searchParams }: { param
   const staffLite = staff.map((s) => ({ id: s.id, nickname: s.nickname, isActive: s.isActive }));
   const customers = await prisma.customer.findMany({ where: { storeId: store.id }, select: { id: true, nickname: true }, orderBy: { nickname: "asc" } });
 
-  // ── 리스트 뷰 ──
-  const today = startOfDayLocal(new Date());
+  // ── 리스트 뷰 ── 날짜 필터는 달력 날짜가 아니라 영업일 단위로 자른다
+  const todayStr = businessDayOf(store);
+  const today = businessDayRange(store, todayStr).start;
   const date = sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : "";
+  const dateRange = date ? businessDayRange(store, date) : null;
   const where = {
     storeId: store.id,
-    ...(date ? { startTime: { gte: toLocalDate(date, "00:00"), lt: new Date(toLocalDate(date, "00:00").getTime() + 86_400_000) } } : { startTime: { gte: today } }),
+    ...(dateRange ? { startTime: { gte: dateRange.start, lt: dateRange.end } } : { startTime: { gte: today } }),
     ...(sp.staffId ? { staffId: sp.staffId } : {}),
     ...(sp.status ? { status: sp.status } : {}),
     ...(sp.q ? { customer: { nickname: { contains: sp.q } } } : {}),
@@ -95,7 +97,7 @@ export default async function ReservationsPage({ params, searchParams }: { param
               const inMonth = d.getMonth() === mStart.getMonth();
               const m = byDay.get(k);
               const total = m ? [...m.values()].reduce((a, b) => a + b, 0) : 0;
-              const isToday = k === ymd(today);
+              const isToday = k === todayStr;
               return (
                 <Link key={k} href={`?view=list&date=${k}`} className={cn("flex min-h-[76px] flex-col rounded-xl border p-1.5 text-left transition-colors hover:border-brand", inMonth ? "border-line bg-white" : "border-transparent bg-transparent opacity-40", isToday && "border-brand bg-blush-lt/40")}>
                   <span className={cn("text-[11px] font-bold", isToday ? "text-brand" : "text-ink")}>{d.getDate()}</span>

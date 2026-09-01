@@ -38,6 +38,33 @@ export function isStoreClosed(store: Pick<Store, "closedDays">, date: string) {
   return parseJsonArray<number>(store.closedDays).includes(wd);
 }
 
+/* ─── 영업일 ───
+   자정이 아니라 마감 시각이 하루의 경계다. 12:00 오픈 · 익일 04:00 마감이면
+   9/1 영업일은 [9/1 04:00, 9/2 04:00) 이고, 9/2 새벽 1시는 아직 9/1 영업일이다.
+   경계를 마감 시각으로 잡으면 하루들이 빈틈 없이 딱 맞물린다. */
+
+/** 지금이 속한 영업일 (YYYY-MM-DD) */
+export function businessDayOf(store: Pick<Store, "openTime" | "closeTime">, now = new Date()) {
+  const open = timeToMin(store.openTime);
+  const close = timeToMin(store.closeTime);
+  if (close > open) return ymd(now); // 자정을 넘기지 않는 매장은 달력 날짜 그대로
+  const mins = now.getHours() * 60 + now.getMinutes();
+  // 마감 전 새벽이면 아직 어제 영업일
+  return mins < close ? ymd(new Date(now.getTime() - 86_400_000)) : ymd(now);
+}
+
+/** 해당 영업일이 포함하는 실제 시각 범위 */
+export function businessDayRange(store: Pick<Store, "openTime" | "closeTime">, date: string) {
+  const open = timeToMin(store.openTime);
+  const close = timeToMin(store.closeTime);
+  if (close > open) {
+    const start = toLocalDate(date, "00:00");
+    return { start, end: addMinutes(start, 24 * 60) };
+  }
+  const start = toLocalDate(date, store.closeTime);
+  return { start, end: addMinutes(start, 24 * 60) };
+}
+
 /** 특정 캐치걸의 특정 날짜 슬롯 상태 계산 */
 export async function getSlotsFor(
   store: Store,
@@ -110,7 +137,8 @@ export function maxHoursAt(slots: Slot[], index: number, slotMinutes: number, ca
 
 /** 예약 가능 날짜 목록 (오늘 ~ maxAdvanceDays) — 매장 휴무/캐치걸 휴무/근무 없는 요일은 disabled */
 export function calendarDays(store: Store, staff: Staff & { schedules: StaffSchedule[]; offs: { date: string }[] }) {
-  const today = startOfDayLocal(new Date());
+  // 새벽 2시에도 "오늘"은 어제 시작한 영업일이어야 한다
+  const today = toLocalDate(businessDayOf(store), "00:00");
   const out: { date: string; weekday: number; disabled: boolean; reason?: string }[] = [];
   const offSet = new Set(staff.offs.map((o) => o.date));
   for (let i = 0; i <= store.maxAdvanceDays; i++) {

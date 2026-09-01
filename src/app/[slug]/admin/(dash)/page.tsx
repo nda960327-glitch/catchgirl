@@ -3,8 +3,8 @@ import { format, startOfMonth, subDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
-import { storeSlotTimes } from "@/lib/slots";
-import { startOfDayLocal, STATUS_LABEL, parseJsonArray, ymd, won, wonShort, STORE_FEE_PER_HOUR } from "@/lib/utils";
+import { businessDayOf, businessDayRange, storeSlotTimes } from "@/lib/slots";
+import { STATUS_LABEL, parseJsonArray, toLocalDate, won, wonShort, STORE_FEE_PER_HOUR } from "@/lib/utils";
 import { Card, Chip, Eyebrow } from "@/components/ui";
 import { Charts } from "./charts";
 import { Timeline } from "./timeline";
@@ -13,8 +13,9 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
   const { slug } = await params;
   const store = await getStoreBySlug(slug);
   const now = new Date();
-  const today0 = startOfDayLocal(now);
-  const tomorrow0 = new Date(today0.getTime() + 86_400_000);
+  // "오늘"은 달력 날짜가 아니라 영업일 — 새벽 2시는 아직 어제 시작한 영업일이다
+  const todayStr = businessDayOf(store, now);
+  const { start: today0, end: tomorrow0 } = businessDayRange(store, todayStr);
   const weekAgo = subDays(today0, 6);
   const monthAgo = subDays(today0, 30);
   const monthStart = startOfMonth(now);
@@ -53,7 +54,6 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
   // 캐치걸별 점유율 (30일, 취소 제외)
   const share = staff.map((s) => ({ name: s.nickname, count: monthRes.filter((r) => r.status !== "CANCELLED" && r.staffId === s.id).length }));
 
-  const todayStr = ymd(now);
   // 각 지표는 그 숫자를 만든 목록으로 바로 넘어간다
   const kpis = [
     { label: `${format(now, "M월")} 매출`, value: wonShort(revenueDone), sub: `방문완료 ${doneHours}시간 · 예정 포함 ${wonShort(revenueBooked)}`, href: `/${slug}/admin/reservations?view=list` },
@@ -68,7 +68,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <Eyebrow>Dashboard</Eyebrow>
-          <h1 className="mt-1 font-serif text-[22px] font-bold text-ink">{format(now, "M월 d일 EEEE", { locale: ko })}</h1>
+          <h1 className="mt-1 font-serif text-[22px] font-bold text-ink">{format(toLocalDate(todayStr, "00:00"), "M월 d일 EEEE", { locale: ko })}</h1>
+          <div className="mt-0.5 text-[11px] text-mute">영업일 기준 · {store.openTime}~익일 {store.closeTime}</div>
         </div>
         <Link href={`/${slug}/admin/reservations?new=1`} className="cta-grad rounded-2xl px-4 py-2.5 text-[13px] font-bold text-white shadow-cta">+ 전화 예약 등록</Link>
       </div>

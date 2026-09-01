@@ -1,8 +1,8 @@
 import "server-only";
 import type { Store } from "@prisma/client";
 import { prisma } from "./db";
-import { getSlotsFor } from "./slots";
-import { parseJsonArray, ymd } from "./utils";
+import { businessDayOf, getSlotsFor } from "./slots";
+import { parseJsonArray } from "./utils";
 
 /** "지금 예약 가능"으로 볼 시간 여유 — 이 안에 시작하는 빈자리가 있으면 지금 가능으로 본다 */
 const AVAILABLE_NOW_WINDOW_MIN = 30;
@@ -59,7 +59,7 @@ export async function listStaffSummaries(store: Store, includeInactive = false):
     },
   });
   const now = new Date();
-  const today = ymd(now);
+  const today = businessDayOf(store, now); // 새벽에도 "오늘"은 어제 시작한 영업일
   const nowCutoff = now.getTime() + AVAILABLE_NOW_WINDOW_MIN * 60_000;
 
   return Promise.all(

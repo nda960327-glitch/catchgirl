@@ -8,6 +8,7 @@ import { logoutAdmin } from "@/app/[slug]/admin/actions";
 const NAV = [
   { href: "", label: "대시보드", icon: "◫" },
   { href: "/reservations", label: "예약 관리", icon: "▤" },
+  { href: "/revenue", label: "매출 관리", icon: "₩" },
   { href: "/staff", label: "직원 관리", icon: "♟" },
   { href: "/customers", label: "고객 관리", icon: "♡" },
   { href: "/reviews", label: "후기·댓글", icon: "✎" },

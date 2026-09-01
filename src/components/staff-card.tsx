@@ -17,12 +17,11 @@ export function StaffCard({ s, href }: { s: StaffSummary; href: string }) {
             )}
           </div>
           <div className="mt-1.5 truncate text-[12px] text-mute">{s.tags.slice(0, 3).map((t) => `#${t}`).join(" ")}</div>
-          {(s.upCount > 0 || s.downCount > 0) && (
-            <div className="mt-1.5 flex items-center gap-2.5 text-[11px] font-semibold">
-              <span className="text-brand">👍 {s.upCount}</span>
-              {s.downCount > 0 && <span className="text-mute">👎 {s.downCount}</span>}
-            </div>
-          )}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-semibold">
+            <span className={s.upCount > 0 ? "text-brand" : "text-mute"}>👍 {s.upCount}</span>
+            {s.downCount > 0 && <span className="text-mute">👎 {s.downCount}</span>}
+            <span className="text-mute">리뷰 {s.reviewCount}</span>
+          </div>
           <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1">
             {/* 지금 되는 사람은 배지 두 개, 오늘만 되는 사람은 '오늘' 하나 */}
             {s.availableNow && (
