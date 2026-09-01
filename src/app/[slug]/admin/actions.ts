@@ -663,6 +663,7 @@ const storeSchema = z.object({
   themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   openTime: z.string().regex(/^\d{2}:\d{2}$/),
   closeTime: z.string().regex(/^\d{2}:\d{2}$/),
+  shiftSplitTime: z.string().regex(/^\d{2}:\d{2}$/),
   slotMinutes: z.coerce.number().int().refine((v) => [30, 60].includes(v), "30 또는 60"),
   closedDays: z.array(z.number().int().min(0).max(6)).default([]),
   cancelDeadlineHours: z.coerce.number().int().min(0).max(72),
@@ -675,6 +676,12 @@ export async function saveStoreSettings(slug: string, input: z.input<typeof stor
     await requireAdmin(store.id);
     const p = storeSchema.safeParse(input);
     if (!p.success) return { ok: false, error: p.error.issues[0].message };
+    // 새벽 마감을 다음 날로 펴서 본다. 교대 시각이 영업시간 밖이면 한쪽 조가 통째로 사라진다.
+    const open = toMin(p.data.openTime);
+    const norm = (t: string) => { const m = toMin(t); return m <= open ? m + 24 * 60 : m; };
+    if (norm(p.data.shiftSplitTime) >= norm(p.data.closeTime)) {
+      return { ok: false, error: "교대 시각은 오픈과 마감 사이여야 해요" };
+    }
     await prisma.store.update({ where: { id: store.id }, data: { ...p.data, closedDays: JSON.stringify(p.data.closedDays) } });
     revalidatePath(`/${slug}`, "layout");
     return { ok: true };

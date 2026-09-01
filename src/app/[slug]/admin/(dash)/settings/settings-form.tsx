@@ -8,7 +8,7 @@ import { uploadImages } from "@/lib/image-client";
 import { cn, themeVars, WEEKDAYS_KO } from "@/lib/utils";
 import { saveStoreSettings, triggerReminders } from "../../actions";
 
-type Init = { name: string; tagline: string; heroTitle: string; logoUrl: string | null; coverUrl: string | null; themeColor: string; openTime: string; closeTime: string; slotMinutes: number; closedDays: number[]; cancelDeadlineHours: number; maxAdvanceDays: number; noshowPolicy: string };
+type Init = { name: string; tagline: string; heroTitle: string; logoUrl: string | null; coverUrl: string | null; themeColor: string; openTime: string; closeTime: string; shiftSplitTime: string; slotMinutes: number; closedDays: number[]; cancelDeadlineHours: number; maxAdvanceDays: number; noshowPolicy: string };
 
 const PRESETS = ["#B4586A", "#C8A46A", "#5B6C8F", "#3E7C6A", "#8A5BB5", "#C4642F", "#1F1F24"];
 
@@ -86,8 +86,7 @@ export function SettingsForm({ slug, init }: { slug: string; init: Init }) {
         <Card className="p-5">
           <div className="text-[14px] font-bold text-ink">영업 · 예약 정책</div>
           <div className="mt-4 grid gap-4 md:grid-cols-3">
-            <Field label="오픈"><Input type="time" value={f.openTime} onChange={(e) => setF({ ...f, openTime: e.target.value })} className="h-11" /></Field>
-            <Field label="마감"><Input type="time" value={f.closeTime} onChange={(e) => setF({ ...f, closeTime: e.target.value })} className="h-11" /></Field>
+            {/* 오픈·마감은 아래 '주간 · 야간 시간'에서 조 시간과 함께 정한다 */}
             <Field label="슬롯 단위">
               <Select value={String(f.slotMinutes)} onChange={(e) => setF({ ...f, slotMinutes: Number(e.target.value) })} className="w-full">
                 <option value="30">30분</option>
@@ -107,6 +106,29 @@ export function SettingsForm({ slug, init }: { slug: string; init: Init }) {
           </div>
           <div className="mt-4">
             <Field label="노쇼 정책 문구 (고객 화면 노출)"><Textarea rows={2} value={f.noshowPolicy} onChange={(e) => setF({ ...f, noshowPolicy: e.target.value })} /></Field>
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <div className="text-[14px] font-bold text-ink">주간 · 야간 시간</div>
+          <div className="mt-1 text-[11px] leading-[1.7] text-mute">
+            룸 배치를 짤 때 주간·야간 칸에 기본으로 들어가는 시간이에요.
+            사람마다 다르면 배치표에서 그 사람 시간만 따로 고치면 돼요.
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <Field label="주간 시작 (= 오픈)">
+              <Input type="time" value={f.openTime} onChange={(e) => setF({ ...f, openTime: e.target.value })} className="h-11" />
+            </Field>
+            <Field label="교대 시각 (주간 끝 · 야간 시작)">
+              <Input type="time" value={f.shiftSplitTime} onChange={(e) => setF({ ...f, shiftSplitTime: e.target.value })} className="h-11" />
+            </Field>
+            <Field label="야간 끝 (= 마감)">
+              <Input type="time" value={f.closeTime} onChange={(e) => setF({ ...f, closeTime: e.target.value })} className="h-11" />
+            </Field>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-xl bg-[#FFF6E6] px-3 py-2 text-[12px] font-bold text-[#8A6A20]">주간 {f.openTime} ~ {f.shiftSplitTime}</span>
+            <span className="rounded-xl bg-[#EEF1FB] px-3 py-2 text-[12px] font-bold text-[#3D4E8C]">야간 {f.shiftSplitTime} ~ {f.closeTime < f.openTime ? "익일 " : ""}{f.closeTime}</span>
           </div>
         </Card>
 

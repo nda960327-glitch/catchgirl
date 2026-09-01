@@ -31,6 +31,11 @@ const OPEN_HOUR = 12;
 const SLOTS_PER_DAY = 32;
 const SLOTS_PER_HOUR = 2;
 const startAt = (day: Date, slotIdx: number) => new Date(day.getFullYear(), day.getMonth(), day.getDate(), OPEN_HOUR, slotIdx * 30, 0, 0);
+/** "HH:MM" → 슬롯 인덱스. 새벽 시각은 영업일 끝쪽으로 넘겨서 센다 (02:00 → 28). */
+const slotOf = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return ((h < OPEN_HOUR ? h + 24 : h) * 60 + m - OPEN_HOUR * 60) / 30;
+};
 
 const CUSTOMER_NAMES = [
   "서준","도윤","시우","민준","은우","예준","지호","유준","하준","주원",
@@ -201,13 +206,55 @@ async function main() {
   // 단골이 될 사람들 — 이들에게 예약을 더 몰아준다
   const regulars = customers.slice(0, 22);
 
-  console.log("📅 7~9월 예약 생성...");
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  // 배치를 먼저 짠다. 예약은 그 사람이 실제로 그 방을 쓰는 시간 안에서만 잡혀야
+  // 손님에게 몇 번 룸인지 안내가 나간다.
+  console.log("🗓 출근 배치 (지난주 ~ 다음주)...");
+  type Busy = { s: number; e: number }; // 슬롯 인덱스 구간
+  const dayShifts = new Map<string, Map<number, Busy[]>>();
+  let assignCount = 0;
+  for (let off = -7; off <= 7; off++) {
+    const day = addDays(today, off);
+    const date = ymd(day);
+    const pool = [...staff.keys()].sort(() => rand() - 0.5);
+    const roster = new Map<number, Busy[]>();
+    let p = 0;
+    // 룸 10개 중 6~9개를 채운다
+    const fill = intBetween(6, 9);
+    for (let r = 0; r < fill; r++) {
+      // 조마다 시간이 딱 떨어지지 않는다 — 룸별로 출근·인수인계·마감 시각이 다르다
+      const dayStart = pick(["12:00", "13:00", "14:00"]);
+      const handover = pick(["19:00", "20:00", "20:00", "21:00"]);
+      const nightEnd = pick(["02:00", "03:00", "04:00", "04:00"]);
+      const dayStaff = pool[p++ % pool.length];
+      // 가끔은 한 사람이 그 룸의 주간·야간을 통으로 맡는다
+      const nightStaff = chance(0.15) ? dayStaff : pool[p++ % pool.length];
+      const shifts = [
+        { shift: "DAY" as const, staffIdx: dayStaff, startTime: dayStart, endTime: handover },
+        { shift: "NIGHT" as const, staffIdx: nightStaff, startTime: handover, endTime: nightEnd },
+      ];
+      for (const s of shifts) {
+        try {
+          await prisma.shiftAssignment.create({
+            data: { storeId: store.id, date, roomId: rooms[r].id, shift: s.shift, staffId: staff[s.staffIdx].id, startTime: s.startTime, endTime: s.endTime },
+          });
+          assignCount++;
+          roster.set(s.staffIdx, [...(roster.get(s.staffIdx) ?? []), { s: slotOf(s.startTime), e: slotOf(s.endTime) }]);
+        } catch {
+          // 같은 조에 이미 배치된 사람이면 건너뛴다
+        }
+      }
+    }
+    dayShifts.set(date, roster);
+  }
+  console.log(`   배치 ${assignCount}건`);
+
+  console.log("📅 7~9월 예약 생성...");
   const firstDay = new Date(today.getFullYear(), 6, 1); // 7월 1일
   const lastDay = addDays(today, 5); // 오늘 + 5일치 예정 예약
 
-  type Busy = { s: number; e: number }; // 슬롯 인덱스 구간
   const overlaps = (list: Busy[], s: number, e: number) => list.some((b) => s < b.e && e > b.s);
 
   const createdRes: { id: string; staffIdx: number; customerId: string; start: Date; status: string; nickname: string }[] = [];
@@ -220,18 +267,25 @@ async function main() {
     const staffBusy = new Map<number, Busy[]>();
     const custBusy = new Map<string, Busy[]>();
 
-    // 그날 출근한 캐치걸 (12~16명)
+    // 배치표가 있는 날은 그날 방을 맡은 사람만 예약을 받는다.
+    // 배치표가 없는 오래된 날짜는 그냥 그럴듯한 인원을 뽑는다.
+    const roster = dayShifts.get(ymd(day));
     const workingCount = weekend ? intBetween(14, 17) : intBetween(10, 14);
-    const working = [...staff.keys()].sort(() => rand() - 0.5).slice(0, workingCount);
+    const working = roster?.size ? [...roster.keys()] : [...staff.keys()].sort(() => rand() - 0.5).slice(0, workingCount);
 
     for (const si of working) {
+      // 배치된 시간대 안에서만 예약을 잡아야 손님에게 룸 안내가 나간다
+      const windows = roster?.get(si) ?? [{ s: 0, e: SLOTS_PER_DAY }];
       const bookings = weekend ? intBetween(1, 3) : intBetween(0, 2);
       for (let b = 0; b < bookings; b++) {
         const hours = chance(0.45) ? 1 : chance(0.6) ? 2 : chance(0.7) ? 3 : 4;
         const span = hours * SLOTS_PER_HOUR;
+        const w = pick(windows);
+        const room = w.e - w.s - span;
+        if (room < 0) continue; // 근무 시간보다 긴 예약은 못 넣는다
         // 저녁~밤에 몰리도록 시작 슬롯을 뒤쪽으로 치우친 분포로 뽑는다
         const bias = Math.min(1, Math.max(0, (rand() + rand() + rand()) / 3 + 0.18));
-        const slot = Math.min(SLOTS_PER_DAY - span, Math.floor(bias * (SLOTS_PER_DAY - span)));
+        const slot = w.s + Math.min(room, Math.floor(bias * room));
         const sBusy = staffBusy.get(si) ?? [];
         if (overlaps(sBusy, slot, slot + span)) continue;
 
@@ -269,8 +323,9 @@ async function main() {
             hourlyPrice: st.hourlyPrice,
             optionsPrice,
             totalPrice: st.hourlyPrice * hours + optionsPrice,
-            // 배치가 있으면 화면에서 실시간으로 다시 찾으므로 여기선 비워 둔다
-            roomName: null,
+            // 배치표가 남아 있는 최근 날짜는 화면에서 실시간으로 다시 찾는다.
+            // 그보다 오래된 예약은 배치 기록이 없으므로 그날 쓴 방을 적어 둔다.
+            roomName: isPast ? rooms[si % rooms.length].name : null,
             cancelledAt: status === "CANCELLED" ? new Date(start.getTime() - 5 * 3600_000) : null,
             options: { create: optRows },
           },
@@ -368,31 +423,6 @@ async function main() {
     // 아직 앱을 시작하지 않은 손님 — 이 코드로 시작할 수 있다
     data: { inviteCode: "A3K9", passwordHash: null, adminMemo: "카톡으로만 예약하시던 분. 앱 연결코드 안내함." },
   });
-
-  console.log("🗓 출근 배치 (지난주 ~ 다음주)...");
-  let assignCount = 0;
-  for (let off = -7; off <= 7; off++) {
-    const day = addDays(today, off);
-    const date = ymd(day);
-    const pool = [...staff.keys()].sort(() => rand() - 0.5);
-    let p = 0;
-    for (const shift of ["DAY", "NIGHT"] as const) {
-      // 룸 10개 중 6~9개를 채운다
-      const fill = intBetween(6, 9);
-      for (let r = 0; r < fill; r++) {
-        const si = pool[p++ % pool.length];
-        try {
-          await prisma.shiftAssignment.create({
-            data: { storeId: store.id, date, shift, roomId: rooms[r].id, staffId: staff[si].id },
-          });
-          assignCount++;
-        } catch {
-          // 같은 조에 이미 배치된 사람이면 건너뛴다
-        }
-      }
-    }
-  }
-  console.log(`   배치 ${assignCount}건`);
 
   console.log("🚶 자리 비움(외출)...");
   const todayStr = ymd(today);

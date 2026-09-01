@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Avatar, Chip } from "@/components/ui";
 import { cn, STATUS_LABEL } from "@/lib/utils";
@@ -42,15 +42,43 @@ export function Timeline({
   nowTime: string;
 }) {
   const [picked, setPicked] = useState<{ item: TimelineItem; staffName: string } | null>(null);
-  const nowIdx = times.findIndex((t) => t > nowTime);
+  const scroller = useRef<HTMLDivElement>(null);
+  // "02:09" < "12:00" 이라 문자열로 비교하면 새벽엔 지금 표시가 낮 12시로 튄다.
+  // 영업일은 자정을 넘겨 이어지므로 오픈 시각보다 이른 시간은 다음 날로 펴서 센다.
+  const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  const openMin = toMin(times[0] ?? "00:00");
+  const norm = (t: string) => (toMin(t) < openMin ? toMin(t) + 24 * 60 : toMin(t));
+  const nowIdx = times.findIndex((t) => norm(t) > norm(nowTime));
   const perHour = 60 / slotMinutes;
+
+  // scrollTo({behavior:"smooth"}) 를 무시하는 브라우저가 있어 scrollLeft 로 직접 옮긴다.
+  // 부드럽게 흐르는 건 컨테이너의 scroll-smooth 가 맡는다.
+  /** 새벽까지 다 그리면 화면 밖으로 넘어가므로, 열 때 지금 시각이 보이는 곳으로 옮겨 둔다 */
+  const scrollToNow = () => {
+    const el = scroller.current;
+    if (!el || nowIdx < 0) return;
+    el.scrollLeft = Math.max(0, nowIdx * COL - el.clientWidth / 3);
+  };
+  useEffect(scrollToNow, [nowIdx]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const nudge = (dir: -1 | 1) => {
+    const el = scroller.current;
+    if (el) el.scrollLeft += dir * COL * perHour * 3;
+  };
 
   return (
     <>
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-4 flex items-center justify-end gap-1.5">
+        <button onClick={() => nudge(-1)} aria-label="이전 시간대" className="h-8 w-8 rounded-xl border border-line bg-white text-[13px] font-bold text-mute hover:border-brand hover:text-brand">‹</button>
+        <button onClick={scrollToNow} className="h-8 rounded-xl border border-line bg-white px-3 text-[11px] font-bold text-mute hover:border-brand hover:text-brand">지금</button>
+        <button onClick={() => nudge(1)} aria-label="다음 시간대" className="h-8 w-8 rounded-xl border border-line bg-white text-[13px] font-bold text-mute hover:border-brand hover:text-brand">›</button>
+      </div>
+      {/* scroll-behavior:smooth 를 켜면 일부 브라우저에서 scrollLeft 지정이 통째로 무시된다 */}
+      <div ref={scroller} className="scroll-x mt-2 overflow-x-auto pb-2">
         <div style={{ minWidth: NAME_W + times.length * COL }}>
           <div className="flex">
-            <div className="shrink-0" style={{ width: NAME_W }} />
+            {/* 옆으로 밀어도 누구 줄인지 보여야 하므로 이름 칸은 붙여 둔다 */}
+            <div className="sticky left-0 z-20 shrink-0 bg-white" style={{ width: NAME_W }} />
             {times.map((t, i) => (
               <div
                 key={t}
@@ -65,7 +93,7 @@ export function Timeline({
 
           {rows.map((row) => (
             <div key={row.id} className="mt-2 flex items-center">
-              <div className="flex shrink-0 items-center gap-1.5 pr-2" style={{ width: NAME_W }}>
+              <div className="sticky left-0 z-20 flex shrink-0 items-center gap-1.5 bg-white pr-2" style={{ width: NAME_W }}>
                 <Avatar src={row.photo} name={row.name} size={26} rounded={9} />
                 <span className="truncate text-[12px] font-bold text-ink">{row.name}</span>
               </div>
