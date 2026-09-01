@@ -693,6 +693,133 @@ export async function adminCommentAction(slug: string, commentId: string, action
   }
 }
 
+/* ─── 할인 ─── */
+
+const couponSchema = z.object({
+  customerId: z.string().min(1),
+  name: z.string().trim().min(1, "쿠폰 이름을 입력해 주세요").max(30),
+  amount: z.coerce.number().int().min(1_000, "1,000원 이상으로 정해 주세요").max(1_000_000),
+  memo: z.string().trim().max(200).default(""),
+  /** 며칠 뒤까지 쓸 수 있는지. 0 이면 기한 없음. */
+  validDays: z.coerce.number().int().min(0).max(365).default(30),
+});
+
+/** 손님 한 명에게 쿠폰을 준다 */
+export async function issueCoupon(slug: string, input: z.input<typeof couponSchema>): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const p = couponSchema.safeParse(input);
+    if (!p.success) return { ok: false, error: p.error.issues[0].message };
+    const d = p.data;
+    const customer = await prisma.customer.findUnique({ where: { id: d.customerId } });
+    if (!customer || customer.storeId !== store.id) return { ok: false, error: "고객을 찾을 수 없어요." };
+    await prisma.coupon.create({
+      data: {
+        storeId: store.id,
+        customerId: d.customerId,
+        name: d.name,
+        amount: d.amount,
+        memo: d.memo,
+        expiresAt: d.validDays > 0 ? new Date(Date.now() + d.validDays * 86_400_000) : null,
+      },
+    });
+    revalidatePath(`/${slug}/admin/customers/${d.customerId}`);
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 아직 안 쓴 쿠폰 회수 */
+export async function deleteCoupon(slug: string, couponId: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const c = await prisma.coupon.findUnique({ where: { id: couponId } });
+    if (!c || c.storeId !== store.id) return { ok: false, error: "쿠폰을 찾을 수 없어요." };
+    if (c.usedAt) return { ok: false, error: "이미 쓴 쿠폰은 지울 수 없어요." };
+    await prisma.coupon.delete({ where: { id: couponId } });
+    revalidatePath(`/${slug}/admin/customers/${c.customerId}`);
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+const benefitSchema = z.object({
+  grade: z.enum(["단골", "VIP"]),
+  amount: z.coerce.number().int().min(0).max(1_000_000),
+  note: z.string().trim().max(200).default(""),
+  isActive: z.boolean().default(true),
+});
+
+/** 등급 혜택 저장 */
+export async function saveGradeBenefit(slug: string, input: z.input<typeof benefitSchema>): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const p = benefitSchema.safeParse(input);
+    if (!p.success) return { ok: false, error: p.error.issues[0].message };
+    const d = p.data;
+    await prisma.gradeBenefit.upsert({
+      where: { storeId_grade: { storeId: store.id, grade: d.grade } },
+      create: { storeId: store.id, grade: d.grade, amount: d.amount, note: d.note, isActive: d.isActive },
+      update: { amount: d.amount, note: d.note, isActive: d.isActive },
+    });
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+const promoSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().trim().min(1, "할인 이름을 입력해 주세요").max(30),
+  amount: z.coerce.number().int().min(1_000, "1,000원 이상으로 정해 주세요").max(1_000_000),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "날짜를 확인해 주세요"),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "날짜를 확인해 주세요"),
+  isActive: z.boolean().default(true),
+});
+
+/** 기간 할인 (비 오는 날 할인 등) */
+export async function saveDayPromotion(slug: string, input: z.input<typeof promoSchema>): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const p = promoSchema.safeParse(input);
+    if (!p.success) return { ok: false, error: p.error.issues[0].message };
+    const d = p.data;
+    if (d.endDate < d.startDate) return { ok: false, error: "종료일이 시작일보다 빨라요." };
+    if (d.id) {
+      const ex = await prisma.dayPromotion.findUnique({ where: { id: d.id } });
+      if (!ex || ex.storeId !== store.id) return { ok: false, error: "할인을 찾을 수 없어요." };
+      await prisma.dayPromotion.update({ where: { id: d.id }, data: { name: d.name, amount: d.amount, startDate: d.startDate, endDate: d.endDate, isActive: d.isActive } });
+    } else {
+      await prisma.dayPromotion.create({ data: { storeId: store.id, name: d.name, amount: d.amount, startDate: d.startDate, endDate: d.endDate, isActive: d.isActive } });
+    }
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteDayPromotion(slug: string, id: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const ex = await prisma.dayPromotion.findUnique({ where: { id } });
+    if (!ex || ex.storeId !== store.id) return { ok: false, error: "할인을 찾을 수 없어요." };
+    await prisma.dayPromotion.delete({ where: { id } });
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 /** 요금제 변경. 결제 연동이 붙기 전까지는 화면에서 바로 바뀐다. */
 export async function setStorePlan(slug: string, plan: "PRO" | "MAX"): Promise<R> {
   try {

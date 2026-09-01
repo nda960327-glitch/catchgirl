@@ -4,6 +4,7 @@ import { prisma } from "./db";
 import { ACTIVE_STATUSES, businessDayOf, getSlotsFor, maxHoursAt, MAX_BOOKING_HOURS, shiftOfTime } from "./slots";
 import { addMinutes, fmtDateTimeKo, genReservationCode, toLocalDate } from "./utils";
 import { notificationService } from "./notifications";
+import { gradeBenefitFor, gradeOfCustomer, promotionOn, resolveDiscount } from "./discounts";
 
 /**
  * 예약들이 실제로 앉을 룸을 찾아준다.
@@ -69,6 +70,8 @@ export type CreateReservationInput = {
   requestNote?: string;
   purposeTag?: string;
   createdBy: "CUSTOMER" | "ADMIN";
+  /** 손님이 고른 쿠폰 (없으면 자동 할인만 붙는다) */
+  couponId?: string;
   /** 관리자 예약은 과거/마감 슬롯 검증을 건너뛴다 */
   skipAvailabilityCheck?: boolean;
 };
@@ -119,7 +122,7 @@ export async function createReservation(input: CreateReservationInput) {
     ? await prisma.storeOption.findMany({ where: { id: { in: wanted }, storeId: store.id, isActive: true } })
     : [];
   const optionsPrice = options.reduce((a, o) => a + o.price, 0);
-  const totalPrice = staff.hourlyPrice * hours + optionsPrice;
+  const listPrice = staff.hourlyPrice * hours + optionsPrice;
 
   // 그날 그 조에 이 캐치걸이 배치된 룸 — 손님에게 "룸1" 로 안내한다.
   // 이름만 복사해 두므로 나중에 룸이 바뀌거나 지워져도 예약 안내는 그대로 남는다.
@@ -130,6 +133,25 @@ export async function createReservation(input: CreateReservationInput) {
     include: { room: { select: { name: true } } },
   });
   const roomName = assignment?.room.name ?? null;
+
+  // 할인 — 매장이 부담하므로 캐치걸 몫(정가)에는 손대지 않는다.
+  // 쿠폰은 예약 생성이 성공한 뒤에 사용 처리한다.
+  const grade = await gradeOfCustomer(customer.id);
+  const [benefit, promo] = await Promise.all([gradeBenefitFor(store.id, grade), promotionOn(store.id, day)]);
+  const auto = [benefit, promo].filter((d): d is { label: string; amount: number } => d !== null).sort((a, b) => b.amount - a.amount)[0] ?? null;
+  const chosen = input.couponId
+    ? await prisma.coupon.findFirst({
+        where: {
+          id: input.couponId,
+          storeId: store.id,
+          customerId: customer.id,
+          usedAt: null,
+          OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }],
+        },
+      })
+    : null;
+  const discount = resolveDiscount(listPrice, auto, chosen ? { label: chosen.name, amount: chosen.amount } : null);
+  const totalPrice = listPrice - discount.amount;
 
   try {
     const created = await prisma.$transaction(
@@ -164,6 +186,8 @@ export async function createReservation(input: CreateReservationInput) {
             createdBy: input.createdBy,
             hourlyPrice: staff.hourlyPrice,
             optionsPrice,
+            discountAmount: discount.amount,
+            discountLabel: discount.label,
             totalPrice,
             roomName,
             options: { create: options.map((o) => ({ optionId: o.id, name: o.name, price: o.price })) },
@@ -172,6 +196,15 @@ export async function createReservation(input: CreateReservationInput) {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+
+    // 예약이 실제로 잡힌 뒤에만 쿠폰을 쓴 것으로 처리한다.
+    // 조건에 usedAt: null 을 남겨 두어 동시에 두 예약에 쓰이지 않게 한다.
+    if (chosen) {
+      await prisma.coupon.updateMany({
+        where: { id: chosen.id, usedAt: null },
+        data: { usedAt: new Date(), reservationId: created.id },
+      });
+    }
 
     await notificationService().send({
       type: "RESERVATION_CONFIRMED",

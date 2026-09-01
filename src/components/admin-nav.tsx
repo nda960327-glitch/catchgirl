@@ -9,10 +9,12 @@ import { logoutAdmin } from "@/app/[slug]/admin/actions";
 const NAV = [
   { href: "", label: "대시보드", icon: "◫" },
   { href: "/reservations", label: "예약 관리", icon: "▤" },
+  { href: "/collect", label: "수금", icon: "◎" },
   { href: "/revenue", label: "매출 관리", icon: "₩" },
   { href: "/staff", label: "직원 관리", icon: "♟" },
   { href: "/customers", label: "고객 관리", icon: "♡" },
   { href: "/reviews", label: "후기·댓글", icon: "✎" },
+  { href: "/discounts", label: "할인 관리", icon: "%" },
   { href: "/settings", label: "매장 설정", icon: "⚙" },
   { href: "/plan", label: "요금제", icon: "◈" },
 ];

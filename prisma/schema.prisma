@@ -46,6 +46,9 @@ model Store {
   notices       Notice[]
   rooms         Room[]
   assignments   ShiftAssignment[]
+  coupons       Coupon[]
+  gradeBenefits GradeBenefit[]
+  promotions    DayPromotion[]
 }
 
 model AdminUser {
@@ -142,9 +145,69 @@ model Customer {
   favorites    Favorite[]
   notes        CustomerNote[]
   votes        StaffVote[]
+  coupons      Coupon[]
 
   @@unique([storeId, nickname])
   @@index([storeId, inviteCode])
+}
+
+/**
+ * 손님 한 명에게 준 쿠폰. 한 번 쓰면 끝난다.
+ * 매장이 "이 분은 착하니까" 하고 그냥 줄 수 있어야 해서 사유를 같이 적어 둔다.
+ */
+model Coupon {
+  id            String    @id @default(cuid())
+  storeId       String
+  customerId    String
+  name          String // 손님에게 보일 이름 — "단골 감사 쿠폰"
+  amount        Int // 정액 할인 (원)
+  memo          String    @default("") // 매장만 보는 발급 사유
+  expiresAt     DateTime?
+  usedAt        DateTime?
+  reservationId String?   @unique // 어느 예약에 썼는지
+  createdAt     DateTime  @default(now())
+
+  store       Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer    Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@index([storeId, customerId, usedAt])
+}
+
+/**
+ * 등급 혜택. 단골·VIP 가 예약할 때마다 자동으로 붙는 할인.
+ * grade 는 metrics 의 등급 이름을 그대로 쓴다 (단골 | VIP).
+ */
+model GradeBenefit {
+  id      String  @id @default(cuid())
+  storeId String
+  grade   String
+  amount  Int     @default(0)
+  note    String  @default("") // 손님 화면에 보일 한 줄 설명
+  isActive Boolean @default(true)
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, grade])
+}
+
+/**
+ * 기간 할인. 비 오는 날처럼 그날그날 매장이 정해 거는 할인이라
+ * 하루짜리로도 만들 수 있게 시작일·종료일을 영업일 문자열로 둔다.
+ */
+model DayPromotion {
+  id        String   @id @default(cuid())
+  storeId   String
+  name      String // "비 오는 날 할인"
+  amount    Int
+  startDate String // YYYY-MM-DD (영업일)
+  endDate   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, startDate, endDate])
 }
 
 /** 관리자가 방문마다 남기는 날짜별 메모 (adminMemo 는 고정 요약, 이쪽은 시간순 기록) */
@@ -183,7 +246,10 @@ model Reservation {
   createdBy    String    @default("CUSTOMER") // CUSTOMER | ADMIN
   hourlyPrice  Int       @default(0) // 예약 시점 시급 스냅샷 — 이후 요금이 바뀌어도 과거 금액 보존
   optionsPrice Int       @default(0)
-  totalPrice   Int       @default(0) // hourlyPrice * hours + optionsPrice
+  // 할인은 매장이 부담한다. 캐치걸 몫은 정가 기준 그대로이고 매장 몫에서만 빠진다.
+  discountAmount Int    @default(0)
+  discountLabel  String @default("") // "VIP 혜택", "비 오는 날 할인" 처럼 손님에게 보일 이름
+  totalPrice   Int       @default(0) // hourlyPrice * hours + optionsPrice - discountAmount (손님이 낸 금액)
   roomName     String? // 예약 시점의 배치 룸 이름 스냅샷 — 손님에게 "룸1" 이라고 안내한다
   createdAt    DateTime  @default(now())
   cancelledAt  DateTime?
@@ -193,6 +259,7 @@ model Reservation {
   customer Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
   review   Review?
   options  ReservationOption[]
+  coupon   Coupon?
 
   @@index([storeId, startTime])
   @@index([staffId, startTime])

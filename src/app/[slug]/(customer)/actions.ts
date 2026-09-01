@@ -106,6 +106,8 @@ const bookSchema = z.object({
   time: z.string().regex(/^\d{2}:\d{2}$/),
   hours: z.coerce.number().int().min(1).max(8).default(1),
   optionIds: z.array(z.string()).max(20).default([]),
+  // 쿠폰이 이 손님 것인지, 아직 쓸 수 있는지는 예약을 만들면서 다시 확인한다
+  couponId: z.string().optional(),
   partySize: z.coerce.number().int().min(1).max(8),
   requestNote: z.string().trim().max(200).optional().default(""),
   purposeTag: z.string().trim().max(20).optional().default(""),

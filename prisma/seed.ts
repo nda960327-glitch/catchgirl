@@ -38,6 +38,8 @@ const slotOf = (t: string) => {
 };
 
 const CUSTOMER_NAMES = [
+  // 데모에서 바로 보여주는 손님. 앞쪽은 단골로 잡히므로 기록이 두툼하게 쌓인다.
+  "길동",
   "서준","도윤","시우","민준","은우","예준","지호","유준","하준","주원",
   "선우","지훈","건우","서진","우주","연우","수호","다온","로운","이안",
   "성민","정훈","상현","동현","승호","태현","민수","진우","재현","영호",
@@ -485,6 +487,37 @@ async function main() {
   }
   await prisma.staffTimeOff.createMany({ data: offRows });
   console.log(`   자리 비움 ${offRows.length}건`);
+
+  console.log("🎟 할인 (등급 혜택 · 기간 할인 · 쿠폰)...");
+  await prisma.gradeBenefit.createMany({
+    data: [
+      { storeId: store.id, grade: "단골", amount: 20_000, note: "다섯 번째 방문부터 예약마다 2만원 빼 드려요." },
+      { storeId: store.id, grade: "VIP", amount: 50_000, note: "열 번째 방문부터 예약마다 5만원 빼 드리고, 원하시는 자리를 먼저 잡아 드려요." },
+    ],
+  });
+  await prisma.dayPromotion.createMany({
+    data: [
+      // 비 오던 날 걸어 뒀던 할인 (지난 기록)
+      { storeId: store.id, name: "비 오는 날 할인", amount: 30_000, startDate: ymd(addDays(today, -9)), endDate: ymd(addDays(today, -9)) },
+      // 이번 주말 할인 — 지금 화면에서 "진행 중" 으로 보인다
+      { storeId: store.id, name: "평일 낮 할인", amount: 20_000, startDate: ymd(addDays(today, -1)), endDate: ymd(addDays(today, 5)) },
+    ],
+  });
+  // 매장이 그냥 챙겨 드린 쿠폰 몇 장
+  const couponDefs = [
+    { name: "감사 쿠폰", amount: 30_000, memo: "오래 찾아주셔서 드림" },
+    { name: "사과 쿠폰", amount: 50_000, memo: "대기 오래 하심" },
+    { name: "생일 축하 쿠폰", amount: 50_000, memo: "" },
+    { name: "재방문 쿠폰", amount: 20_000, memo: "" },
+  ];
+  await prisma.coupon.createMany({
+    data: regulars.slice(0, 8).map((c, i) => ({
+      storeId: store.id,
+      customerId: c.id,
+      ...couponDefs[i % couponDefs.length],
+      expiresAt: new Date(today.getTime() + 30 * 86_400_000),
+    })),
+  });
 
   console.log("📢 공지사항...");
   const noticeDefs = [

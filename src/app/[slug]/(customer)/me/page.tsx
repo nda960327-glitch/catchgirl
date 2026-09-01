@@ -5,7 +5,9 @@ import { getStoreBySlug } from "@/lib/store";
 import { getCustomer } from "@/lib/auth";
 import { computeCustomerStats } from "@/lib/metrics";
 import { resolveRooms } from "@/lib/reservations";
-import { parseJsonArray } from "@/lib/utils";
+import { format } from "date-fns";
+import { parseJsonArray, won } from "@/lib/utils";
+import { usableCoupons } from "@/lib/discounts";
 import { Avatar, Card, Eyebrow, GradeChip, Stars, TopBar } from "@/components/ui";
 import { HistoryTabs, type HistoryItem } from "./history-tabs";
 import { ProfileForm } from "./profile-form";
@@ -41,6 +43,12 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
     hasReview: !!r.review,
   }));
   const nextGoal = stats.grade === "신규" ? 5 - stats.visitCount : stats.grade === "단골" ? 10 - stats.visitCount : 0;
+
+  const [coupons, benefitRow] = await Promise.all([
+    usableCoupons(store.id, me.id),
+    stats.grade === "신규" ? null : prisma.gradeBenefit.findUnique({ where: { storeId_grade: { storeId: store.id, grade: stats.grade } } }),
+  ]);
+  const benefit = benefitRow && benefitRow.isActive && benefitRow.amount > 0 ? benefitRow : null;
 
   return (
     <div className="animate-fade">
@@ -78,7 +86,37 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
           </div>
         )}
       </div>
-      <div className="px-4">
+      {/* 쿠폰과 등급 혜택 — 예약 화면에서 자동으로 붙지만 여기서 미리 확인한다 */}
+      {(coupons.length > 0 || benefit) && (
+        <section className="px-4 pt-6">
+          <Eyebrow className="px-1">Benefits</Eyebrow>
+          <h2 className="mt-1 px-1 font-serif text-[17px] font-bold text-ink">내 혜택</h2>
+          <div className="mt-3 flex flex-col gap-2">
+            {benefit && (
+              <div className="rounded-[18px] border border-line bg-white px-4 py-3.5">
+                <div className="flex items-center gap-2">
+                  <GradeChip grade={stats.grade} />
+                  <span className="text-[13px] font-bold text-brand">예약마다 {won(benefit.amount)} 할인</span>
+                </div>
+                {benefit.note && <p className="mt-1.5 text-[11px] leading-[1.8] text-mute">{benefit.note}</p>}
+              </div>
+            )}
+            {coupons.map((c) => (
+              <div key={c.id} className="flex items-center gap-3 rounded-[18px] border border-brand/30 bg-blush-lt/50 px-4 py-3.5">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-bold text-ink">{c.name}</div>
+                  <div className="mt-0.5 text-[10px] text-mute">
+                    {c.expiresAt ? `${format(c.expiresAt, "yyyy.MM.dd")}까지` : "기한 없음"} · 예약할 때 골라서 쓰세요
+                  </div>
+                </div>
+                <span className="font-serif text-[17px] font-bold text-brand">{won(c.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className="px-4 pt-6">
         <ProfileForm slug={slug} me={{ nickname: me.nickname }} />
       </div>
 

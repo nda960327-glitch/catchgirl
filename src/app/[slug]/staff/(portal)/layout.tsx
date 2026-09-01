@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getStoreBySlug } from "@/lib/store";
@@ -9,13 +8,6 @@ import { StaffNav } from "./staff-nav";
 import { logoutStaff } from "../actions";
 
 
-/** 역할마다 다른 앱으로 설치되도록 매니페스트와 아이콘을 따로 준다 */
-export const metadata: Metadata = {
-  title: "캐치걸_어나더 직원",
-  manifest: "/manifest-staff.json",
-  themeColor: "#C8A46A",
-  icons: { icon: "/assets/icon-staff-192.png", apple: "/assets/icon-staff-192.png" },
-};
 
 export default async function StaffLayout({ children, params }: { children: React.ReactNode; params: Promise<{ slug: string }> }) {
   const { slug } = await params;

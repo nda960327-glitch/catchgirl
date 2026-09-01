@@ -25,7 +25,7 @@ function endLabel(time: string, hours: number) {
 }
 
 export function BookingFlow({
-  slug, staff, store, options, days, initialDate, initialTime, initialSlots, customer,
+  slug, staff, store, options, days, initialDate, initialTime, initialSlots, customer, autoDiscount, coupons,
 }: {
   slug: string;
   staff: { id: string; nickname: string; photo: string | null; hourlyPrice: number };
@@ -36,6 +36,9 @@ export function BookingFlow({
   initialTime: string | null;
   initialSlots: Slot[];
   customer: { nickname: string } | null;
+  /** 자동으로 붙는 할인 (등급·기간 중 큰 것 하나) */
+  autoDiscount: { label: string; amount: number } | null;
+  coupons: { id: string; name: string; amount: number; expiresAt: string | null }[];
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -43,6 +46,7 @@ export function BookingFlow({
   const [date, setDate] = useState(initialDate);
   const [time, setTime] = useState<string | null>(initialTime);
   const [hours, setHours] = useState(1);
+  const [couponId, setCouponId] = useState<string | null>(null);
   const [optIds, setOptIds] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [pending, start] = useTransition();
@@ -82,7 +86,11 @@ export function BookingFlow({
 
   const chosenOpts = options.filter((o) => optIds.includes(o.id));
   const optionsPrice = chosenOpts.reduce((a, o) => a + o.price, 0);
-  const total = staff.hourlyPrice * hours + optionsPrice;
+  const listPrice = staff.hourlyPrice * hours + optionsPrice;
+  // 자동 할인 + 고른 쿠폰. 정가보다 많이 깎이지는 않는다 (서버에서도 같은 계산을 한다)
+  const coupon = coupons.find((c) => c.id === couponId) ?? null;
+  const discount = Math.min(listPrice, (autoDiscount?.amount ?? 0) + (coupon?.amount ?? 0));
+  const total = listPrice - discount;
 
   const submit = () => {
     if (!time) return;
@@ -91,7 +99,7 @@ export function BookingFlow({
       return;
     }
     start(async () => {
-      const r = await bookReservation(slug, { staffId: staff.id, date, time, hours, optionIds: optIds, partySize: 1, requestNote: note });
+      const r = await bookReservation(slug, { staffId: staff.id, date, time, hours, optionIds: optIds, couponId: couponId ?? undefined, partySize: 1, requestNote: note });
       if (r.ok && r.data) {
         router.push(`/${slug}/done/${r.data.id}`);
         return;
@@ -300,6 +308,38 @@ export function BookingFlow({
               </div>
             )}
 
+            {/* 쿠폰 — 자동 할인 위에 한 장 더 쓸 수 있다 */}
+            {coupons.length > 0 && (
+              <div className="rounded-[18px] border border-line bg-white p-4">
+                <div className="text-[12px] font-bold text-ink">쿠폰</div>
+                <div className="mt-0.5 text-[10px] text-mute">한 번 쓰면 사라져요. 예약 1건에 한 장만 쓰실 수 있어요.</div>
+                <div className="mt-2.5 flex flex-col gap-1.5">
+                  {coupons.map((c) => {
+                    const on = couponId === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setCouponId(on ? null : c.id)}
+                        className={cn(
+                          "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-[12px] transition-colors",
+                          on ? "border-brand bg-blush-lt/60" : "border-line bg-white hover:border-brand/50",
+                        )}
+                      >
+                        <span className={cn("h-4 w-4 shrink-0 rounded-full border", on ? "border-[5px] border-brand" : "border-line")} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-bold text-ink">{c.name}</span>
+                          {c.expiresAt && <span className="block text-[10px] text-mute">{c.expiresAt}까지</span>}
+                        </span>
+                        <span className="font-bold text-brand">−{won(c.amount)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* 금액 */}
             <div className="rounded-[18px] border border-line bg-white p-4">
               <div className="flex justify-between text-[12px] text-mute">
@@ -312,9 +352,24 @@ export function BookingFlow({
                   <span className="text-ink">+{won(o.price)}</span>
                 </div>
               ))}
+              {autoDiscount && (
+                <div className="mt-1.5 flex justify-between text-[12px]">
+                  <span className="text-brand">{autoDiscount.label}</span>
+                  <span className="font-semibold text-brand">−{won(autoDiscount.amount)}</span>
+                </div>
+              )}
+              {coupon && (
+                <div className="mt-1.5 flex justify-between text-[12px]">
+                  <span className="text-brand">{coupon.name}</span>
+                  <span className="font-semibold text-brand">−{won(coupon.amount)}</span>
+                </div>
+              )}
               <div className="mt-3 flex items-baseline justify-between border-t border-line pt-3">
                 <span className="text-[12px] font-semibold text-ink">결제 예정 금액</span>
-                <span className="font-serif text-[20px] font-bold text-brand">{won(total)}</span>
+                <span className="flex items-baseline gap-1.5">
+                  {discount > 0 && <span className="text-[12px] text-mute line-through">{won(listPrice)}</span>}
+                  <span className="font-serif text-[20px] font-bold text-brand">{won(total)}</span>
+                </span>
               </div>
               <div className="mt-1.5 text-[10px] text-mute">현장에서 결제해요. 예약은 결제 없이 바로 확정됩니다.</div>
             </div>

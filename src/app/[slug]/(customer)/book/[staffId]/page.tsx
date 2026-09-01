@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import { format } from "date-fns";
 import { prisma } from "@/lib/db";
+import { previewDiscounts } from "@/lib/discounts";
 import { getStoreBySlug } from "@/lib/store";
 import { getCustomer } from "@/lib/auth";
 import { calendarDays, getSlotsFor } from "@/lib/slots";
@@ -19,6 +21,8 @@ export default async function BookPage({ params, searchParams }: { params: Promi
     getSlotsFor(store, staff, initialDate),
     prisma.storeOption.findMany({ where: { storeId: store.id, isActive: true }, orderBy: { sortOrder: "asc" } }),
   ]);
+  // 로그인한 손님에게만 할인이 붙는다 — 등급도 쿠폰도 계정에 딸린 값이라
+  const discounts = me ? await previewDiscounts(store.id, me.id, initialDate) : null;
   return (
     <BookingFlow
       slug={slug}
@@ -30,6 +34,13 @@ export default async function BookPage({ params, searchParams }: { params: Promi
       initialTime={sp.time ?? null}
       initialSlots={initialSlots}
       customer={me ? { nickname: me.nickname } : null}
+      autoDiscount={discounts?.auto ?? null}
+      coupons={(discounts?.coupons ?? []).map((c) => ({
+        id: c.id,
+        name: c.name,
+        amount: c.amount,
+        expiresAt: c.expiresAt ? format(c.expiresAt, "yyyy.MM.dd") : null,
+      }))}
     />
   );
 }

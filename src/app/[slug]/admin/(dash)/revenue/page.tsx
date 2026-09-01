@@ -127,12 +127,15 @@ export default async function RevenuePage({
   const next = format(addMonths(mStart, 1), "yyyy-MM");
   const isThisMonth = monthKey === format(now, "yyyy-MM");
 
-  // 매출(손님이 낸 총액)과 매장 몫(수수료)은 다른 돈이다 — 섞어 부르지 않는다
-  const staffPayout = customerPaid - storeRevenue;
+  // 매출(손님이 낸 총액)과 매장 몫(수수료)은 다른 돈이다 — 섞어 부르지 않는다.
+  // 할인은 매장이 부담하므로 캐치걸 몫은 정가 기준이고, 매장 몫에서만 빠진다.
+  const discountTotal = earning.reduce((a, r) => a + r.discountAmount, 0);
+  const staffPayout = customerPaid + discountTotal - storeRevenue;
   const kpis = [
     { label: "총 매출", value: wonShort(customerPaid), sub: `손님이 낸 금액 · 옵션 ${wonShort(optionRevenue)} 포함` },
-    { label: "매장 몫 (수수료)", value: wonShort(storeRevenue), sub: `${totalHours}시간 × ${won(STORE_FEE_PER_HOUR)}`, strong: true },
-    { label: "캐치걸 몫", value: wonShort(staffPayout), sub: "총 매출 − 매장 몫" },
+    { label: "매장 몫 (수수료)", value: wonShort(storeRevenue - discountTotal), sub: `${totalHours}시간 × ${won(STORE_FEE_PER_HOUR)} − 할인 ${wonShort(discountTotal)}`, strong: true },
+    { label: "캐치걸 몫", value: wonShort(staffPayout), sub: "정가 기준 · 할인에 영향 없음" },
+    { label: "할인", value: wonShort(discountTotal), sub: "매장이 부담한 금액" },
     { label: "예약 건수", value: `${earning.length}건`, sub: "취소·노쇼 제외" },
     { label: "건당 평균", value: wonShort(avgPerBooking), sub: "손님이 낸 금액 기준" },
   ];

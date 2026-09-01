@@ -8,6 +8,7 @@ import { computeCustomerStats } from "@/lib/metrics";
 import { parseJsonArray } from "@/lib/utils";
 import { Avatar, Card, Chip, Eyebrow, GradeChip, StatusChip, Stars } from "@/components/ui";
 import { CustomerAccount, CustomerInfoForm, CustomerNotes } from "./memo-form";
+import { Coupons } from "./coupons";
 
 export default async function CustomerDetail({ params }: { params: Promise<{ slug: string; id: string }> }) {
   const { slug, id } = await params;
@@ -18,6 +19,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
       reservations: { orderBy: { startTime: "desc" }, include: { staff: true, review: true } },
       favorites: { include: { staff: true } },
       notes: { orderBy: { createdAt: "desc" } },
+      coupons: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!c || c.storeId !== store.id) notFound();
@@ -60,6 +62,27 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-5">
+          <Card className="p-5">
+            <Eyebrow>Coupons</Eyebrow>
+            <div className="mt-1 text-[14px] font-bold text-ink">쿠폰</div>
+            <div className="text-[11px] text-mute">
+              이 손님에게만 주는 할인이에요. 예약할 때 손님이 직접 골라 쓰고, 한 번 쓰면 사라져요.
+              등급 혜택·기간 할인 위에 한 장 더 얹혀요.
+            </div>
+            <Coupons
+              slug={slug}
+              customerId={c.id}
+              coupons={c.coupons.map((cp) => ({
+                id: cp.id,
+                name: cp.name,
+                amount: cp.amount,
+                memo: cp.memo,
+                expiresAt: cp.expiresAt ? format(cp.expiresAt, "yyyy.MM.dd") : null,
+                usedAt: cp.usedAt ? format(cp.usedAt, "yyyy.MM.dd") : null,
+                expired: !!cp.expiresAt && !cp.usedAt && cp.expiresAt < new Date(),
+              }))}
+            />
+          </Card>
           <Card className="p-5">
             <Eyebrow>Notes</Eyebrow>
             <div className="mt-1 text-[14px] font-bold text-ink">방문 메모</div>

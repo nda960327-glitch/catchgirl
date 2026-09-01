@@ -20,6 +20,9 @@ export async function middleware(req: NextRequest) {
   if (!m) return NextResponse.next();
   const [, slug, area, rest = ""] = m;
   if (rest.startsWith("/login")) return NextResponse.next();
+  // 앱 설치 정보는 로그인 전에도 읽혀야 한다 — 로그인 화면에서 설치하니까.
+  // 매장 이름과 아이콘뿐이라 가려 둘 것도 없다.
+  if (rest === "/manifest.webmanifest") return NextResponse.next();
   const cookieName = area === "admin" ? "cg_admin" : "cg_staff";
   const ok = await roleOk(req.cookies.get(cookieName)?.value, area);
   if (ok) return NextResponse.next();
