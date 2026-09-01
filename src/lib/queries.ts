@@ -1,8 +1,11 @@
 import "server-only";
 import type { Store } from "@prisma/client";
 import { prisma } from "./db";
-import { remainingToday } from "./slots";
-import { parseJsonArray } from "./utils";
+import { getSlotsFor } from "./slots";
+import { parseJsonArray, ymd } from "./utils";
+
+/** "지금 예약 가능"으로 볼 시간 여유 — 이 안에 시작하는 빈자리가 있으면 지금 가능으로 본다 */
+const AVAILABLE_NOW_WINDOW_MIN = 30;
 
 export type StaffSummary = {
   id: string;
@@ -15,21 +18,14 @@ export type StaffSummary = {
   upCount: number;
   downCount: number;
   hourlyPrice: number;
-  remainingToday: number;
+  /** 오늘 아직 비어 있는 시간 (1시간 단위). 예약이 1시간 단위라 슬롯 칸 수가 아니라 시간으로 센다. */
+  remainingHoursToday: number;
+  /** 지금 바로(30분 안에) 시작할 수 있는 빈자리가 있는지 */
+  availableNow: boolean;
+  /** 오늘 남은 가장 이른 예약 가능 시각 (HH:mm) — 없으면 null */
+  nextOpenTime: string | null;
   isActive: boolean;
 };
-
-/** 캐치걸 목록 정렬 기준 — 값은 URL 쿼리(?sort=)에 그대로 쓴다 */
-export const STAFF_SORTS = [
-  ["", "기본순"],
-  ["rating", "리뷰 높은순"],
-  ["reviews", "리뷰 많은순"],
-  ["up", "추천순"],
-  ["down", "비추천순"],
-  ["price-high", "가격 높은순"],
-  ["price-low", "가격 낮은순"],
-] as const;
-export type StaffSort = (typeof STAFF_SORTS)[number][0];
 
 export function sortStaffSummaries(list: StaffSummary[], sort: string): StaffSummary[] {
   const s = [...list];
@@ -62,20 +58,32 @@ export async function listStaffSummaries(store: Store, includeInactive = false):
       votes: { select: { value: true } },
     },
   });
+  const now = new Date();
+  const today = ymd(now);
+  const nowCutoff = now.getTime() + AVAILABLE_NOW_WINDOW_MIN * 60_000;
+
   return Promise.all(
-    staff.map(async (s) => ({
-      id: s.id,
-      nickname: s.nickname,
-      bio: s.bio,
-      tags: parseJsonArray(s.tags),
-      photos: parseJsonArray(s.photos),
-      rating: s.reviews.length ? Math.round((s.reviews.reduce((a, r) => a + r.rating, 0) / s.reviews.length) * 10) / 10 : null,
-      reviewCount: s.reviews.length,
-      upCount: s.votes.filter((v) => v.value === "UP").length,
-      downCount: s.votes.filter((v) => v.value === "DOWN").length,
-      hourlyPrice: s.hourlyPrice,
-      remainingToday: s.isActive ? await remainingToday(store, s) : 0,
-      isActive: s.isActive,
-    })),
+    staff.map(async (s) => {
+      // 오늘 슬롯은 한 번만 계산해서 남은 자리 수와 "지금 가능" 여부를 함께 뽑는다
+      const slots = s.isActive ? await getSlotsFor(store, s, today, now) : [];
+      const open = slots.filter((x) => x.status === "open");
+      const next = open[0] ?? null;
+      return {
+        id: s.id,
+        nickname: s.nickname,
+        bio: s.bio,
+        tags: parseJsonArray(s.tags),
+        photos: parseJsonArray(s.photos),
+        rating: s.reviews.length ? Math.round((s.reviews.reduce((a, r) => a + r.rating, 0) / s.reviews.length) * 10) / 10 : null,
+        reviewCount: s.reviews.length,
+        upCount: s.votes.filter((v) => v.value === "UP").length,
+        downCount: s.votes.filter((v) => v.value === "DOWN").length,
+        hourlyPrice: s.hourlyPrice,
+        remainingHoursToday: Math.floor((open.length * store.slotMinutes) / 60),
+        availableNow: !!next && new Date(next.startsAt).getTime() <= nowCutoff,
+        nextOpenTime: next?.time ?? null,
+        isActive: s.isActive,
+      };
+    }),
   );
 }

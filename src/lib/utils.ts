@@ -9,6 +9,19 @@ export function cn(...inputs: ClassValue[]) {
 
 export const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
 
+/** 캐치걸 목록 정렬 기준 — 값은 URL 쿼리(?sort=)에 그대로 쓴다.
+ *  클라이언트 드롭다운에서도 쓰므로 server-only 인 queries.ts 가 아니라 여기에 둔다. */
+export const STAFF_SORTS = [
+  ["", "기본순"],
+  ["rating", "리뷰 높은순"],
+  ["reviews", "리뷰 많은순"],
+  ["up", "추천순"],
+  ["down", "비추천순"],
+  ["price-high", "가격 높은순"],
+  ["price-low", "가격 낮은순"],
+] as const;
+export type StaffSort = (typeof STAFF_SORTS)[number][0];
+
 export function parseJsonArray<T = string>(s: string | null | undefined): T[] {
   if (!s) return [];
   try {

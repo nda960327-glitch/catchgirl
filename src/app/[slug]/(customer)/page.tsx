@@ -9,13 +9,17 @@ import { getCustomer } from "@/lib/auth";
 import { Chip, Eyebrow, Sticker } from "@/components/ui";
 import { StaffCard } from "@/components/staff-card";
 
+// 지금 자리가 있는지는 매 순간 달라지므로 캐시하지 않는다
+export const dynamic = "force-dynamic";
+
 export default async function HomePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const store = await getStoreBySlug(slug);
   const [staff, me] = await Promise.all([listStaffSummaries(store), getCustomer(store.id)]);
   const today = new Date();
   const closed = isStoreClosed(store, ymd(today));
-  const openStaff = staff.filter((s) => s.remainingToday > 0);
+  const openStaff = staff.filter((s) => s.remainingHoursToday > 0);
+  const nowStaff = staff.filter((s) => s.availableNow);
 
   return (
     <div className="animate-fade">
@@ -41,6 +45,25 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
         </div>
         <Sticker k="p1" size={104} className="absolute -bottom-2.5 -right-1.5 opacity-95" />
       </div>
+
+      {/* 지금 바로 되는 캐치걸 — 있을 때만 따로 띄운다 */}
+      {nowStaff.length > 0 && (
+        <section className="px-4 pt-5">
+          <div className="mb-3 flex items-baseline justify-between px-1">
+            <h2 className="text-[13px] font-bold text-ink">
+              <span className="text-[#2E8B57]">●</span> 지금 바로 예약 가능 {nowStaff.length}
+            </h2>
+            <Link href={`/${slug}/bartenders?now=1`} className="text-[11px] font-semibold text-brand">
+              모두 보기 ›
+            </Link>
+          </div>
+          <div className="flex flex-col gap-3.5">
+            {nowStaff.slice(0, 3).map((s) => (
+              <StaffCard key={s.id} s={s} href={`/${slug}/bartenders/${s.id}`} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 오늘 예약 가능한 캐치걸 */}
       <section className="px-4 pt-5">

@@ -3,7 +3,7 @@ import { Avatar, Card } from "@/components/ui";
 import type { StaffSummary } from "@/lib/queries";
 
 export function StaffCard({ s, href }: { s: StaffSummary; href: string }) {
-  const low = s.remainingToday <= 3;
+  const low = s.remainingHoursToday <= 2;
   return (
     <Link href={href} className="block">
       <Card className="flex items-center gap-3.5 p-3.5 transition-transform active:scale-[.99]">
@@ -23,10 +23,20 @@ export function StaffCard({ s, href }: { s: StaffSummary; href: string }) {
               {s.downCount > 0 && <span className="text-mute">👎 {s.downCount}</span>}
             </div>
           )}
-          <div className="mt-2 flex items-center gap-1.5">
-            <span className={`h-1.5 w-1.5 rounded-full ${s.remainingToday === 0 ? "bg-[#DED2D4]" : low ? "bg-brand" : "bg-gold-lt"}`} />
-            <span className={`text-[11px] font-semibold ${s.remainingToday === 0 ? "text-mute" : low ? "text-brand" : "text-mute"}`}>
-              {s.remainingToday === 0 ? "오늘은 마감" : `오늘 남은 자리 ${s.remainingToday}`}
+          <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+            {/* 지금 되는 사람은 배지 두 개, 오늘만 되는 사람은 '오늘' 하나 */}
+            {s.availableNow && (
+              <span className="rounded-full bg-[#E8F6EE] px-2 py-[3px] text-[10px] font-bold text-[#2E8B57]">● 지금 예약 가능</span>
+            )}
+            {s.remainingHoursToday > 0 && (
+              <span className="rounded-full bg-blush-lt px-2 py-[3px] text-[10px] font-bold text-brand">오늘 예약 가능</span>
+            )}
+            <span className={`text-[11px] font-semibold ${s.remainingHoursToday === 0 ? "text-mute" : low ? "text-brand" : "text-mute"}`}>
+              {s.remainingHoursToday === 0
+                ? "오늘은 마감"
+                : s.availableNow
+                  ? `${s.remainingHoursToday}시간 남음`
+                  : `${s.nextOpenTime}부터 · ${s.remainingHoursToday}시간 남음`}
             </span>
           </div>
         </div>

@@ -4,8 +4,9 @@ import { prisma } from "./db";
 import { addMinutes, parseJsonArray, startOfDayLocal, toLocalDate, ymd } from "./utils";
 
 export type SlotStatus = "open" | "full" | "off" | "past";
-/** maxHours = 이 시각부터 연달아 예약할 수 있는 최대 시간 (마감까지만) */
-export type Slot = { time: string; status: SlotStatus; remaining: number; maxHours: number };
+/** maxHours = 이 시각부터 연달아 예약할 수 있는 최대 시간 (마감까지만)
+ *  startsAt = 실제 시작 일시 ISO. 자정 넘김 보정이 끝난 값이라 "지금 가능한가" 판단에 그대로 쓴다. */
+export type Slot = { time: string; status: SlotStatus; remaining: number; maxHours: number; startsAt: string };
 
 export const ACTIVE_STATUSES = ["CONFIRMED", "COMPLETED", "NOSHOW"];
 
@@ -81,11 +82,12 @@ export async function getSlotsFor(
       if (t < a) t += 24 * 60;
       return t >= a && t < b;
     });
-    if (closed || off || !inSchedule || !staff.isActive) return { time, status: "off", remaining: 0, maxHours: 0 };
-    if (startAdj.getTime() <= now.getTime()) return { time, status: "past", remaining: 0, maxHours: 0 };
+    const startsAt = startAdj.toISOString();
+    if (closed || off || !inSchedule || !staff.isActive) return { time, status: "off", remaining: 0, maxHours: 0, startsAt };
+    if (startAdj.getTime() <= now.getTime()) return { time, status: "past", remaining: 0, maxHours: 0, startsAt };
     const used = countByTime.get(startAdj.getTime()) ?? 0;
     const remaining = Math.max(0, staff.capacityPerSlot - used);
-    return { time, status: remaining > 0 ? "open" : "full", remaining, maxHours: 0 };
+    return { time, status: remaining > 0 ? "open" : "full", remaining, maxHours: 0, startsAt };
   });
   // 연속 예약 가능 시간은 뒤 슬롯들이 정해져야 알 수 있으므로 한 번 더 훑는다
   for (let i = 0; i < base.length; i++) {
@@ -102,12 +104,6 @@ export function maxHoursAt(slots: Slot[], index: number, slotMinutes: number, ca
   let run = 0;
   for (let i = index; i < slots.length && slots[i].status === "open"; i++) run++;
   return Math.min(cap, Math.floor(run / perHour));
-}
-
-/** 오늘 남은 예약 가능 슬롯 수 */
-export async function remainingToday(store: Store, staff: Staff & { schedules: StaffSchedule[] }) {
-  const slots = await getSlotsFor(store, staff, ymd(new Date()));
-  return slots.filter((s) => s.status === "open").length;
 }
 
 /** 예약 가능 날짜 목록 (오늘 ~ maxAdvanceDays) — 매장 휴무/캐치걸 휴무/근무 없는 요일은 disabled */
