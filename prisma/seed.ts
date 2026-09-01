@@ -20,6 +20,7 @@ const photosFor = (i: number) => [PHOTO_POOL[i % 9], PHOTO_POOL[(i + 3) % 9], PH
 
 async function main() {
   console.log("🧹 기존 데이터 정리...");
+  await prisma.customerNote.deleteMany();
   await prisma.favorite.deleteMany();
   await prisma.comment.deleteMany();
   await prisma.review.deleteMany();
@@ -57,25 +58,25 @@ async function main() {
 
   console.log("🍸 캐치걸 19명...");
   const staffDefs = [
-    { nickname: "루나", realName: "이루나", loginId: "luna", bio: "차분하게 분위기를 맞춰드려요. 조용히 한잔하고 싶은 날 편하게 찾아주세요.", tags: ["조용한매력", "눈빛좋음", "분위기있음"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "민서", realName: "박민서", loginId: "minseo", bio: "밝은 텐션으로 자리를 채워요. 웃을 일이 필요한 날 찾아주세요.", tags: ["애교많음", "밝은텐션", "노래잘함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "섬미", realName: "최섬미", loginId: "seommi", bio: "말수는 적어도 이야기는 끝까지 들어드려요.", tags: ["차분함", "경청잘함", "단정함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "수아", realName: "정수아", loginId: "sua", bio: "리액션이 좋아서 이야기할 맛이 나요.", tags: ["활발함", "텐션업", "리액션좋음"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "시연", realName: "강시연", loginId: "siyeon", bio: "말투가 부드러워서 편하게 대화할 수 있어요.", tags: ["다정함", "배려심", "말투부드러움"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "아리", realName: "조아리", loginId: "ari", bio: "유머 코드가 잘 맞는다는 얘기를 자주 들어요.", tags: ["센스있음", "유머있음", "대화잘통함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "예리", realName: "윤예리", loginId: "yeri", bio: "말을 정말 잘하고 리액션이 좋아요. 오늘 있었던 이야기를 들려주시면 끝까지 들어드릴게요.", tags: ["말잘함", "수다환영", "서비스좋음"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "준희", realName: "김준희", loginId: "junhee", bio: "처음 오신 분께도 먼저 다가가 편하게 말을 건네요. 조용히 있고 싶은 날엔 옆에서 다정하게 자리를 지켜드려요.", tags: ["상냥함", "청순함", "조용한대화"], days: [0, 2, 3, 4, 5, 6] },
-    { nickname: "지유", realName: "장지유", loginId: "jiyu", bio: "털털하고 편하게 대해드려서 부담 없어요.", tags: ["털털함", "친근함", "편안함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "지혜", realName: "임지혜", loginId: "jihye", bio: "차분한 대화를 좋아하신다면 잘 맞으실 거예요.", tags: ["지적임", "차분한매력", "깊은대화"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "유빈", realName: "한유빈", loginId: "yubin", bio: "애교 많고 잘 웃어서 자리가 늘 밝아져요.", tags: ["귀여움", "애교", "웃음많음"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "유이", realName: "오유이", loginId: "yui", bio: "시크해 보여도 대화하다 보면 편해지실 거예요.", tags: ["세련됨", "도시적매력", "시크함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "이슬", realName: "서이슬", loginId: "iseul", bio: "맑고 순수한 느낌으로 편안하게 맞아드려요.", tags: ["청량함", "맑은느낌", "순수함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "지수", realName: "신지수", loginId: "jisu", bio: "눈을 맞추고 이야기 들어드리는 걸 좋아해요.", tags: ["다정다감", "눈맞춤좋음", "포근함"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "지연", realName: "권지연", loginId: "jiyeon", bio: "재치 있는 입담으로 자리를 즐겁게 만들어요.", tags: ["재치있음", "입담좋음", "분위기메이커"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "진아", realName: "황진아", loginId: "jina", bio: "단아한 분위기를 좋아하는 분들과 잘 맞아요.", tags: ["단아함", "조용조용", "여운있음"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "채원", realName: "안채원", loginId: "chaewon", bio: "상큼하고 긍정적인 에너지로 맞아드려요.", tags: ["상큼함", "발랄함", "긍정에너지"], days: [0, 1, 2, 3, 4, 5, 6] },
-    { nickname: "하영", realName: "송하영", loginId: "hayoung", bio: "귀여운 외모에 마음씨도 착해요. 기념일이면 작은 이벤트도 직접 챙겨드려요.", tags: ["외모귀여움", "착함", "기념일"], days: [0, 1, 3, 4, 5, 6] },
-    { nickname: "해린", realName: "전해린", loginId: "haerin", bio: "당당하고 쿨한 매력으로 대화를 이끌어가요.", tags: ["당당함", "자신감", "쿨한매력"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "루나", loginId: "luna", bio: "차분하게 분위기를 맞춰드려요. 조용히 한잔하고 싶은 날 편하게 찾아주세요.", tags: ["조용한매력", "눈빛좋음", "분위기있음"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "민서", loginId: "minseo", bio: "밝은 텐션으로 자리를 채워요. 웃을 일이 필요한 날 찾아주세요.", tags: ["애교많음", "밝은텐션", "노래잘함"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "섬미", loginId: "seommi", bio: "말수는 적어도 이야기는 끝까지 들어드려요.", tags: ["차분함", "경청잘함", "단정함"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "수아", loginId: "sua", bio: "리액션이 좋아서 이야기할 맛이 나요.", tags: ["활발함", "텐션업", "리액션좋음"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "시연", loginId: "siyeon", bio: "말투가 부드러워서 편하게 대화할 수 있어요.", tags: ["다정함", "배려심", "말투부드러움"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "아리", loginId: "ari", bio: "유머 코드가 잘 맞는다는 얘기를 자주 들어요.", tags: ["센스있음", "유머있음", "대화잘통함"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "예리", loginId: "yeri", bio: "말을 정말 잘하고 리액션이 좋아요. 오늘 있었던 이야기를 들려주시면 끝까지 들어드릴게요.", tags: ["말잘함", "수다환영", "서비스좋음"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "준희", loginId: "junhee", bio: "처음 오신 분께도 먼저 다가가 편하게 말을 건네요. 조용히 있고 싶은 날엔 옆에서 다정하게 자리를 지켜드려요.", tags: ["상냥함", "청순함", "조용한대화"], days: [0, 2, 3, 4, 5, 6] },
+    { nickname: "지유", loginId: "jiyu", bio: "털털하고 편하게 대해드려서 부담 없어요.", tags: ["털털함", "친근함", "편안함"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "지혜", loginId: "jihye", bio: "차분한 대화를 좋아하신다면 잘 맞으실 거예요.", tags: ["지적임", "차분한매력", "깊은대화"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "유빈", loginId: "yubin", bio: "애교 많고 잘 웃어서 자리가 늘 밝아져요.", tags: ["귀여움", "애교", "웃음많음"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "유이", loginId: "yui", bio: "시크해 보여도 대화하다 보면 편해지실 거예요.", tags: ["세련됨", "도시적매력", "시크함"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "이슬", loginId: "iseul", bio: "맑고 순수한 느낌으로 편안하게 맞아드려요.", tags: ["청량함", "맑은느낌", "순수함"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "지수", loginId: "jisu", bio: "눈을 맞추고 이야기 들어드리는 걸 좋아해요.", tags: ["다정다감", "눈맞춤좋음", "포근함"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "지연", loginId: "jiyeon", bio: "재치 있는 입담으로 자리를 즐겁게 만들어요.", tags: ["재치있음", "입담좋음", "분위기메이커"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "진아", loginId: "jina", bio: "단아한 분위기를 좋아하는 분들과 잘 맞아요.", tags: ["단아함", "조용조용", "여운있음"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "채원", loginId: "chaewon", bio: "상큼하고 긍정적인 에너지로 맞아드려요.", tags: ["상큼함", "발랄함", "긍정에너지"], days: [0, 1, 2, 3, 4, 5, 6] },
+    { nickname: "하영", loginId: "hayoung", bio: "귀여운 외모에 마음씨도 착해요. 기념일이면 작은 이벤트도 직접 챙겨드려요.", tags: ["외모귀여움", "착함", "기념일"], days: [0, 1, 3, 4, 5, 6] },
+    { nickname: "해린", loginId: "haerin", bio: "당당하고 쿨한 매력으로 대화를 이끌어가요.", tags: ["당당함", "자신감", "쿨한매력"], days: [0, 1, 2, 3, 4, 5, 6] },
   ];
   const staff: Record<string, { id: string }> = {};
   for (let i = 0; i < staffDefs.length; i++) {
@@ -84,7 +85,6 @@ async function main() {
       data: {
         storeId: store.id,
         nickname: s.nickname,
-        realName: s.realName,
         bio: s.bio,
         tags: JSON.stringify(s.tags),
         photos: JSON.stringify(photosFor(i)),
@@ -102,19 +102,19 @@ async function main() {
   off.setDate(off.getDate() + 3);
   await prisma.staffOff.create({ data: { staffId: staff["예리"].id, date: ymd(off), reason: "개인 휴무" } });
 
-  console.log("👤 고객 6명...");
+  console.log("👤 고객 6명... (연락처·실명 없이 닉네임 + PIN)");
   const custDefs = [
-    { nickname: "길동", phone: "010-1111-0001", memo: "조용한 대화 선호, 창가 자리. 준희 단골.", name: "홍길동", birthday: "1990-03-14", gender: "M", instagram: "gildong_night", referral: "인스타그램", email: "gildong@example.com" },
-    { nickname: "병정", phone: "010-2222-0002", memo: "노쇼 이력 2회 — 예약 확인 전화 필요", name: "김병정", birthday: "1993-11-02", gender: "M", referral: "지인 소개" },
-    { nickname: "갑을", phone: "010-3333-0003", memo: "", name: "이갑을", birthday: "1998-07-21", gender: "M", referral: "검색" },
-    { nickname: "춘삼", phone: "010-4444-0004", memo: "기념일 방문. 이벤트 좋아함", name: "박춘삼", birthday: "1995-09-09", gender: "M", referral: "인스타그램" },
-    { nickname: "태식", phone: "010-5555-0005", memo: "", name: "최태식", gender: "M", referral: "지나가다" },
-    { nickname: "철식", phone: "010-6666-0006", memo: "", name: "정철식", birthday: "1992-05-05", gender: "M", referral: "지인 소개" },
+    { nickname: "길동", memo: "조용한 대화 선호, 창가 자리. 준희 단골.", referral: "인스타그램" },
+    { nickname: "병정", memo: "노쇼 이력 2회 — 방문 당일 재확인 필요", referral: "지인 소개" },
+    { nickname: "갑을", memo: "", referral: "검색" },
+    { nickname: "춘삼", memo: "기념일 방문. 이벤트 좋아함", referral: "인스타그램" },
+    { nickname: "태식", memo: "", referral: "지나가다" },
+    { nickname: "철식", memo: "", referral: "지인 소개" },
   ];
   const cust: Record<string, { id: string }> = {};
   for (const c of custDefs) {
     cust[c.nickname] = await prisma.customer.create({
-      data: { storeId: store.id, nickname: c.nickname, phone: c.phone, adminMemo: c.memo, name: c.name ?? null, birthday: c.birthday ?? null, gender: c.gender ?? null, instagram: c.instagram ?? null, referral: c.referral ?? null, email: c.email ?? null },
+      data: { storeId: store.id, nickname: c.nickname, passwordHash: pw, adminMemo: c.memo, referral: c.referral ?? null },
     });
   }
 
@@ -226,11 +226,25 @@ async function main() {
     ],
   });
 
+  console.log("📝 관리자 방문 메모...");
+  const noteDefs = [
+    { c: "길동", day: -45, content: "첫 방문. 준희 지정. 위스키 하이볼 좋아하심." },
+    { c: "길동", day: -24, content: "창가 자리 선호 확인. 시끄러운 날은 안쪽 자리 피해달라고 하심." },
+    { c: "길동", day: -3, content: "곧 승진한다고 하심 — 다음 방문 때 축하 인사 드리면 좋을 듯." },
+    { c: "병정", day: -12, content: "두 번째 노쇼. 다음 예약은 당일 오후에 한 번 더 확인하기로." },
+    { c: "춘삼", day: -7, content: "기념일 방문. 케이크 반입 문의 있었고 허용해 드림. 다음에도 챙기면 좋아하실 듯." },
+  ];
+  for (const n of noteDefs) {
+    await prisma.customerNote.create({
+      data: { storeId: store.id, customerId: cust[n.c].id, authorName: "매니저", content: n.content, createdAt: at(n.day, "23:30") },
+    });
+  }
+
   console.log(`
-✅ 시드 완료
+✅ 시드 완료 — 휴대폰 번호·실명은 저장하지 않아요
   매장:   http://localhost:3000/secret-garden
-  고객:   닉네임 길동 / 휴대폰 010-1111-0001  (단골 7회)
-          닉네임 병정 / 휴대폰 010-2222-0002  (노쇼 2회)
+  고객:   닉네임 길동 / PIN 1234  (단골 7회)
+          닉네임 병정 / PIN 1234  (노쇼 2회)
   캐치걸: junhee / 1234   (19명 — 예리 yeri, 하영 hayoung 외)
   관리자: admin@catchgirl.app / 1234
 `);

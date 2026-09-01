@@ -29,12 +29,13 @@ model Store {
   noshowPolicy        String   @default("노쇼 3회 누적 시 예약이 제한될 수 있어요.")
   createdAt           DateTime @default(now())
 
-  staff        Staff[]
-  customers    Customer[]
-  reservations Reservation[]
-  admins       AdminUser[]
-  reviews      Review[]
-  comments     Comment[]
+  staff         Staff[]
+  customers     Customer[]
+  reservations  Reservation[]
+  admins        AdminUser[]
+  reviews       Review[]
+  comments      Comment[]
+  customerNotes CustomerNote[]
 }
 
 model AdminUser {
@@ -51,7 +52,6 @@ model Staff {
   id              String   @id @default(cuid())
   storeId         String
   nickname        String
-  realName        String?
   bio             String   @default("")
   tags            String   @default("[]") // JSON string[]
   photos          String   @default("[]") // JSON string[] (url)
@@ -95,29 +95,41 @@ model StaffOff {
 }
 
 // ───────────────── 고객 ─────────────────
+// 개인정보(휴대폰·실명·생일·이메일·SNS)는 수집하지 않는다.
+// 신원은 매장 안에서만 통하는 닉네임 + PIN 이고, 사람에 대한 기억은 adminMemo / CustomerNote 에 남긴다.
 model Customer {
   id            String   @id @default(cuid())
   storeId       String
   nickname      String
-  phone         String // 매장 화면에 전체 노출 (연락·고객관리용)
-  name          String?
-  email         String?
-  birthday      String? // YYYY-MM-DD
-  gender        String? // F | M | N
-  instagram     String?
+  passwordHash  String? // 고객이 정한 PIN. 관리자가 대신 만든 고객은 null → 첫 로그인 때 설정
   referral      String? // 방문 경로 (인스타/지인소개/검색/기타)
-  adminMemo     String   @default("")
+  adminMemo     String   @default("") // 상단 고정 메모 (한눈에 보는 핵심)
   isBlacklisted Boolean  @default(false)
   createdAt     DateTime @default(now())
 
-  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  store        Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
   reservations Reservation[]
   reviews      Review[]
   comments     Comment[]
   favorites    Favorite[]
+  notes        CustomerNote[]
 
-  @@unique([storeId, phone])
-  @@index([storeId, nickname])
+  @@unique([storeId, nickname])
+}
+
+/** 관리자가 방문마다 남기는 날짜별 메모 (adminMemo 는 고정 요약, 이쪽은 시간순 기록) */
+model CustomerNote {
+  id         String   @id @default(cuid())
+  storeId    String
+  customerId String
+  authorName String
+  content    String
+  createdAt  DateTime @default(now())
+
+  store    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, createdAt])
 }
 
 // ───────────────── 예약 ─────────────────

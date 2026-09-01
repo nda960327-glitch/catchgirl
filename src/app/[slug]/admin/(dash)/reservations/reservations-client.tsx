@@ -11,13 +11,14 @@ import { cn, ymd } from "@/lib/utils";
 import { adminCreateReservation, adminSetReservationStatus, adminUpdateReservation } from "../../actions";
 
 export type ResRow = {
-  id: string; code: string; startTime: string; date: string; time: string; staffId: string; staffName: string; customerId: string; customerName: string; phone: string;
+  id: string; code: string; startTime: string; date: string; time: string; staffId: string; staffName: string; customerId: string; customerName: string; memo: string;
   partySize: number; requestNote: string; purposeTag: string; status: string; createdBy: string; blacklisted: boolean;
 };
 type StaffLite = { id: string; nickname: string; isActive: boolean };
+type CustomerLite = { id: string; nickname: string };
 
 export function ReservationsClient({ slug, rows, staff, customers, filters, times, openNew, focusId, staffPhotos }: {
-  slug: string; rows: ResRow[]; staff: StaffLite[]; customers: { id: string; nickname: string; phone: string }[];
+  slug: string; rows: ResRow[]; staff: StaffLite[]; customers: CustomerLite[];
   filters: { date: string; staffId: string; q: string; status: string }; times: string[]; openNew: boolean; focusId?: string; staffPhotos: Record<string, string | null>;
 }) {
   const router = useRouter();
@@ -95,7 +96,7 @@ export function ReservationsClient({ slug, rows, staff, customers, filters, time
             <div>
               <Link href={`/${slug}/admin/customers/${r.customerId}`} className="font-semibold text-ink underline-offset-2 hover:underline">{r.customerName}</Link>
               {r.blacklisted && <Chip tone="red" className="ml-1">블랙리스트</Chip>}
-              <div className="text-[10px] text-mute">{r.phone}{r.createdBy === "ADMIN" ? " · 관리자 등록" : ""}</div>
+              <div className="truncate text-[10px] text-mute" title={r.memo}>{r.memo || (r.createdBy === "ADMIN" ? "관리자 등록" : "—")}</div>
             </div>
             <div className="truncate text-mute" title={r.requestNote}>{r.requestNote || "—"}</div>
             <div><StatusChip status={r.status} /></div>
@@ -136,12 +137,12 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
   );
 }
 
-function NewReservationModal({ slug, staff, customers, times, defaultDate, onClose }: { slug: string; staff: StaffLite[]; customers: { id: string; nickname: string; phone: string }[]; times: string[]; defaultDate: string; onClose: () => void }) {
+function NewReservationModal({ slug, staff, customers, times, defaultDate, onClose }: { slug: string; staff: StaffLite[]; customers: CustomerLite[]; times: string[]; defaultDate: string; onClose: () => void }) {
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
   const [mode, setMode] = useState<"existing" | "new">("existing");
-  const [form, setForm] = useState({ staffId: staff[0]?.id ?? "", date: defaultDate, time: times[0] ?? "18:00", partySize: 1, requestNote: "", customerId: customers[0]?.id ?? "", nickname: "", phone: "" });
+  const [form, setForm] = useState({ staffId: staff[0]?.id ?? "", date: defaultDate, time: times[0] ?? "18:00", partySize: 1, requestNote: "", customerId: customers[0]?.id ?? "", nickname: "" });
   const submit = () => {
     start(async () => {
       const r = await adminCreateReservation(slug, { ...form, customerId: mode === "existing" ? form.customerId : undefined });
@@ -169,18 +170,17 @@ function NewReservationModal({ slug, staff, customers, times, defaultDate, onClo
         {mode === "existing" ? (
           <Field label="고객">
             <Select value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })} className="w-full">
-              {customers.map((c) => <option key={c.id} value={c.id}>{c.nickname} · {c.phone}</option>)}
+              {customers.map((c) => <option key={c.id} value={c.id}>{c.nickname}</option>)}
             </Select>
           </Field>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="닉네임"><Input value={form.nickname} onChange={(e) => setForm({ ...form, nickname: e.target.value })} placeholder="예: 민지" /></Field>
-            <Field label="휴대폰"><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="010-0000-0000" inputMode="tel" /></Field>
-          </div>
+          <Field label="닉네임" hint="휴대폰 번호는 받지 않아요">
+            <Input value={form.nickname} onChange={(e) => setForm({ ...form, nickname: e.target.value })} placeholder="예: 길동" />
+          </Field>
         )}
         <Field label="요청사항"><Textarea rows={2} value={form.requestNote} onChange={(e) => setForm({ ...form, requestNote: e.target.value })} /></Field>
         <div className="text-[11px] text-mute">※ 관리자 등록은 근무시간/마감 검증을 건너뛰지만, 같은 슬롯의 동시 접객 한도는 지켜요.</div>
-        <Button size="lg" onClick={submit} loading={pending} disabled={mode === "new" && (!form.nickname || !form.phone)}>등록하기</Button>
+        <Button size="lg" onClick={submit} loading={pending} disabled={mode === "new" && !form.nickname}>등록하기</Button>
       </div>
     </Modal>
   );

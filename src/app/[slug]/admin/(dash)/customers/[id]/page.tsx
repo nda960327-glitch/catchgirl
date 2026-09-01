@@ -5,9 +5,9 @@ import { ko } from "date-fns/locale";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { computeCustomerStats } from "@/lib/metrics";
-import { GENDER_LABEL, parseJsonArray } from "@/lib/utils";
+import { parseJsonArray } from "@/lib/utils";
 import { Avatar, Card, Chip, Eyebrow, GradeChip, StatusChip, Stars } from "@/components/ui";
-import { CustomerInfoForm } from "./memo-form";
+import { CustomerInfoForm, CustomerNotes } from "./memo-form";
 
 export default async function CustomerDetail({ params }: { params: Promise<{ slug: string; id: string }> }) {
   const { slug, id } = await params;
@@ -17,6 +17,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
     include: {
       reservations: { orderBy: { startTime: "desc" }, include: { staff: true, review: true } },
       favorites: { include: { staff: true } },
+      notes: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!c || c.storeId !== store.id) notFound();
@@ -42,10 +43,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
             {s.noshowCount >= 3 && <Chip tone="red">노쇼 {s.noshowCount}회 경고</Chip>}
           </div>
           <div className="text-[11px] text-mute">
-            <a href={`tel:${c.phone}`} className="font-semibold text-ink">{c.phone}</a> · 가입 {format(c.createdAt, "yyyy.MM.dd")}
-            {c.name ? ` · ${c.name}` : ""}{c.gender ? ` · ${GENDER_LABEL[c.gender] ?? c.gender}` : ""}{c.birthday ? ` · 🎂 ${c.birthday.replace(/-/g, ".")}` : ""}
-            {c.instagram ? <> · <a href={`https://instagram.com/${c.instagram}`} target="_blank" rel="noreferrer" className="text-brand">@{c.instagram}</a></> : ""}
-            {c.email ? ` · ${c.email}` : ""}{c.referral ? ` · 방문경로 ${c.referral}` : ""}
+            가입 {format(c.createdAt, "yyyy.MM.dd")}{c.referral ? ` · 방문경로 ${c.referral}` : ""}
           </div>
         </div>
       </div>
@@ -61,6 +59,16 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-5">
+          <Card className="p-5">
+            <Eyebrow>Notes</Eyebrow>
+            <div className="mt-1 text-[14px] font-bold text-ink">방문 메모</div>
+            <div className="text-[11px] text-mute">연락처를 남기지 않는 대신, 이 손님을 기억할 내용을 여기에 쌓아요. 고객에겐 보이지 않아요.</div>
+            <CustomerNotes
+              slug={slug}
+              customerId={c.id}
+              notes={c.notes.map((n) => ({ id: n.id, authorName: n.authorName, content: n.content, createdAt: format(n.createdAt, "yyyy.MM.dd HH:mm") }))}
+            />
+          </Card>
           <Card className="p-5">
             <Eyebrow>History</Eyebrow>
             <div className="mt-1 text-[14px] font-bold text-ink">전체 예약 히스토리</div>
@@ -98,8 +106,8 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
           </Card>
           <Card className="p-5">
             <Eyebrow>Customer Info</Eyebrow>
-            <div className="mt-1 text-[14px] font-bold text-ink">고객 정보 · 메모</div>
-            <CustomerInfoForm slug={slug} customerId={c.id} init={{ nickname: c.nickname, phone: c.phone, name: c.name ?? "", email: c.email ?? "", birthday: c.birthday ?? "", gender: c.gender ?? "", instagram: c.instagram ?? "", referral: c.referral ?? "", adminMemo: c.adminMemo, isBlacklisted: c.isBlacklisted }} />
+            <div className="mt-1 text-[14px] font-bold text-ink">고객 정보</div>
+            <CustomerInfoForm slug={slug} customerId={c.id} init={{ nickname: c.nickname, referral: c.referral ?? "", adminMemo: c.adminMemo, isBlacklisted: c.isBlacklisted }} />
           </Card>
         </div>
       </div>

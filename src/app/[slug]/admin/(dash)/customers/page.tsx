@@ -73,7 +73,7 @@ export default async function CustomersPage({ params, searchParams }: { params: 
                 {s.noshowCount >= 3 && !c.isBlacklisted && <Chip tone="red">노쇼 경고</Chip>}
                 {s.dormant && s.visitCount > 0 && <Chip tone="mute">휴면</Chip>}
               </div>
-              <div className="text-[10px] text-mute">{c.phone}{c.name ? ` · ${c.name}` : ""}{c.birthday ? ` · ${c.birthday.slice(2).replace(/-/g, ".")}` : ""}</div>
+              <div className="truncate text-[10px] text-mute" title={c.adminMemo}>{c.adminMemo || "메모 없음"}</div>
             </div>
             <div><GradeChip grade={s.grade} /></div>
             <div className="text-ink"><span className="md:hidden text-mute">방문 </span>{s.visitCount}회</div>

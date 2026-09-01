@@ -97,7 +97,6 @@ export async function createReservation(input: CreateReservationInput) {
 
     await notificationService().send({
       type: "RESERVATION_CONFIRMED",
-      to: customer.phone,
       customerName: customer.nickname,
       staffName: staff.nickname,
       when: fmtDateTimeKo(start),
@@ -130,7 +129,6 @@ export async function cancelReservation(reservationId: string, by: "CUSTOMER" | 
   });
   await notificationService().send({
     type: "RESERVATION_CANCELLED",
-    to: r.customer.phone,
     customerName: r.customer.nickname,
     staffName: r.staff.nickname,
     when: fmtDateTimeKo(r.startTime),
@@ -151,7 +149,6 @@ export async function sendDueReminders() {
   for (const r of due) {
     await notificationService().send({
       type: "REMINDER_1H",
-      to: r.customer.phone,
       customerName: r.customer.nickname,
       staffName: r.staff.nickname,
       when: fmtDateTimeKo(r.startTime),

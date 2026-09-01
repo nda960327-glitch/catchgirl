@@ -221,7 +221,7 @@ export function BookingFlow({
                 <Input value={customer.nickname} readOnly className="bg-[#FAF6F7]" />
               ) : (
                 <div className="flex h-12 items-center justify-between rounded-2xl border border-dashed border-blush bg-white px-4 text-[13px]">
-                  <span className="text-mute">다음 단계에서 휴대폰 번호·닉네임을 입력해요</span>
+                  <span className="text-mute">다음 단계에서 닉네임·PIN을 입력해요</span>
                 </div>
               )}
             </Field>
@@ -246,7 +246,7 @@ export function BookingFlow({
         )}
         {step === 3 && (
           <Button size="lg" onClick={submit} loading={pending}>
-            {customer ? "예약 확정하기" : "휴대폰 번호로 계속하기"}
+            {customer ? "예약 확정하기" : "닉네임으로 계속하기"}
           </Button>
         )}
         <div className="mt-2 text-center text-[10px] text-mute/80">

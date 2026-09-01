@@ -2,64 +2,74 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { clearSession, getCustomer, requireCustomer, setSession } from "@/lib/auth";
 import { getStoreBySlug } from "@/lib/store";
 import { cancelReservation, createReservation, SlotConflictError } from "@/lib/reservations";
-import { normalizePhone } from "@/lib/utils";
 
 export type ActionResult<T = undefined> = { ok: true; data?: T } | { ok: false; error: string; conflict?: boolean };
 
-/* ─── 고객 로그인: 휴대폰 + 닉네임 (없으면 생성) ─── */
-const profileSchema = z.object({
-  name: z.string().trim().max(20).optional().default(""),
-  email: z.string().trim().max(60).optional().default(""),
-  birthday: z.string().trim().regex(/^(\d{4}-\d{2}-\d{2})?$/, "생년월일 형식을 확인해 주세요").optional().default(""),
-  gender: z.enum(["F", "M", "N", ""]).optional().default(""),
-  instagram: z.string().trim().max(40).optional().default(""),
+/* ─── 고객 로그인: 닉네임 + PIN ───
+   휴대폰·실명 같은 개인정보는 받지 않는다. 매장 안에서만 통하는 닉네임과
+   본인 확인용 PIN 만으로 신원을 잡고, 처음 보는 닉네임이면 그 자리에서 계정을 만든다. */
+const loginSchema = z.object({
+  nickname: z.string().trim().min(1, "닉네임을 입력해 주세요").max(12, "닉네임은 12자 이하"),
+  pin: z.string().trim().regex(/^\d{4,6}$/, "PIN은 숫자 4~6자리예요"),
   referral: z.string().trim().max(20).optional().default(""),
 });
-const loginSchema = profileSchema.extend({
-  nickname: z.string().trim().min(1, "닉네임을 입력해 주세요").max(12, "닉네임은 12자 이하"),
-  phone: z.string().trim().regex(/^\d{2,3}-?\d{3,4}-?\d{4}$/, "휴대폰 번호 형식을 확인해 주세요"),
-});
 const pick = (fd: FormData, keys: string[]) => Object.fromEntries(keys.map((k) => [k, (fd.get(k) ?? "") as string]));
-/** 선택 입력은 값이 있을 때만 덮어쓴다 (비워서 지우는 건 마이페이지에서) */
-const optionalData = (d: z.infer<typeof profileSchema>) => ({
-  ...(d.name ? { name: d.name } : {}), ...(d.email ? { email: d.email } : {}), ...(d.birthday ? { birthday: d.birthday } : {}),
-  ...(d.gender ? { gender: d.gender } : {}), ...(d.instagram ? { instagram: d.instagram.replace(/^@/, "") } : {}), ...(d.referral ? { referral: d.referral } : {}),
-});
+
 export async function loginCustomer(slug: string, form: FormData, next?: string): Promise<ActionResult> {
   const store = await getStoreBySlug(slug);
-  const parsed = loginSchema.safeParse(pick(form, ["nickname", "phone", "name", "email", "birthday", "gender", "instagram", "referral"]));
+  const parsed = loginSchema.safeParse(pick(form, ["nickname", "pin", "referral"]));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
-  const phone = normalizePhone(parsed.data.phone);
-  const extra = optionalData(parsed.data);
-  let customer = await prisma.customer.findUnique({ where: { storeId_phone: { storeId: store.id, phone } } });
+  const { nickname, pin, referral } = parsed.data;
+
+  let customer = await prisma.customer.findUnique({ where: { storeId_nickname: { storeId: store.id, nickname } } });
   if (!customer) {
-    customer = await prisma.customer.create({ data: { storeId: store.id, nickname: parsed.data.nickname, phone, ...extra } });
-  } else {
-    // 같은 번호 재방문: 닉네임/추가 정보 갱신
-    customer = await prisma.customer.update({ where: { id: customer.id }, data: { nickname: parsed.data.nickname, ...extra } });
+    customer = await prisma.customer.create({
+      data: { storeId: store.id, nickname, passwordHash: await bcrypt.hash(pin, 10), ...(referral ? { referral } : {}) },
+    });
+  } else if (!customer.passwordHash) {
+    // 관리자가 전화예약으로 먼저 만들어 둔 고객 — 첫 로그인에서 PIN 을 정하며 계정을 넘겨받는다
+    customer = await prisma.customer.update({ where: { id: customer.id }, data: { passwordHash: await bcrypt.hash(pin, 10) } });
+  } else if (!(await bcrypt.compare(pin, customer.passwordHash))) {
+    return { ok: false, error: "이미 쓰고 있는 닉네임이거나 PIN이 맞지 않아요." };
   }
   await setSession({ role: "customer", id: customer.id, storeId: store.id, name: customer.nickname });
   redirect(next && next.startsWith(`/${slug}`) ? next : `/${slug}/me`);
 }
 
-/** 마이페이지 — 내 정보 수정 (빈 값은 지움) */
+/** 마이페이지 — 닉네임/방문 경로 수정 */
 export async function updateMyProfile(slug: string, form: FormData): Promise<ActionResult> {
   const store = await getStoreBySlug(slug);
   const me = await getCustomer(store.id);
   if (!me) return { ok: false, error: "LOGIN_REQUIRED" };
-  const parsed = profileSchema.extend({ nickname: z.string().trim().min(1, "닉네임을 입력해 주세요").max(12) }).safeParse(pick(form, ["nickname", "name", "email", "birthday", "gender", "instagram", "referral"]));
+  const parsed = z
+    .object({ nickname: z.string().trim().min(1, "닉네임을 입력해 주세요").max(12), referral: z.string().trim().max(20).optional().default("") })
+    .safeParse(pick(form, ["nickname", "referral"]));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const d = parsed.data;
-  await prisma.customer.update({
-    where: { id: me.id },
-    data: { nickname: d.nickname, name: d.name || null, email: d.email || null, birthday: d.birthday || null, gender: d.gender || null, instagram: d.instagram.replace(/^@/, "") || null, referral: d.referral || null },
-  });
+  try {
+    await prisma.customer.update({ where: { id: me.id }, data: { nickname: d.nickname, referral: d.referral || null } });
+  } catch (e) {
+    if (e instanceof Error && e.message.includes("Unique constraint")) return { ok: false, error: "이미 쓰고 있는 닉네임이에요." };
+    throw e;
+  }
   revalidatePath(`/${slug}/me`);
+  return { ok: true };
+}
+
+/** 마이페이지 — PIN 변경 */
+export async function changeMyPin(slug: string, currentPin: string, newPin: string): Promise<ActionResult> {
+  const store = await getStoreBySlug(slug);
+  const me = await getCustomer(store.id);
+  if (!me) return { ok: false, error: "LOGIN_REQUIRED" };
+  if (!/^\d{4,6}$/.test(newPin)) return { ok: false, error: "새 PIN은 숫자 4~6자리예요" };
+  if (me.passwordHash && !(await bcrypt.compare(currentPin, me.passwordHash))) return { ok: false, error: "현재 PIN이 맞지 않아요." };
+  await prisma.customer.update({ where: { id: me.id }, data: { passwordHash: await bcrypt.hash(newPin, 10) } });
   return { ok: true };
 }
 

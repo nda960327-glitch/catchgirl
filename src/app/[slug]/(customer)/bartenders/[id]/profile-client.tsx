@@ -29,7 +29,7 @@ export function ProfileClient({
   const { toast } = useToast();
 
   const requireLogin = () => {
-    toast("휴대폰 번호와 닉네임으로 먼저 시작해 주세요", "info");
+    toast("닉네임과 PIN으로 먼저 시작해 주세요", "info");
     router.push(`/${slug}/login?next=/${slug}/bartenders/${staff.id}`);
   };
 

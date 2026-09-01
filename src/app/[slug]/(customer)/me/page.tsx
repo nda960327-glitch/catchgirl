@@ -47,7 +47,7 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
               <span className="font-serif text-[20px] font-bold text-ink">{me.nickname}</span>
               <GradeChip grade={stats.grade} />
             </div>
-            <div className="mt-1 text-[11px] text-mute">{me.phone}{me.name ? ` · ${me.name}` : ""}</div>
+            <div className="mt-1 text-[11px] text-mute">가입 {stats.visitCount > 0 ? `· 누적 ${stats.visitCount}회 방문` : "· 첫 방문을 기다리고 있어요"}</div>
           </div>
           <form action={logoutCustomer.bind(null, slug)}>
             <button className="rounded-full border border-line bg-white px-3 py-1.5 text-[10px] font-semibold text-mute">로그아웃</button>
@@ -72,7 +72,7 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
         )}
       </div>
       <div className="px-4">
-        <ProfileForm slug={slug} me={{ nickname: me.nickname, phone: me.phone, name: me.name ?? "", email: me.email ?? "", birthday: me.birthday ?? "", gender: me.gender ?? "", instagram: me.instagram ?? "", referral: me.referral ?? "" }} />
+        <ProfileForm slug={slug} me={{ nickname: me.nickname, referral: me.referral ?? "" }} />
       </div>
 
       {/* 예약 히스토리 */}

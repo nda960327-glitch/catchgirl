@@ -91,7 +91,7 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-[13px]">
                     <span className="font-bold text-ink">{r.customer.nickname}</span>
-                    <a href={`tel:${r.customer.phone}`} className="text-[11px] text-mute underline-offset-2 hover:underline">{r.customer.phone}</a>
+                    {r.customer.adminMemo && <span className="truncate text-[11px] text-mute" title={r.customer.adminMemo}>{r.customer.adminMemo}</span>}
                   </div>
                   {r.requestNote && <div className="mt-1 text-[11px] text-mute">“{r.requestNote}”</div>}
                 </div>

@@ -62,7 +62,7 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
         <Sticker k="p8" size={64} />
         <div>
           <div className="text-[13px] font-bold text-ink">{me ? `${me.nickname}님, 다녀온 자리를 기억해 두었어요` : "다녀온 자리, 기억해 두었어요"}</div>
-          <div className="mt-1 text-[11px] text-mute">{me ? "후기를 남기면 다음 방문이 더 편해져요" : "휴대폰 번호와 닉네임만으로 시작할 수 있어요"}</div>
+          <div className="mt-1 text-[11px] text-mute">{me ? "후기를 남기면 다음 방문이 더 편해져요" : "닉네임과 PIN만으로 시작할 수 있어요"}</div>
         </div>
       </Link>
 

@@ -8,7 +8,7 @@ import { prisma } from "@/lib/db";
 import { clearSession, requireAdmin, setSession } from "@/lib/auth";
 import { getStoreBySlug } from "@/lib/store";
 import { cancelReservation, createReservation, sendDueReminders, SlotConflictError } from "@/lib/reservations";
-import { normalizePhone, ymd } from "@/lib/utils";
+import { ymd } from "@/lib/utils";
 
 export type R<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 const fail = (e: unknown, fallback = "처리에 실패했어요."): R<never> => ({ ok: false, error: e instanceof Error && e.message !== "UNAUTHORIZED" ? e.message : e instanceof Error ? "권한이 없어요." : fallback });
@@ -58,7 +58,6 @@ const adminBook = z.object({
   partySize: z.coerce.number().int().min(1).max(20),
   requestNote: z.string().trim().max(200).optional().default(""),
   nickname: z.string().trim().max(12).optional().default(""),
-  phone: z.string().trim().optional().default(""),
   customerId: z.string().optional(),
 });
 export async function adminCreateReservation(slug: string, input: z.input<typeof adminBook>): Promise<R<{ id: string }>> {
@@ -69,12 +68,12 @@ export async function adminCreateReservation(slug: string, input: z.input<typeof
     if (!p.success) return { ok: false, error: "입력값을 확인해 주세요." };
     let customerId = p.data.customerId;
     if (!customerId) {
-      if (!p.data.nickname || p.data.phone.replace(/\D/g, "").length < 9) return { ok: false, error: "닉네임과 휴대폰 번호를 입력해 주세요." };
-      const phone = normalizePhone(p.data.phone);
+      if (!p.data.nickname) return { ok: false, error: "닉네임을 입력해 주세요." };
+      // 전화로 받은 예약 — PIN 없이 만들어 두고, 고객이 같은 닉네임으로 처음 로그인할 때 넘겨받는다
       const c = await prisma.customer.upsert({
-        where: { storeId_phone: { storeId: store.id, phone } },
+        where: { storeId_nickname: { storeId: store.id, nickname: p.data.nickname } },
         update: {},
-        create: { storeId: store.id, nickname: p.data.nickname, phone },
+        create: { storeId: store.id, nickname: p.data.nickname },
       });
       customerId = c.id;
     }
@@ -120,7 +119,6 @@ export async function adminUpdateReservation(slug: string, id: string, data: { p
 const staffSchema = z.object({
   id: z.string().optional(),
   nickname: z.string().trim().min(1).max(10),
-  realName: z.string().trim().max(20).optional().default(""),
   bio: z.string().trim().max(300).optional().default(""),
   tags: z.array(z.string().trim().min(1).max(12)).max(8).default([]),
   photos: z.array(z.string()).max(10).default([]),
@@ -139,7 +137,7 @@ export async function saveStaff(slug: string, input: z.input<typeof staffSchema>
     if (!p.success) return { ok: false, error: p.error.issues[0].message };
     const d = p.data;
     const base = {
-      nickname: d.nickname, realName: d.realName || null, bio: d.bio, tags: JSON.stringify(d.tags), photos: JSON.stringify(d.photos),
+      nickname: d.nickname, bio: d.bio, tags: JSON.stringify(d.tags), photos: JSON.stringify(d.photos),
       isActive: d.isActive, capacityPerSlot: d.capacityPerSlot, loginId: d.loginId || null,
       ...(d.password ? { passwordHash: await bcrypt.hash(d.password, 10) } : {}),
     };
@@ -170,17 +168,11 @@ export async function saveStaff(slug: string, input: z.input<typeof staffSchema>
 /* ─── 고객 관리 ─── */
 const customerInfoSchema = z.object({
   nickname: z.string().trim().min(1).max(12),
-  phone: z.string().trim().min(9),
-  name: z.string().trim().max(20).default(""),
-  email: z.string().trim().max(60).default(""),
-  birthday: z.string().trim().regex(/^(\d{4}-\d{2}-\d{2})?$/).default(""),
-  gender: z.string().regex(/^(F|M|N)?$/).default(""),
-  instagram: z.string().trim().max(40).default(""),
   referral: z.string().trim().max(20).default(""),
   adminMemo: z.string().max(500).default(""),
   isBlacklisted: z.boolean().default(false),
 });
-/** 관리자 — 고객 정보 전체 수정 (연락처·이름·생일·성별·인스타·방문경로·메모·블랙리스트) */
+/** 관리자 — 고객 기본 정보 수정 (닉네임·방문경로·고정 메모·블랙리스트) */
 export async function saveCustomerInfo(slug: string, customerId: string, input: z.input<typeof customerInfoSchema>): Promise<R> {
   try {
     const store = await getStoreBySlug(slug);
@@ -192,15 +184,45 @@ export async function saveCustomerInfo(slug: string, customerId: string, input: 
     const d = p.data;
     await prisma.customer.update({
       where: { id: customerId },
-      data: {
-        nickname: d.nickname, phone: normalizePhone(d.phone), name: d.name || null, email: d.email || null, birthday: d.birthday || null,
-        gender: d.gender || null, instagram: d.instagram.replace(/^@/, "") || null, referral: d.referral || null, adminMemo: d.adminMemo, isBlacklisted: d.isBlacklisted,
-      },
+      data: { nickname: d.nickname, referral: d.referral || null, adminMemo: d.adminMemo, isBlacklisted: d.isBlacklisted },
     });
     revalidatePath(`/${slug}/admin`, "layout");
     return { ok: true };
   } catch (e) {
-    if (e instanceof Error && e.message.includes("Unique constraint")) return { ok: false, error: "같은 휴대폰 번호의 고객이 이미 있어요." };
+    if (e instanceof Error && e.message.includes("Unique constraint")) return { ok: false, error: "같은 닉네임의 고객이 이미 있어요." };
+    return fail(e);
+  }
+}
+
+/** 관리자 — 고객 메모 한 줄 추가 (방문마다 쌓이는 시간순 기록) */
+export async function addCustomerNote(slug: string, customerId: string, content: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    const admin = await requireAdmin(store.id);
+    const c = await prisma.customer.findUnique({ where: { id: customerId } });
+    if (!c || c.storeId !== store.id) return { ok: false, error: "고객을 찾을 수 없어요." };
+    const text = content.trim();
+    if (!text) return { ok: false, error: "메모 내용을 입력해 주세요." };
+    if (text.length > 500) return { ok: false, error: "메모는 500자까지 쓸 수 있어요." };
+    await prisma.customerNote.create({ data: { storeId: store.id, customerId, authorName: admin.name, content: text } });
+    revalidatePath(`/${slug}/admin/customers/${customerId}`);
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 관리자 — 고객 메모 삭제 */
+export async function deleteCustomerNote(slug: string, noteId: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const n = await prisma.customerNote.findUnique({ where: { id: noteId } });
+    if (!n || n.storeId !== store.id) return { ok: false, error: "메모를 찾을 수 없어요." };
+    await prisma.customerNote.delete({ where: { id: noteId } });
+    revalidatePath(`/${slug}/admin/customers/${n.customerId}`);
+    return { ok: true };
+  } catch (e) {
     return fail(e);
   }
 }

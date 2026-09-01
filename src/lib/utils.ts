@@ -19,15 +19,7 @@ export function parseJsonArray<T = string>(s: string | null | undefined): T[] {
   }
 }
 
-export const GENDER_LABEL: Record<string, string> = { F: "여성", M: "남성", N: "선택 안 함" };
 export const REFERRALS = ["인스타그램", "지인 소개", "검색", "지나가다", "기타"];
-
-export function normalizePhone(phone: string) {
-  const d = phone.replace(/\D/g, "");
-  if (d.length === 11) return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
-  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
-  return phone.trim();
-}
 
 export function ymd(d: Date) {
   return format(d, "yyyy-MM-dd");

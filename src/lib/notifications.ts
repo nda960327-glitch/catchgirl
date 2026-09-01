@@ -1,11 +1,13 @@
 /**
- * NotificationService — MVP는 콘솔 로그 + 화면 토스트.
- * Phase 2: KakaoAlimtalkNotificationService / SmsNotificationService 를 같은 인터페이스로 구현해 교체.
+ * NotificationService — 콘솔 로그 + 화면 토스트.
+ *
+ * 고객 연락처(휴대폰·이메일)를 수집하지 않으므로 문자/알림톡 같은 외부 발송은 하지 않는다.
+ * 알림은 매장 내부(관리자·캐치걸 화면)와 고객 본인의 마이페이지에서 확인하는 용도다.
  */
 export type NotificationEvent =
-  | { type: "RESERVATION_CONFIRMED"; to: string; customerName: string; staffName: string; when: string; code: string }
-  | { type: "RESERVATION_CANCELLED"; to: string; customerName: string; staffName: string; when: string; code: string }
-  | { type: "REMINDER_1H"; to: string; customerName: string; staffName: string; when: string; code: string };
+  | { type: "RESERVATION_CONFIRMED"; customerName: string; staffName: string; when: string; code: string }
+  | { type: "RESERVATION_CANCELLED"; customerName: string; staffName: string; when: string; code: string }
+  | { type: "REMINDER_1H"; customerName: string; staffName: string; when: string; code: string };
 
 export interface NotificationService {
   send(event: NotificationEvent): Promise<{ ok: boolean; message: string }>;
@@ -25,14 +27,10 @@ export function renderMessage(e: NotificationEvent): string {
 export class ConsoleNotificationService implements NotificationService {
   async send(e: NotificationEvent) {
     const message = renderMessage(e);
-    console.log(`\n📨 [Notification → ${e.to}] ${message}\n`);
+    console.log(`\n📨 [Notification → ${e.customerName}] ${message}\n`);
     return { ok: true, message };
   }
 }
-
-// Phase 2 확장 지점 — 구현하지 않음
-// export class KakaoAlimtalkNotificationService implements NotificationService { ... }
-// export class SmsNotificationService implements NotificationService { ... }
 
 let _svc: NotificationService | null = null;
 export function notificationService(): NotificationService {

@@ -18,7 +18,7 @@ export default async function ReservationsPage({ params, searchParams }: { param
   const view = sp.view === "calendar" ? "calendar" : "list";
   const staff = await prisma.staff.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" } });
   const staffLite = staff.map((s) => ({ id: s.id, nickname: s.nickname, isActive: s.isActive }));
-  const customers = await prisma.customer.findMany({ where: { storeId: store.id }, select: { id: true, nickname: true, phone: true }, orderBy: { nickname: "asc" } });
+  const customers = await prisma.customer.findMany({ where: { storeId: store.id }, select: { id: true, nickname: true }, orderBy: { nickname: "asc" } });
 
   // ── 리스트 뷰 ──
   const today = startOfDayLocal(new Date());
@@ -35,7 +35,7 @@ export default async function ReservationsPage({ params, searchParams }: { param
     : [];
   const rows: ResRow[] = list.map((r) => ({
     id: r.id, code: r.code, startTime: r.startTime.toISOString(), date: ymd(r.startTime), time: format(r.startTime, "HH:mm"),
-    staffId: r.staffId, staffName: r.staff.nickname, customerId: r.customerId, customerName: r.customer.nickname, phone: r.customer.phone,
+    staffId: r.staffId, staffName: r.staff.nickname, customerId: r.customerId, customerName: r.customer.nickname, memo: r.customer.adminMemo,
     partySize: r.partySize, requestNote: r.requestNote, purposeTag: r.purposeTag, status: r.status, createdBy: r.createdBy, blacklisted: r.customer.isBlacklisted,
   }));
 
@@ -117,7 +117,7 @@ export default async function ReservationsPage({ params, searchParams }: { param
           slug={slug}
           rows={rows}
           staff={staffLite}
-          customers={customers.map((c) => ({ id: c.id, nickname: c.nickname, phone: c.phone }))}
+          customers={customers}
           filters={{ date, staffId: sp.staffId ?? "", q: sp.q ?? "", status: sp.status ?? "" }}
           times={storeSlotTimes(store)}
           openNew={sp.new === "1"}

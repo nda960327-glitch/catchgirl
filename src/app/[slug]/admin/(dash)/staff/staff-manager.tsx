@@ -9,13 +9,13 @@ import { cn, WEEKDAYS_KO } from "@/lib/utils";
 import { saveStaff } from "../../actions";
 
 export type StaffFull = {
-  id: string; nickname: string; realName: string; bio: string; tags: string[]; photos: string[]; isActive: boolean; capacityPerSlot: number; loginId: string;
+  id: string; nickname: string; bio: string; tags: string[]; photos: string[]; isActive: boolean; capacityPerSlot: number; loginId: string;
   schedules: { weekday: number; startTime: string; endTime: string }[];
   offs: { date: string; reason: string }[];
   stats: { rating: number | null; reviewCount: number; reservationCount: number; completedCount: number; noshowRate: number; revisitRate: number };
 };
 
-const EMPTY: StaffFull = { id: "", nickname: "", realName: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, loginId: "", schedules: [], offs: [], stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0 } };
+const EMPTY: StaffFull = { id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, loginId: "", schedules: [], offs: [], stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0 } };
 
 export function StaffManager({ slug, items, storeHours, initialEdit }: { slug: string; items: StaffFull[]; storeHours: { open: string; close: string }; initialEdit?: string }) {
   const [editing, setEditing] = useState<StaffFull | null>(initialEdit === "new" ? EMPTY : items.find((i) => i.id === initialEdit) ?? null);
@@ -32,7 +32,6 @@ export function StaffManager({ slug, items, storeHours, initialEdit }: { slug: s
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-serif text-[16px] font-bold text-ink">{s.nickname}</span>
-                  {s.realName && <span className="text-[11px] text-mute">{s.realName}</span>}
                   <Chip tone={s.isActive ? "green" : "mute"}>{s.isActive ? "활성" : "비활성"}</Chip>
                   {s.loginId && <Chip tone="gold">ID {s.loginId}</Chip>}
                   <Chip tone="mute">슬롯당 {s.capacityPerSlot}팀</Chip>
@@ -99,7 +98,7 @@ function StaffEditor({ slug, init, onClose }: { slug: string; init: StaffFull; o
   const submit = () => {
     start(async () => {
       const r = await saveStaff(slug, {
-        id: f.id || undefined, nickname: f.nickname, realName: f.realName, bio: f.bio, tags: f.tags, photos: f.photos, isActive: f.isActive,
+        id: f.id || undefined, nickname: f.nickname, bio: f.bio, tags: f.tags, photos: f.photos, isActive: f.isActive,
         capacityPerSlot: f.capacityPerSlot, loginId: f.loginId, password: f.password, schedules: f.schedules, offs: f.offs,
       });
       if (!r.ok) return toast(r.error, "error");
@@ -135,10 +134,7 @@ function StaffEditor({ slug, init, onClose }: { slug: string; init: StaffFull; o
             <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
           </div>
         </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="닉네임 (고객 노출)"><Input value={f.nickname} onChange={(e) => setF({ ...f, nickname: e.target.value })} /></Field>
-          <Field label="실명 (내부용)"><Input value={f.realName} onChange={(e) => setF({ ...f, realName: e.target.value })} /></Field>
-        </div>
+        <Field label="닉네임 (고객 노출)" hint="실명은 저장하지 않아요"><Input value={f.nickname} onChange={(e) => setF({ ...f, nickname: e.target.value })} /></Field>
         <Field label="한 줄 소개"><Textarea rows={2} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} /></Field>
         <Field label="태그" hint="Enter로 추가">
           <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-line bg-white px-3 py-2">

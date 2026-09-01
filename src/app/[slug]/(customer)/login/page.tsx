@@ -13,15 +13,15 @@ export default async function CustomerLoginPage({ params, searchParams }: { para
         <Sticker k="p7" size={110} />
         <div className="mt-2 font-serif text-[21px] font-bold text-ink">닉네임으로 충분해요</div>
         <p className="mt-2 text-[12px] leading-[1.7] text-mute">
-          {store.name}에서는 실명이 필요 없어요.
-          <br />휴대폰 번호로 예약 확인·알림을 보내드려요. 나머지 정보는 적어주시면 더 잘 챙겨드릴 수 있어요.
+          {store.name}은 실명도 휴대폰 번호도 받지 않아요.
+          <br />닉네임과 PIN만 있으면 예약하고, 다음에 다시 찾아올 수 있어요.
         </p>
       </div>
       <div className="px-6 pt-6">
         <LoginForm slug={slug} next={next} />
       </div>
       <div className="mt-auto px-6 pb-8 pt-6 text-center text-[10px] leading-[1.7] text-mute/80">
-        데모 계정 — 유나 / 010-1111-0001 (단골) · 제이 / 010-2222-0002
+        데모 계정 — 길동 / PIN 1234 (단골) · 병정 / PIN 1234
       </div>
     </div>
   );
