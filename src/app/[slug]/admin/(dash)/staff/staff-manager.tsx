@@ -12,10 +12,10 @@ export type StaffFull = {
   id: string; nickname: string; bio: string; tags: string[]; photos: string[]; isActive: boolean; capacityPerSlot: number; loginId: string;
   schedules: { weekday: number; startTime: string; endTime: string }[];
   offs: { date: string; reason: string }[];
-  stats: { rating: number | null; reviewCount: number; reservationCount: number; completedCount: number; noshowRate: number; revisitRate: number };
+  stats: { rating: number | null; reviewCount: number; reservationCount: number; completedCount: number; noshowRate: number; revisitRate: number; upCount: number; downCount: number };
 };
 
-const EMPTY: StaffFull = { id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, loginId: "", schedules: [], offs: [], stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0 } };
+const EMPTY: StaffFull = { id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, loginId: "", schedules: [], offs: [], stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0, upCount: 0, downCount: 0 } };
 
 export function StaffManager({ slug, items, storeHours, initialEdit }: { slug: string; items: StaffFull[]; storeHours: { open: string; close: string }; initialEdit?: string }) {
   const [editing, setEditing] = useState<StaffFull | null>(initialEdit === "new" ? EMPTY : items.find((i) => i.id === initialEdit) ?? null);
@@ -45,13 +45,15 @@ export function StaffManager({ slug, items, storeHours, initialEdit }: { slug: s
               <Button variant="outline" size="sm" onClick={() => setEditing(s)}>수정</Button>
             </div>
             {/* 실적 */}
-            <div className="mt-3 grid grid-cols-5 gap-2 rounded-2xl bg-[#FAF6F7] p-3 text-center">
+            <div className="mt-3 grid grid-cols-4 gap-2 rounded-2xl bg-[#FAF6F7] p-3 text-center md:grid-cols-7">
               {[
                 ["예약 수", `${s.stats.reservationCount}`],
                 ["방문완료", `${s.stats.completedCount}`],
                 ["재방문 유도율", `${s.stats.revisitRate}%`],
                 ["평균 별점", s.stats.rating !== null ? `${s.stats.rating.toFixed(1)} (${s.stats.reviewCount})` : "–"],
                 ["노쇼율", `${s.stats.noshowRate}%`],
+                ["👍 추천", `${s.stats.upCount}`],
+                ["👎 비추천", `${s.stats.downCount}`],
               ].map(([k, v]) => (
                 <div key={k}>
                   <div className="font-serif text-[15px] font-bold text-brand">{v}</div>

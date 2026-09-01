@@ -6,13 +6,13 @@ import { format } from "date-fns";
 import { Avatar, Button, Card, Chip, Empty, GradeChip, Stars, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { cn } from "@/lib/utils";
-import { addComment, reportReview, toggleFavorite } from "../../actions";
+import { addComment, reportReview, toggleFavorite, voteStaff } from "../../actions";
 
 export type ReviewItem = { id: string; nickname: string; grade: string; rating: number; content: string; photos: string[]; reply: string | null; createdAt: string; mine: boolean };
 export type CommentItem = { id: string; authorName: string; authorType: string; content: string; createdAt: string; replies: CommentItem[] };
 
 export function ProfileClient({
-  slug, staff, stats, reviews, comments, loggedIn, favorited,
+  slug, staff, stats, reviews, comments, loggedIn, favorited, votes,
 }: {
   slug: string;
   staff: { id: string; nickname: string; bio: string; tags: string[]; photos: string[] };
@@ -21,9 +21,11 @@ export function ProfileClient({
   comments: CommentItem[];
   loggedIn: boolean;
   favorited: boolean;
+  votes: { up: number; down: number; my: "UP" | "DOWN" | null };
 }) {
   const [tab, setTab] = useState<0 | 1>(0);
   const [fav, setFav] = useState(favorited);
+  const [vote, setVote] = useState(votes);
   const [pending, start] = useTransition();
   const router = useRouter();
   const { toast } = useToast();
@@ -41,6 +43,21 @@ export function ProfileClient({
       const r = await toggleFavorite(slug, staff.id);
       if (!r.ok) { setFav(!nextVal); toast(r.error, "error"); }
       else toast(nextVal ? "찜 목록에 담았어요 ♡" : "찜을 해제했어요", "success");
+    });
+  };
+
+  /** 낙관적 갱신 — 같은 버튼 재클릭은 취소, 반대쪽은 갈아타기 */
+  const onVote = (value: "UP" | "DOWN") => {
+    if (!loggedIn) return requireLogin();
+    const prev = vote;
+    const my = prev.my === value ? null : value;
+    const delta = (side: "UP" | "DOWN") => (my === side ? 1 : 0) - (prev.my === side ? 1 : 0);
+    setVote({ up: prev.up + delta("UP"), down: prev.down + delta("DOWN"), my });
+    start(async () => {
+      const r = await voteStaff(slug, staff.id, value);
+      if (!r.ok) { setVote(prev); toast(r.error, "error"); return; }
+      toast(my === "UP" ? "추천했어요 👍" : my === "DOWN" ? "비추천했어요" : "취소했어요", "success");
+      router.refresh();
     });
   };
 
@@ -79,6 +96,7 @@ export function ProfileClient({
           {[
             ["평점", stats.rating !== null ? stats.rating.toFixed(1) : "–"],
             ["후기", String(stats.reviewCount)],
+            ["추천", String(vote.up)],
             ["재방문", `${stats.revisitRate}%`],
           ].map(([k, v], i) => (
             <div key={k} className={cn("flex-1 text-center", i > 0 && "border-l border-line")}>
@@ -86,6 +104,33 @@ export function ProfileClient({
               <div className="mt-1 text-[10px] font-medium text-mute">{k}</div>
             </div>
           ))}
+        </div>
+
+        {/* 추천 / 비추천 */}
+        <div className="mt-3 flex gap-2.5">
+          <button
+            onClick={() => onVote("UP")}
+            disabled={pending}
+            className={cn(
+              "flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border text-[13px] font-bold transition-all active:scale-[.97]",
+              vote.my === "UP" ? "border-brand bg-blush-lt text-brand" : "border-line bg-white text-mute",
+            )}
+          >
+            👍 추천 <span className="font-serif">{vote.up}</span>
+          </button>
+          <button
+            onClick={() => onVote("DOWN")}
+            disabled={pending}
+            className={cn(
+              "flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border text-[13px] font-bold transition-all active:scale-[.97]",
+              vote.my === "DOWN" ? "border-ink bg-[#F1ECED] text-ink" : "border-line bg-white text-mute",
+            )}
+          >
+            👎 비추천 <span className="font-serif">{vote.down}</span>
+          </button>
+        </div>
+        <div className="mt-1.5 text-center text-[10px] text-mute">
+          {vote.my ? "같은 버튼을 다시 누르면 취소돼요" : "한 캐치걸에 한 표만 줄 수 있어요"}
         </div>
 
         {/* 탭 */}

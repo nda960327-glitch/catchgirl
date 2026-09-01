@@ -60,12 +60,15 @@ export type StaffStats = {
   completedCount: number;
   noshowRate: number; // 0~1
   revisitRate: number; // 0~1 — 완료 고객 중 2회 이상 방문 비율
+  upCount: number;
+  downCount: number;
 };
 
 export async function staffStats(staffId: string): Promise<StaffStats> {
-  const [reviews, rs] = await Promise.all([
+  const [reviews, rs, votes] = await Promise.all([
     prisma.review.findMany({ where: { staffId, isHidden: false }, select: { rating: true } }),
     prisma.reservation.findMany({ where: { staffId }, select: { status: true, customerId: true } }),
+    prisma.staffVote.findMany({ where: { staffId }, select: { value: true } }),
   ]);
   const rating = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : null;
   const nonCancelled = rs.filter((r) => r.status !== "CANCELLED");
@@ -82,5 +85,7 @@ export async function staffStats(staffId: string): Promise<StaffStats> {
     completedCount: completed.length,
     noshowRate: nonCancelled.length ? noshow.length / nonCancelled.length : 0,
     revisitRate: custN ? revisitN / custN : 0,
+    upCount: votes.filter((v) => v.value === "UP").length,
+    downCount: votes.filter((v) => v.value === "DOWN").length,
   };
 }

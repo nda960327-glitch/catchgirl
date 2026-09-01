@@ -16,6 +16,12 @@ export function StaffCard({ s, href }: { s: StaffSummary; href: string }) {
             )}
           </div>
           <div className="mt-1.5 truncate text-[12px] text-mute">{s.tags.slice(0, 3).map((t) => `#${t}`).join(" ")}</div>
+          {(s.upCount > 0 || s.downCount > 0) && (
+            <div className="mt-1.5 flex items-center gap-2.5 text-[11px] font-semibold">
+              <span className="text-brand">👍 {s.upCount}</span>
+              {s.downCount > 0 && <span className="text-mute">👎 {s.downCount}</span>}
+            </div>
+          )}
           <div className="mt-2 flex items-center gap-1.5">
             <span className={`h-1.5 w-1.5 rounded-full ${s.remainingToday === 0 ? "bg-[#DED2D4]" : low ? "bg-brand" : "bg-gold-lt"}`} />
             <span className={`text-[11px] font-semibold ${s.remainingToday === 0 ? "text-mute" : low ? "text-brand" : "text-mute"}`}>

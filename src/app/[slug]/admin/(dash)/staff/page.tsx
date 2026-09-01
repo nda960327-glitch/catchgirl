@@ -18,7 +18,7 @@ export default async function StaffPage({ params, searchParams }: { params: Prom
         isActive: s.isActive, capacityPerSlot: s.capacityPerSlot, loginId: s.loginId ?? "",
         schedules: s.schedules.map((x) => ({ weekday: x.weekday, startTime: x.startTime, endTime: x.endTime })),
         offs: s.offs.map((o) => ({ date: o.date, reason: o.reason ?? "" })),
-        stats: { rating: st.rating, reviewCount: st.reviewCount, reservationCount: st.reservationCount, completedCount: st.completedCount, noshowRate: Math.round(st.noshowRate * 100), revisitRate: Math.round(st.revisitRate * 100) },
+        stats: { rating: st.rating, reviewCount: st.reviewCount, reservationCount: st.reservationCount, completedCount: st.completedCount, noshowRate: Math.round(st.noshowRate * 100), revisitRate: Math.round(st.revisitRate * 100), upCount: st.upCount, downCount: st.downCount },
       };
     }),
   );

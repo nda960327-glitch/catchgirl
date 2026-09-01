@@ -130,6 +130,32 @@ export async function toggleFavorite(slug: string, staffId: string): Promise<Act
   return { ok: true, data: { on: !ex } };
 }
 
+/* ─── 추천 / 비추천 ─── */
+/** 같은 버튼을 다시 누르면 취소, 반대쪽을 누르면 갈아탄다. 반환값은 누른 뒤 내 표 상태. */
+export async function voteStaff(slug: string, staffId: string, value: "UP" | "DOWN"): Promise<ActionResult<{ my: "UP" | "DOWN" | null }>> {
+  const store = await getStoreBySlug(slug);
+  const customer = await getCustomer(store.id);
+  if (!customer) return { ok: false, error: "LOGIN_REQUIRED" };
+  const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+  if (!staff || staff.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+
+  const ex = await prisma.staffVote.findUnique({ where: { customerId_staffId: { customerId: customer.id, staffId } } });
+  let my: "UP" | "DOWN" | null;
+  if (!ex) {
+    await prisma.staffVote.create({ data: { customerId: customer.id, staffId, value } });
+    my = value;
+  } else if (ex.value === value) {
+    await prisma.staffVote.delete({ where: { id: ex.id } });
+    my = null;
+  } else {
+    await prisma.staffVote.update({ where: { id: ex.id }, data: { value } });
+    my = value;
+  }
+  revalidatePath(`/${slug}/bartenders/${staffId}`);
+  revalidatePath(`/${slug}/bartenders`);
+  return { ok: true, data: { my } };
+}
+
 /* ─── 댓글 ─── */
 export async function addComment(slug: string, staffId: string, content: string, parentId?: string): Promise<ActionResult> {
   const store = await getStoreBySlug(slug);

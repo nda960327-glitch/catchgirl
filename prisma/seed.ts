@@ -20,6 +20,7 @@ const photosFor = (i: number) => [PHOTO_POOL[i % 9], PHOTO_POOL[(i + 3) % 9], PH
 
 async function main() {
   console.log("🧹 기존 데이터 정리...");
+  await prisma.staffVote.deleteMany();
   await prisma.customerNote.deleteMany();
   await prisma.favorite.deleteMany();
   await prisma.comment.deleteMany();
@@ -225,6 +226,27 @@ async function main() {
       { customerId: cust["갑을"].id, staffId: staff["예리"].id },
     ],
   });
+
+  console.log("👍 추천 / 👎 비추천...");
+  const voteDefs: { c: string; s: string; v: "UP" | "DOWN" }[] = [
+    { c: "길동", s: "준희", v: "UP" },
+    { c: "갑을", s: "준희", v: "UP" },
+    { c: "춘삼", s: "준희", v: "UP" },
+    { c: "태식", s: "준희", v: "UP" },
+    { c: "길동", s: "하영", v: "UP" },
+    { c: "갑을", s: "하영", v: "UP" },
+    { c: "춘삼", s: "하영", v: "UP" },
+    { c: "길동", s: "예리", v: "UP" },
+    { c: "태식", s: "예리", v: "DOWN" },
+    { c: "병정", s: "예리", v: "DOWN" },
+    { c: "갑을", s: "루나", v: "UP" },
+    { c: "철식", s: "지유", v: "UP" },
+    { c: "병정", s: "지유", v: "DOWN" },
+    { c: "춘삼", s: "해린", v: "DOWN" },
+  ];
+  for (const v of voteDefs) {
+    await prisma.staffVote.create({ data: { customerId: cust[v.c].id, staffId: staff[v.s].id, value: v.v } });
+  }
 
   console.log("📝 관리자 방문 메모...");
   const noteDefs = [

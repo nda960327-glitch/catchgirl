@@ -69,6 +69,7 @@ model Staff {
   reviews      Review[]
   comments     Comment[]
   favorites    Favorite[]
+  votes        StaffVote[]
 
   @@index([storeId, isActive])
 }
@@ -113,6 +114,7 @@ model Customer {
   comments     Comment[]
   favorites    Favorite[]
   notes        CustomerNote[]
+  votes        StaffVote[]
 
   @@unique([storeId, nickname])
 }
@@ -218,4 +220,18 @@ model Favorite {
   staff      Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
   @@unique([customerId, staffId])
+}
+
+/** 캐치걸 추천/비추천 — 고객 1명당 캐치걸 1명에게 한 표. 같은 버튼을 다시 누르면 취소된다. */
+model StaffVote {
+  id         String   @id @default(cuid())
+  customerId String
+  staffId    String
+  value      String // UP | DOWN
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  staff      Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, staffId])
+  @@index([staffId, value])
 }
