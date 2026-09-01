@@ -450,9 +450,7 @@ export async function saveNotice(slug: string, input: z.input<typeof noticeSchem
     if (d.id) {
       const ex = await prisma.notice.findUnique({ where: { id: d.id } });
       if (!ex || ex.storeId !== store.id) return { ok: false, error: "공지를 찾을 수 없어요." };
-      // 잠긴 공지는 문구만 고칠 수 있다 — 내리거나 고정을 풀 수는 없다
-      const flags = ex.isLocked ? { isPinned: true, isActive: true } : { isPinned: d.isPinned, isActive: d.isActive };
-      await prisma.notice.update({ where: { id: d.id }, data: { title: d.title, body: d.body, ...flags } });
+      await prisma.notice.update({ where: { id: d.id }, data: { title: d.title, body: d.body, isPinned: d.isPinned, isActive: d.isActive } });
     } else {
       const count = await prisma.notice.count({ where: { storeId: store.id } });
       await prisma.notice.create({ data: { storeId: store.id, title: d.title, body: d.body, isPinned: d.isPinned, isActive: d.isActive, sortOrder: count } });
@@ -470,7 +468,6 @@ export async function deleteNotice(slug: string, noticeId: string): Promise<R> {
     await requireAdmin(store.id);
     const n = await prisma.notice.findUnique({ where: { id: noticeId } });
     if (!n || n.storeId !== store.id) return { ok: false, error: "공지를 찾을 수 없어요." };
-    if (n.isLocked) return { ok: false, error: "이 안내는 지울 수 없어요. 내용은 고치실 수 있어요." };
     await prisma.notice.delete({ where: { id: noticeId } });
     revalidatePath(`/${slug}`, "layout");
     return { ok: true };
@@ -690,6 +687,22 @@ export async function adminCommentAction(slug: string, commentId: string, action
       await prisma.comment.update({ where: { id: commentId }, data: { isHidden: action === "hide" } });
     }
     revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 요금제 변경. 결제 연동이 붙기 전까지는 화면에서 바로 바뀐다. */
+export async function setStorePlan(slug: string, plan: "PRO" | "MAX"): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    if (plan !== "PRO" && plan !== "MAX") return { ok: false, error: "요금제를 확인해 주세요." };
+    if (plan === store.plan) return { ok: true };
+    // 올릴 땐 그날부터 새 요금제가 시작된다
+    await prisma.store.update({ where: { id: store.id }, data: { plan, planStartedAt: new Date() } });
+    revalidatePath(`/${slug}/admin`, "layout");
     return { ok: true };
   } catch (e) {
     return fail(e);

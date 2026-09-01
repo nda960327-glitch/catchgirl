@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { LOCKED_NOTICE } from "../src/lib/notices";
 
 const prisma = new PrismaClient();
 
@@ -123,6 +122,9 @@ async function main() {
       tagline: "오늘 밤, 당신의 캐치걸",
       logoUrl: "/assets/icon.webp",
       themeColor: "#B4586A",
+      plan: "PRO",
+      // 두 달째 쓰고 있는 매장처럼 — 다음 청구일이 화면에 자연스럽게 뜨도록
+      planStartedAt: new Date(new Date().getFullYear(), new Date().getMonth() - 2, 14),
       openTime: "12:00",
       closeTime: "04:00",
       shiftSplitTime: "20:00",
@@ -486,7 +488,6 @@ async function main() {
 
   console.log("📢 공지사항...");
   const noticeDefs = [
-    LOCKED_NOTICE,
     {
       title: "초대받은 분만 이용하실 수 있어요",
       body:

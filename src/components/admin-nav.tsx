@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { PLANS, planOf } from "@/lib/plans";
 import { logoutAdmin } from "@/app/[slug]/admin/actions";
 
 const NAV = [
@@ -13,9 +14,26 @@ const NAV = [
   { href: "/customers", label: "고객 관리", icon: "♡" },
   { href: "/reviews", label: "후기·댓글", icon: "✎" },
   { href: "/settings", label: "매장 설정", icon: "⚙" },
+  { href: "/plan", label: "요금제", icon: "◈" },
 ];
 
-export function AdminNav({ slug, storeName, logoUrl, adminName }: { slug: string; storeName: string; logoUrl: string | null; adminName: string }) {
+/** 구독 중인 요금제 뱃지 — Max 는 금색으로 한눈에 구분되게 */
+export function PlanBadge({ plan, className }: { plan: string; className?: string }) {
+  const p = planOf(plan);
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[.1em]",
+        p === "MAX" ? "bg-gold text-white" : "bg-ink text-white",
+        className,
+      )}
+    >
+      {PLANS[p].name}
+    </span>
+  );
+}
+
+export function AdminNav({ slug, storeName, logoUrl, adminName, plan }: { slug: string; storeName: string; logoUrl: string | null; adminName: string; plan: string }) {
   const path = usePathname();
   const base = `/${slug}/admin`;
   return (
@@ -27,7 +45,10 @@ export function AdminNav({ slug, storeName, logoUrl, adminName }: { slug: string
           {logoUrl ? <img src={logoUrl} alt="" className="h-9 w-9 rounded-xl" /> : <span className="h-9 w-9 rounded-xl bg-blush-lt" />}
           <div>
             <div className="text-[9px] font-semibold uppercase tracking-[.2em] text-gold">Admin</div>
-            <div className="font-serif text-[15px] font-bold text-ink">{storeName}</div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-serif text-[15px] font-bold text-ink">{storeName}</span>
+              <PlanBadge plan={plan} />
+            </div>
           </div>
         </Link>
         <nav className="mt-7 flex flex-col gap-1">

@@ -4,6 +4,7 @@ import { ko } from "date-fns/locale";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { completeFinishedReservations } from "@/lib/rollover";
+import { FIXED_NOTICE } from "@/lib/notices";
 import { listStaffSummaries } from "@/lib/queries";
 import { businessDayOf, isStoreClosed } from "@/lib/slots";
 import { cn } from "@/lib/utils";
@@ -24,8 +25,7 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
     getCustomer(store.id),
     prisma.notice.findMany({
       where: { storeId: store.id, isActive: true },
-      // 이 앱이 무엇을 예약하는 곳인지 밝히는 안내가 늘 맨 위에 온다
-      orderBy: [{ isLocked: "desc" }, { isPinned: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
+      orderBy: [{ isPinned: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
     }),
   ]);
   const today = new Date();
@@ -73,39 +73,32 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
 
       <InstallApp role="customer" className="mx-4 mt-4" />
 
-      {/* 공지사항 */}
-      {notices.length > 0 && (
-        <section className="px-4 pt-6">
+      {/* 공지사항 — 고정 안내는 매장 공지가 없어도 늘 보여야 한다 */}
+      <section className="px-4 pt-6">
           <div className="mb-3 flex items-baseline gap-2 px-1">
             <Eyebrow>Notice</Eyebrow>
             <h2 className="text-[13px] font-bold text-ink">공지사항</h2>
           </div>
           <div className="flex flex-col gap-2.5">
-            {notices.map((n) =>
-              // 늘 걸려 있는 안내는 공지들 사이에 섞이면 안 된다 — 색을 달리해 못박아 둔다
-              n.isLocked ? (
-                <p key={n.id} className="whitespace-pre-line px-1 text-[12px] leading-[1.9] text-gold">
-                  {n.body}
-                </p>
-              ) : (
-                <div
-                  key={n.id}
-                  className={cn(
-                    "rounded-[20px] border px-[18px] py-4",
-                    n.isPinned ? "border-brand/30 bg-blush-lt/60" : "border-line bg-white",
-                  )}
-                >
-                  <div className="flex items-start gap-2">
-                    {n.isPinned && <Chip>필독</Chip>}
-                    <div className="mt-0.5 text-[13px] font-bold text-ink">{n.title}</div>
-                  </div>
-                  <p className="mt-2 whitespace-pre-line text-[12px] leading-[1.8] text-mute">{n.body}</p>
+            {/* 매장이 고칠 수 없는 안내 — 공지 카드에 섞이지 않게 색만 달리해 적는다 */}
+            <p className="whitespace-pre-line px-1 text-[12px] leading-[1.9] text-gold">{FIXED_NOTICE.body}</p>
+            {notices.map((n) => (
+              <div
+                key={n.id}
+                className={cn(
+                  "rounded-[20px] border px-[18px] py-4",
+                  n.isPinned ? "border-brand/30 bg-blush-lt/60" : "border-line bg-white",
+                )}
+              >
+                <div className="flex items-start gap-2">
+                  {n.isPinned && <Chip>필독</Chip>}
+                  <div className="mt-0.5 text-[13px] font-bold text-ink">{n.title}</div>
                 </div>
-              ),
-            )}
+                <p className="mt-2 whitespace-pre-line text-[12px] leading-[1.8] text-mute">{n.body}</p>
+              </div>
+            ))}
           </div>
         </section>
-      )}
 
       {/* 배너 */}
       <Link href={me ? `/${slug}/me` : `/${slug}/login`} className="mx-4 mt-[22px] flex items-center gap-3 rounded-[22px] bg-gradient-to-r from-blush-lt to-[#FFF8F4] px-[18px] py-[18px]">

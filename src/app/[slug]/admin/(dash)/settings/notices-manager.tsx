@@ -4,11 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, Chip, Eyebrow, Field, Input, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
+import { FIXED_NOTICE } from "@/lib/notices";
 import { deleteNotice, saveNotice } from "../../actions";
 
-export type NoticeItem = { id: string; title: string; body: string; isPinned: boolean; isActive: boolean; isLocked: boolean };
+export type NoticeItem = { id: string; title: string; body: string; isPinned: boolean; isActive: boolean };
 
-const BLANK: NoticeItem = { id: "", title: "", body: "", isPinned: false, isActive: true, isLocked: false };
+const BLANK: NoticeItem = { id: "", title: "", body: "", isPinned: false, isActive: true };
 
 /** 관리자 — 고객 홈에 뜨는 공지를 직접 쓰고 고친다 */
 export function NoticesManager({ slug, items }: { slug: string; items: NoticeItem[] }) {
@@ -44,20 +45,28 @@ export function NoticesManager({ slug, items }: { slug: string; items: NoticeIte
       <p className="mt-1 text-[12px] text-mute">고객 홈 화면에 그대로 보여요. <b className="text-ink">필독</b>으로 지정하면 맨 위에 강조돼요.</p>
 
       <div className="mt-4 flex flex-col gap-2.5">
-        {items.length === 0 && <div className="rounded-2xl border border-dashed border-line px-4 py-5 text-center text-[12px] text-mute">아직 공지가 없어요</div>}
+        {/* 고정 안내 — 코드에 박혀 있어 여기서도 손댈 수 없다 */}
+        <div className="rounded-2xl border border-gold/40 bg-[#FFFBF3] p-3.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Chip tone="gold">고정</Chip>
+            <span className="text-[13px] font-bold text-ink">{FIXED_NOTICE.title}</span>
+            <span className="ml-auto text-[10px] font-semibold text-mute">수정·삭제 불가</span>
+          </div>
+          <p className="mt-1.5 whitespace-pre-line text-[12px] leading-[1.7] text-mute">{FIXED_NOTICE.body}</p>
+          <p className="mt-2 text-[10px] leading-[1.7] text-mute">
+            이 앱이 무엇을 예약하는 곳인지 밝혀 두는 안내예요. 고객 홈 공지 맨 위에 늘 보이고, 매장에서 고치거나 내릴 수 없어요.
+          </p>
+        </div>
+        {items.length === 0 && <div className="rounded-2xl border border-dashed border-line px-4 py-5 text-center text-[12px] text-mute">아직 매장 공지가 없어요</div>}
         {items.map((n) => (
           <div key={n.id} className="rounded-2xl border border-line bg-white p-3.5">
             <div className="flex flex-wrap items-center gap-1.5">
               {n.isPinned && <Chip>필독</Chip>}
-              {n.isLocked && <Chip tone="mute">항상 노출</Chip>}
               {!n.isActive && <Chip tone="mute">숨김</Chip>}
               <span className="text-[13px] font-bold text-ink">{n.title}</span>
               <div className="ml-auto flex gap-1.5">
                 <Button size="sm" variant="outline" onClick={() => setEditing(n)}>수정</Button>
-                {/* 늘 걸려 있어야 하는 안내는 삭제 버튼을 아예 두지 않는다 */}
-                {!n.isLocked && (
-                  <button onClick={() => remove(n)} disabled={pending} className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-bold text-mute hover:text-[#C0392B]">삭제</button>
-                )}
+                <button onClick={() => remove(n)} disabled={pending} className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-bold text-mute hover:text-[#C0392B]">삭제</button>
               </div>
             </div>
             <p className="mt-1.5 whitespace-pre-line text-[12px] leading-[1.7] text-mute">{n.body}</p>
@@ -74,22 +83,16 @@ export function NoticesManager({ slug, items }: { slug: string; items: NoticeIte
           <Field label="내용" hint="줄바꿈 그대로 보여요">
             <Textarea rows={5} value={editing.body} onChange={(e) => setEditing({ ...editing, body: e.target.value })} maxLength={1000} />
           </Field>
-          {editing.isLocked ? (
-            <div className="rounded-xl bg-white/70 px-3.5 py-2.5 text-[11px] leading-[1.7] text-mute">
-              이 안내는 늘 맨 위에 걸려 있어요. 내리거나 지울 수는 없고, <b className="text-ink">문구만</b> 고치실 수 있어요.
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-4">
-              <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
-                <input type="checkbox" checked={editing.isPinned} onChange={(e) => setEditing({ ...editing, isPinned: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
-                필독 (맨 위 고정)
-              </label>
-              <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
-                <input type="checkbox" checked={editing.isActive} onChange={(e) => setEditing({ ...editing, isActive: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
-                고객에게 노출
-              </label>
-            </div>
-          )}
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
+              <input type="checkbox" checked={editing.isPinned} onChange={(e) => setEditing({ ...editing, isPinned: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
+              필독 (맨 위 고정)
+            </label>
+            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
+              <input type="checkbox" checked={editing.isActive} onChange={(e) => setEditing({ ...editing, isActive: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
+              고객에게 노출
+            </label>
+          </div>
           <div className="flex gap-2">
             <Button onClick={save} loading={pending} className="flex-1" disabled={!editing.title.trim() || !editing.body.trim()}>저장</Button>
             <Button variant="ghost" onClick={() => setEditing(null)}>취소</Button>
