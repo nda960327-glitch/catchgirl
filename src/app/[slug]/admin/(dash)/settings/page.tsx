@@ -4,11 +4,15 @@ import { parseJsonArray } from "@/lib/utils";
 import { Eyebrow } from "@/components/ui";
 import { SettingsForm } from "./settings-form";
 import { OptionsManager } from "./options-manager";
+import { NoticesManager } from "./notices-manager";
 
 export default async function SettingsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const store = await getStoreBySlug(slug);
-  const options = await prisma.storeOption.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" } });
+  const [options, notices] = await Promise.all([
+    prisma.storeOption.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" } }),
+    prisma.notice.findMany({ where: { storeId: store.id }, orderBy: [{ isPinned: "desc" }, { sortOrder: "asc" }] }),
+  ]);
   return (
     <div className="animate-fade">
       <Eyebrow>Store Settings</Eyebrow>
@@ -22,6 +26,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
           cancelDeadlineHours: store.cancelDeadlineHours, maxAdvanceDays: store.maxAdvanceDays, noshowPolicy: store.noshowPolicy,
         }}
       />
+      <NoticesManager slug={slug} items={notices.map((n) => ({ id: n.id, title: n.title, body: n.body, isPinned: n.isPinned, isActive: n.isActive }))} />
       <OptionsManager slug={slug} items={options.map((o) => ({ id: o.id, name: o.name, price: o.price, isActive: o.isActive }))} />
     </div>
   );

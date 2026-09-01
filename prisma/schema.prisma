@@ -37,6 +37,7 @@ model Store {
   comments      Comment[]
   customerNotes CustomerNote[]
   options       StoreOption[]
+  notices       Notice[]
 }
 
 model AdminUser {
@@ -169,6 +170,22 @@ model Reservation {
   @@index([storeId, startTime])
   @@index([staffId, startTime])
   @@index([customerId, startTime])
+}
+
+/** 고객 홈에 띄우는 공지 — 관리자에서 직접 쓰고 고칠 수 있다 */
+model Notice {
+  id        String   @id @default(cuid())
+  storeId   String
+  title     String
+  body      String
+  isPinned  Boolean  @default(false) // 목록 맨 위 고정
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, isActive])
 }
 
 /** 매장이 관리하는 추가 옵션 (이름·가격을 관리자에서 편집) */

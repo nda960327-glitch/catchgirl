@@ -19,6 +19,7 @@ const photosFor = (i: number) => [PHOTO_POOL[i % 9], PHOTO_POOL[(i + 3) % 9], PH
 
 async function main() {
   console.log("🧹 기존 데이터 정리...");
+  await prisma.notice.deleteMany();
   await prisma.reservationOption.deleteMany();
   await prisma.storeOption.deleteMany();
   await prisma.staffVote.deleteMany();
@@ -119,6 +120,37 @@ async function main() {
     cust[c.nickname] = await prisma.customer.create({
       data: { storeId: store.id, nickname: c.nickname, passwordHash: pw, adminMemo: c.memo },
     });
+  }
+
+  console.log("📢 공지사항...");
+  const noticeDefs = [
+    {
+      title: "초대받은 분만 이용하실 수 있어요",
+      body:
+        "이곳은 기존에 방문해 주신 분들을 위해 조용히 열어둔 공간이에요.\n" +
+        "주소나 화면을 다른 분께 공유하시면 예약이 제한될 수 있어요.\n" +
+        "새로 함께 오고 싶은 분이 계시면 매장에 먼저 말씀해 주세요.",
+      isPinned: true,
+    },
+    {
+      title: "전담 캐치걸을 지정해 예약해요",
+      body:
+        "오늘 그 자리에 누가 앉을지 직접 고르실 수 있어요.\n" +
+        "프로필에서 소개와 후기를 보고, 마음에 드는 분을 지정해 주세요.\n" +
+        "찜해 두시면 다음 방문 때 더 빠르게 찾으실 수 있어요.",
+      isPinned: false,
+    },
+    {
+      title: "예약은 1시간 단위, 이어서도 가능해요",
+      body:
+        "1시간부터 시작해 원하는 만큼 이어서 예약하실 수 있어요.\n" +
+        `영업은 ${store.openTime}부터 다음 날 ${store.closeTime}까지예요.\n` +
+        `사정이 생기시면 방문 ${store.cancelDeadlineHours}시간 전까지 취소를 부탁드려요.`,
+      isPinned: false,
+    },
+  ];
+  for (let i = 0; i < noticeDefs.length; i++) {
+    await prisma.notice.create({ data: { storeId: store.id, ...noticeDefs[i], sortOrder: i } });
   }
 
   console.log("➕ 추가 옵션...");

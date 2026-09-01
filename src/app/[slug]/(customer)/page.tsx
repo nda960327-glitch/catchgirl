@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { listStaffSummaries } from "@/lib/queries";
 import { isStoreClosed } from "@/lib/slots";
-import { ymd } from "@/lib/utils";
+import { cn, ymd } from "@/lib/utils";
 import { getCustomer } from "@/lib/auth";
 import { Chip, Eyebrow, Sticker } from "@/components/ui";
-import { StaffCard } from "@/components/staff-card";
 
 // 지금 자리가 있는지는 매 순간 달라지므로 캐시하지 않는다
 export const dynamic = "force-dynamic";
@@ -15,7 +15,14 @@ export const dynamic = "force-dynamic";
 export default async function HomePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const store = await getStoreBySlug(slug);
-  const [staff, me] = await Promise.all([listStaffSummaries(store), getCustomer(store.id)]);
+  const [staff, me, notices] = await Promise.all([
+    listStaffSummaries(store),
+    getCustomer(store.id),
+    prisma.notice.findMany({
+      where: { storeId: store.id, isActive: true },
+      orderBy: [{ isPinned: "desc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
+    }),
+  ]);
   const today = new Date();
   const closed = isStoreClosed(store, ymd(today));
   const openStaff = staff.filter((s) => s.remainingHoursToday > 0);
@@ -46,39 +53,46 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
         <Sticker k="p1" size={104} className="absolute -bottom-2.5 -right-1.5 opacity-95" />
       </div>
 
-      {/* 지금 바로 되는 캐치걸 — 있을 때만 따로 띄운다 */}
-      {nowStaff.length > 0 && (
-        <section className="px-4 pt-5">
-          <div className="mb-3 flex items-baseline justify-between px-1">
-            <h2 className="text-[13px] font-bold text-ink">
-              <span className="text-[#2E8B57]">●</span> 지금 바로 예약 가능 {nowStaff.length}
-            </h2>
-            <Link href={`/${slug}/bartenders?now=1`} className="text-[11px] font-semibold text-brand">
-              모두 보기 ›
-            </Link>
+      {/* 예약하러 가기 — 캐치걸 목록은 예약 탭에서 본다 */}
+      <Link
+        href={`/${slug}/bartenders`}
+        className="cta-grad mx-4 mt-5 flex items-center gap-3 rounded-[22px] px-[18px] py-4 shadow-cta"
+      >
+        <div className="flex-1">
+          <div className="text-[14px] font-bold text-white">캐치걸 보고 예약하기</div>
+          <div className="mt-0.5 text-[11px] text-white/85">
+            {nowStaff.length > 0 ? `지금 바로 가능한 캐치걸 ${nowStaff.length}명` : `오늘 예약 가능한 캐치걸 ${openStaff.length}명`}
           </div>
-          <div className="flex flex-col gap-3.5">
-            {nowStaff.slice(0, 3).map((s) => (
-              <StaffCard key={s.id} s={s} href={`/${slug}/bartenders/${s.id}`} />
+        </div>
+        <span className="text-[18px] text-white/90">›</span>
+      </Link>
+
+      {/* 공지사항 */}
+      {notices.length > 0 && (
+        <section className="px-4 pt-6">
+          <div className="mb-3 flex items-baseline gap-2 px-1">
+            <Eyebrow>Notice</Eyebrow>
+            <h2 className="text-[13px] font-bold text-ink">공지사항</h2>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {notices.map((n) => (
+              <div
+                key={n.id}
+                className={cn(
+                  "rounded-[20px] border px-[18px] py-4",
+                  n.isPinned ? "border-brand/30 bg-blush-lt/60" : "border-line bg-white",
+                )}
+              >
+                <div className="flex items-start gap-2">
+                  {n.isPinned && <Chip>필독</Chip>}
+                  <div className="mt-0.5 text-[13px] font-bold text-ink">{n.title}</div>
+                </div>
+                <p className="mt-2 whitespace-pre-line text-[12px] leading-[1.8] text-mute">{n.body}</p>
+              </div>
             ))}
           </div>
         </section>
       )}
-
-      {/* 오늘 예약 가능한 캐치걸 */}
-      <section className="px-4 pt-5">
-        <div className="mb-3 flex items-baseline justify-between px-1">
-          <h2 className="text-[13px] font-bold text-ink">오늘 예약 가능한 캐치걸</h2>
-          <Link href={`/${slug}/bartenders`} className="text-[11px] font-semibold text-brand">
-            전체 보기 ›
-          </Link>
-        </div>
-        <div className="flex flex-col gap-3.5">
-          {staff.map((s) => (
-            <StaffCard key={s.id} s={s} href={`/${slug}/bartenders/${s.id}`} />
-          ))}
-        </div>
-      </section>
 
       {/* 배너 */}
       <Link href={me ? `/${slug}/me` : `/${slug}/login`} className="mx-4 mt-[22px] flex items-center gap-3 rounded-[22px] bg-gradient-to-r from-blush-lt to-[#FFF8F4] px-[18px] py-[18px]">

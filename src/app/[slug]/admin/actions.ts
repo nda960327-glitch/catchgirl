@@ -198,6 +198,50 @@ export async function deleteStaff(slug: string, staffId: string): Promise<R> {
   }
 }
 
+/* ─── 공지사항 관리 ─── */
+const noticeSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().trim().min(1, "제목을 입력해 주세요").max(40),
+  body: z.string().trim().min(1, "내용을 입력해 주세요").max(1000),
+  isPinned: z.boolean().default(false),
+  isActive: z.boolean().default(true),
+});
+export async function saveNotice(slug: string, input: z.input<typeof noticeSchema>): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const p = noticeSchema.safeParse(input);
+    if (!p.success) return { ok: false, error: p.error.issues[0].message };
+    const d = p.data;
+    if (d.id) {
+      const ex = await prisma.notice.findUnique({ where: { id: d.id } });
+      if (!ex || ex.storeId !== store.id) return { ok: false, error: "공지를 찾을 수 없어요." };
+      await prisma.notice.update({ where: { id: d.id }, data: { title: d.title, body: d.body, isPinned: d.isPinned, isActive: d.isActive } });
+    } else {
+      const count = await prisma.notice.count({ where: { storeId: store.id } });
+      await prisma.notice.create({ data: { storeId: store.id, title: d.title, body: d.body, isPinned: d.isPinned, isActive: d.isActive, sortOrder: count } });
+    }
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteNotice(slug: string, noticeId: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const n = await prisma.notice.findUnique({ where: { id: noticeId } });
+    if (!n || n.storeId !== store.id) return { ok: false, error: "공지를 찾을 수 없어요." };
+    await prisma.notice.delete({ where: { id: noticeId } });
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 /* ─── 추가 옵션 관리 ─── */
 const optionSchema = z.object({
   id: z.string().optional(),
