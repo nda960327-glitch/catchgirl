@@ -6,6 +6,8 @@ import { getStoreBySlug } from "@/lib/store";
 import { businessDayOf, businessDayRange, storeSlotTimes } from "@/lib/slots";
 import { cn, parseJsonArray, won, wonShort, ymd, STORE_FEE_PER_HOUR, WEEKDAYS_KO } from "@/lib/utils";
 import { Avatar, Card, Chip, Eyebrow } from "@/components/ui";
+import { PlanBadge } from "@/components/admin-nav";
+import { PLANS, planOf } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,8 @@ export default async function RevenuePage({
   const sp = await searchParams;
   const store = await getStoreBySlug(slug);
   const now = new Date();
+
+  const canExport = PLANS[planOf(store.plan)].dataExport;
 
   const monthBase = sp.month && /^\d{4}-\d{2}$/.test(sp.month) ? new Date(`${sp.month}-01T00:00:00`) : now;
   const mStart = startOfMonth(monthBase);
@@ -301,6 +305,42 @@ export default async function RevenuePage({
           </Card>
         </div>
       </div>
+
+      {/* 내보내기 — 정산·세무 때 쓰는 기능이라 매출 화면에 둔다 */}
+      <Card className="mt-4 p-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[14px] font-bold text-ink">데이터 내보내기</span>
+          <PlanBadge plan="MAX" />
+          {!canExport && <Chip tone="mute">Max 요금제 기능</Chip>}
+        </div>
+        <p className="mt-1 text-[11px] leading-[1.8] text-mute">
+          {format(mStart, "yyyy년 M월", { locale: ko })} 기준으로 내려받아요. 엑셀에서 바로 열리는 CSV 예요.
+          {canExport && " 고객 명단에는 매장이 적어 두신 연락처가 들어 있으니 보관에 주의해 주세요."}
+        </p>
+        {canExport ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {[
+              ["reservations", "예약 내역", "건별 금액·상태·룸까지"],
+              ["staff", "캐치걸 정산", "1인당 시간·매장 몫·캐치걸 몫"],
+              ["customers", "고객 명단", "연락처·방문·누적 지출 (기간 전체)"],
+            ].map(([t, label, hint]) => (
+              <a
+                key={t}
+                href={`/${slug}/admin/export/${t}?month=${format(mStart, "yyyy-MM")}`}
+                className="rounded-2xl border border-line bg-white px-4 py-2.5 transition-colors hover:border-brand"
+              >
+                <span className="block text-[12px] font-bold text-ink">{label} ↓</span>
+                <span className="block text-[10px] text-mute">{hint}</span>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl bg-[#FAF6F7] px-4 py-3">
+            <span className="text-[11px] text-mute">Max 요금제로 올리시면 예약 내역·캐치걸 정산·고객 명단을 CSV 로 내려받으실 수 있어요.</span>
+            <Link href={`/${slug}/admin/plan`} className="text-[11px] font-bold text-brand underline-offset-2 hover:underline">요금제 보기 ›</Link>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
