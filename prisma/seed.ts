@@ -135,14 +135,28 @@ async function main() {
   console.log("📅 예약 생성... (1시간 단위, 연달아 예약 가능)");
   type R = { c: string; s: string; day: number; t: string; h: number; status: string; note?: string; by?: string; opts?: string[] };
   const rs: R[] = [
-    // ── 오늘 (데모 핵심) — 연속 예약 섞어서 ──
+    // ── 오늘 (데모 핵심) — 타임라인이 꽉 차 보이도록 캐치걸·시간대를 넓게 깔아둔다.
+    //    같은 캐치걸끼리도, 같은 손님끼리도 시간이 겹치지 않게 배치했다.
+    { c: "철식", s: "지유", day: 0, t: "12:00", h: 1, status: "COMPLETED" },
+    { c: "길동", s: "아리", day: 0, t: "12:00", h: 1, status: "COMPLETED" },
+    { c: "춘삼", s: "이슬", day: 0, t: "12:00", h: 2, status: "COMPLETED", opts: ["옵션2"] },
+    { c: "병정", s: "민서", day: 0, t: "12:30", h: 2, status: "COMPLETED" },
+    { c: "태식", s: "진아", day: 0, t: "12:00", h: 1, status: "NOSHOW" },
+    { c: "갑을", s: "루나", day: 0, t: "13:00", h: 2, status: "CONFIRMED" },
+    { c: "철식", s: "유빈", day: 0, t: "13:30", h: 2, status: "CONFIRMED" },
     { c: "길동", s: "준희", day: 0, t: "14:00", h: 3, status: "CONFIRMED", note: "창가 자리 부탁드려요", opts: ["옵션1"] },
-    { c: "갑을", s: "준희", day: 0, t: "19:00", h: 2, status: "CONFIRMED" },
-    { c: "태식", s: "준희", day: 0, t: "22:00", h: 1, status: "CONFIRMED" },
+    { c: "태식", s: "선미", day: 0, t: "15:00", h: 2, status: "CONFIRMED" },
     { c: "춘삼", s: "예리", day: 0, t: "16:30", h: 3, status: "CONFIRMED", note: "케이크 반입 가능할까요?", opts: ["옵션1", "옵션2"] },
-    { c: "병정", s: "예리", day: 0, t: "20:00", h: 2, status: "CONFIRMED", by: "ADMIN" },
+    { c: "갑을", s: "수아", day: 0, t: "17:00", h: 2, status: "CONFIRMED" },
+    { c: "태식", s: "루나", day: 0, t: "18:00", h: 3, status: "CONFIRMED" },
+    { c: "갑을", s: "준희", day: 0, t: "19:00", h: 2, status: "CONFIRMED" },
     { c: "길동", s: "하영", day: 0, t: "19:30", h: 2, status: "CONFIRMED" },
-    { c: "철식", s: "지유", day: 0, t: "12:00", h: 1, status: "CONFIRMED" },
+    { c: "병정", s: "예리", day: 0, t: "20:00", h: 2, status: "CONFIRMED", by: "ADMIN" },
+    { c: "철식", s: "민서", day: 0, t: "20:00", h: 2, status: "CONFIRMED" },
+    { c: "춘삼", s: "시연", day: 0, t: "21:00", h: 2, status: "CONFIRMED", opts: ["옵션1"] },
+    { c: "태식", s: "준희", day: 0, t: "22:00", h: 1, status: "CONFIRMED" },
+    { c: "병정", s: "지혜", day: 0, t: "22:00", h: 2, status: "CONFIRMED" },
+    { c: "길동", s: "해린", day: 0, t: "23:00", h: 2, status: "CONFIRMED", note: "조용한 자리로 부탁드려요" },
     // ── 과거: 길동 방문 7회(단골) ──
     { c: "길동", s: "준희", day: -3, t: "19:00", h: 2, status: "COMPLETED", opts: ["옵션1"] },
     { c: "길동", s: "준희", day: -10, t: "20:00", h: 1, status: "COMPLETED" },

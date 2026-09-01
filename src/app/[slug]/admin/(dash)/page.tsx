@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { format, subDays } from "date-fns";
+import { format, startOfMonth, subDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { storeSlotTimes } from "@/lib/slots";
-import { startOfDayLocal, STATUS_LABEL, parseJsonArray } from "@/lib/utils";
+import { startOfDayLocal, STATUS_LABEL, parseJsonArray, ymd, won, wonShort, STORE_FEE_PER_HOUR } from "@/lib/utils";
 import { Card, Chip, Eyebrow } from "@/components/ui";
 import { Charts } from "./charts";
 import { Timeline } from "./timeline";
@@ -17,13 +17,27 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
   const tomorrow0 = new Date(today0.getTime() + 86_400_000);
   const weekAgo = subDays(today0, 6);
   const monthAgo = subDays(today0, 30);
+  const monthStart = startOfMonth(now);
 
-  const [todayRes, monthRes, newCustomers, staff] = await Promise.all([
-    prisma.reservation.findMany({ where: { storeId: store.id, startTime: { gte: today0, lt: tomorrow0 } }, include: { staff: true, customer: true }, orderBy: { startTime: "asc" } }),
+  const [todayRes, monthRes, newCustomers, staff, totalCustomers, thisMonthRes] = await Promise.all([
+    prisma.reservation.findMany({
+      where: { storeId: store.id, startTime: { gte: today0, lt: tomorrow0 } },
+      include: { staff: true, options: true, customer: { include: { reservations: { select: { status: true } } } } },
+      orderBy: { startTime: "asc" },
+    }),
     prisma.reservation.findMany({ where: { storeId: store.id, startTime: { gte: monthAgo, lt: tomorrow0 } }, select: { status: true, startTime: true, staffId: true } }),
     prisma.customer.count({ where: { storeId: store.id, createdAt: { gte: weekAgo } } }),
     prisma.staff.findMany({ where: { storeId: store.id, isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.customer.count({ where: { storeId: store.id } }),
+    prisma.reservation.findMany({ where: { storeId: store.id, startTime: { gte: monthStart, lt: tomorrow0 } }, select: { status: true, hours: true } }),
   ]);
+
+  // 매장 수익 = 예약된 시간 × 시간당 정액 (캐치걸에게 가는 요금과는 별개)
+  const hoursOf = (statuses: string[]) => thisMonthRes.filter((r) => statuses.includes(r.status)).reduce((a, r) => a + r.hours, 0);
+  const doneHours = hoursOf(["COMPLETED"]);
+  const bookedHours = hoursOf(["COMPLETED", "CONFIRMED"]);
+  const revenueDone = doneHours * STORE_FEE_PER_HOUR;
+  const revenueBooked = bookedHours * STORE_FEE_PER_HOUR;
 
   const todayActive = todayRes.filter((r) => r.status !== "CANCELLED");
   const todayNoshow = todayRes.filter((r) => r.status === "NOSHOW").length;
@@ -39,11 +53,14 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
   // 캐치걸별 점유율 (30일, 취소 제외)
   const share = staff.map((s) => ({ name: s.nickname, count: monthRes.filter((r) => r.status !== "CANCELLED" && r.staffId === s.id).length }));
 
+  const todayStr = ymd(now);
+  // 각 지표는 그 숫자를 만든 목록으로 바로 넘어간다
   const kpis = [
-    { label: "오늘 예약", value: `${todayActive.length}건`, sub: `${todayRes.filter((r) => r.status === "CONFIRMED" && r.startTime > now).length}건 남음` },
-    { label: "오늘 노쇼", value: `${todayNoshow}건`, sub: todayNoshow ? "고객관리에서 확인" : "아직 없어요" },
-    { label: "취소율 (30일)", value: `${cancelRate}%`, sub: `${monthRes.length}건 중` },
-    { label: "신규 고객 (7일)", value: `${newCustomers}명`, sub: "첫 예약 기준" },
+    { label: `${format(now, "M월")} 매출`, value: wonShort(revenueDone), sub: `방문완료 ${doneHours}시간 · 예정 포함 ${wonShort(revenueBooked)}`, href: `/${slug}/admin/reservations?view=list` },
+    { label: "총 고객", value: `${totalCustomers}명`, sub: `최근 7일 신규 ${newCustomers}명`, href: `/${slug}/admin/customers` },
+    { label: "오늘 예약", value: `${todayActive.length}건`, sub: `${todayRes.filter((r) => r.status === "CONFIRMED" && r.startTime > now).length}건 남음`, href: `/${slug}/admin/reservations?view=list&date=${todayStr}` },
+    { label: "오늘 노쇼", value: `${todayNoshow}건`, sub: todayNoshow ? "눌러서 확인" : "아직 없어요", href: `/${slug}/admin/reservations?view=list&date=${todayStr}&status=NOSHOW` },
+    { label: "취소율 (30일)", value: `${cancelRate}%`, sub: `${monthRes.length}건 중`, href: `/${slug}/admin/reservations?view=list&status=CANCELLED` },
   ];
 
   return (
@@ -56,15 +73,38 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
         <Link href={`/${slug}/admin/reservations?new=1`} className="cta-grad rounded-2xl px-4 py-2.5 text-[13px] font-bold text-white shadow-cta">+ 전화 예약 등록</Link>
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {kpis.map((k) => (
-          <Card key={k.label} className="p-4">
-            <div className="text-[11px] font-semibold text-mute">{k.label}</div>
-            <div className="mt-1.5 font-serif text-[26px] font-bold text-ink">{k.value}</div>
-            <div className="mt-1 text-[11px] text-mute">{k.sub}</div>
-          </Card>
+          <Link key={k.label} href={k.href} className="block">
+            <Card className="group p-4 transition-all hover:border-brand hover:shadow-pop">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-mute">{k.label}</span>
+                <span className="text-[12px] text-blush transition-transform group-hover:translate-x-0.5">›</span>
+              </div>
+              <div className="mt-1.5 font-serif text-[26px] font-bold text-ink">{k.value}</div>
+              <div className="mt-1 text-[11px] text-mute">{k.sub}</div>
+            </Card>
+          </Link>
         ))}
       </div>
+
+      {/* 매출 근거 — 숫자가 어디서 나왔는지 바로 보이게 */}
+      <Card className="mt-5 p-5">
+        <div className="text-[13px] font-bold text-ink">{format(now, "M월")} 매출 상세</div>
+        <div className="mt-0.5 text-[11px] text-mute">예약 1시간당 {won(STORE_FEE_PER_HOUR)} 기준</div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {[
+            { k: "방문완료", h: doneHours, v: revenueDone, tone: "text-ink" },
+            { k: "예정(확정)", h: bookedHours - doneHours, v: revenueBooked - revenueDone, tone: "text-mute" },
+            { k: "합계", h: bookedHours, v: revenueBooked, tone: "text-brand" },
+          ].map((x) => (
+            <div key={x.k} className="rounded-2xl bg-[#FAF6F7] px-4 py-3">
+              <div className="text-[11px] text-mute">{x.k} · {x.h}시간</div>
+              <div className={`mt-0.5 font-serif text-[18px] font-bold ${x.tone}`}>{won(x.v)}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       <Card className="mt-5 p-5">
         <div className="flex items-center justify-between">
@@ -77,11 +117,33 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
           </div>
         </div>
         <Timeline
+          slug={slug}
           times={storeSlotTimes(store)}
           slotMinutes={store.slotMinutes}
           rows={staff.map((s) => ({
-            id: s.id, name: s.nickname, photo: parseJsonArray(s.photos)[0] ?? null,
-            items: todayActive.filter((r) => r.staffId === s.id).map((r) => ({ id: r.id, time: format(r.startTime, "HH:mm"), status: r.status, customer: r.customer.nickname, party: r.partySize })),
+            id: s.id,
+            name: s.nickname,
+            photo: parseJsonArray(s.photos)[0] ?? null,
+            items: todayActive
+              .filter((r) => r.staffId === s.id)
+              .map((r) => ({
+                id: r.id,
+                code: r.code,
+                time: format(r.startTime, "HH:mm"),
+                endTime: format(r.endTime, "HH:mm"),
+                hours: r.hours,
+                status: r.status,
+                requestNote: r.requestNote,
+                totalPrice: r.totalPrice,
+                optionNames: r.options.map((o) => o.name),
+                createdBy: r.createdBy,
+                customerId: r.customerId,
+                customer: r.customer.nickname,
+                customerMemo: r.customer.adminMemo,
+                customerVisits: r.customer.reservations.filter((x) => x.status === "COMPLETED").length,
+                customerNoshows: r.customer.reservations.filter((x) => x.status === "NOSHOW").length,
+                blacklisted: r.customer.isBlacklisted,
+              })),
           }))}
           nowTime={format(now, "HH:mm")}
         />

@@ -8,6 +8,8 @@ export type SlotStatus = "open" | "full" | "off" | "past";
  *  startsAt = 실제 시작 일시 ISO. 자정 넘김 보정이 끝난 값이라 "지금 가능한가" 판단에 그대로 쓴다. */
 export type Slot = { time: string; status: SlotStatus; remaining: number; maxHours: number; startsAt: string };
 
+// 시각 계산은 전부 서버의 로컬 시간대 기준이다. 배포 환경(Vercel 등)은 기본이 UTC 라서
+// TZ=Asia/Seoul 을 지정하지 않으면 영업시간·슬롯·"지난 시간" 판정이 통째로 밀린다.
 export const ACTIVE_STATUSES = ["CONFIRMED", "COMPLETED", "NOSHOW"];
 
 /** 한 번에 예약할 수 있는 최대 시간 */

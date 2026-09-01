@@ -9,6 +9,17 @@ export function cn(...inputs: ClassValue[]) {
 
 export const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
 
+/** 매장이 예약 1시간마다 가져가는 금액 (원). 고객이 내는 캐치걸 요금과는 별개다. */
+export const STORE_FEE_PER_HOUR = 100_000;
+
+export const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
+/** 큰 금액을 KPI 카드에 넣기 위한 축약 — 1,240만원 / 32만원 */
+export function wonShort(n: number) {
+  if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(n % 100_000_000 === 0 ? 0 : 1)}억원`;
+  if (n >= 10_000) return `${Math.round(n / 10_000).toLocaleString("ko-KR")}만원`;
+  return won(n);
+}
+
 /** 캐치걸 목록 정렬 기준 — 값은 URL 쿼리(?sort=)에 그대로 쓴다.
  *  클라이언트 드롭다운에서도 쓰므로 server-only 인 queries.ts 가 아니라 여기에 둔다. */
 export const STAFF_SORTS = [
