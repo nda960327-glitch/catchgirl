@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { getStaffUser } from "@/lib/auth";
 import { businessDayOf, businessDayRange } from "@/lib/slots";
-import { cn, won, wonShort, ymd } from "@/lib/utils";
+import { cn, STORE_FEE_PER_HOUR, won, wonShort, ymd } from "@/lib/utils";
 import { Card, Chip, Eyebrow } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -43,24 +43,29 @@ export default async function StaffEarningsPage({
     }),
     prisma.reservation.findMany({
       where: { staffId: me.id, startTime: { gte: prevRange.start, lt: prevRange.end }, status: { in: EARNING } },
-      select: { totalPrice: true, hours: true },
+      select: { totalPrice: true, discountAmount: true, hours: true },
     }),
     // 재방문율은 전체 기간 기준으로 봐야 의미가 있다
     prisma.reservation.findMany({
       where: { staffId: me.id, status: "COMPLETED" },
-      select: { customerId: true, startTime: true, totalPrice: true },
+      select: { customerId: true, startTime: true, totalPrice: true, discountAmount: true },
     }),
   ]);
 
   const earning = thisMonth.filter((r) => EARNING.includes(r.status));
   const done = earning.filter((r) => r.status === "COMPLETED");
-  const revenue = earning.reduce((a, r) => a + r.totalPrice, 0);
-  const doneRevenue = done.reduce((a, r) => a + r.totalPrice, 0);
+  // 할인은 매장이 부담하므로 정가 기준으로 보고, 거기서 매장 수수료를 뺀 것이 내 몫이다.
+  // 45만원짜리 1시간이면 수수료 10만원을 빼고 35만원이 남는다.
+  const listOf = (r: { totalPrice: number; discountAmount: number }) => r.totalPrice + r.discountAmount;
+  const netOf = (r: { totalPrice: number; discountAmount: number; hours: number }) =>
+    listOf(r) - r.hours * STORE_FEE_PER_HOUR;
+  const revenue = earning.reduce((a, r) => a + netOf(r), 0);
+  const grossRevenue = earning.reduce((a, r) => a + listOf(r), 0);
   const hours = earning.reduce((a, r) => a + r.hours, 0);
   const noshow = thisMonth.filter((r) => r.status === "NOSHOW").length;
   const cancelled = thisMonth.filter((r) => r.status === "CANCELLED").length;
 
-  const lastRevenue = lastMonth.reduce((a, r) => a + r.totalPrice, 0);
+  const lastRevenue = lastMonth.reduce((a, r) => a + netOf(r), 0);
   const lastHours = lastMonth.reduce((a, r) => a + r.hours, 0);
   const diff = revenue - lastRevenue;
   const diffPct = lastRevenue > 0 ? Math.round((diff / lastRevenue) * 100) : null;
@@ -88,7 +93,7 @@ export default async function StaffEarningsPage({
   const bySpender = new Map<string, { name: string; spent: number; visits: number; hours: number }>();
   for (const r of earning) {
     const v = bySpender.get(r.customerId) ?? { name: r.customer.nickname, spent: 0, visits: 0, hours: 0 };
-    v.spent += r.totalPrice;
+    v.spent += netOf(r);
     v.visits += 1;
     v.hours += r.hours;
     bySpender.set(r.customerId, v);
@@ -98,7 +103,7 @@ export default async function StaffEarningsPage({
 
   // ── 일자별 ──
   const byDay = new Map<string, number>();
-  for (const r of earning) byDay.set(businessDayOf(store, r.startTime), (byDay.get(businessDayOf(store, r.startTime)) ?? 0) + r.totalPrice);
+  for (const r of earning) byDay.set(businessDayOf(store, r.startTime), (byDay.get(businessDayOf(store, r.startTime)) ?? 0) + netOf(r));
   const peakDay = Math.max(1, ...byDay.values());
   const daysInMonth = Array.from({ length: mEnd.getDate() }, (_, i) => new Date(mStart.getFullYear(), mStart.getMonth(), i + 1));
 
@@ -110,8 +115,8 @@ export default async function StaffEarningsPage({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <Eyebrow>My Earnings</Eyebrow>
-          <h1 className="mt-1 font-serif text-[20px] font-bold text-ink">{format(mStart, "yyyy년 M월", { locale: ko })} 내 매출</h1>
-          <div className="mt-0.5 text-[11px] text-mute">{me.nickname} · 손님이 결제한 금액 기준</div>
+          <h1 className="mt-1 font-serif text-[20px] font-bold text-ink">{format(mStart, "yyyy년 M월", { locale: ko })} 내 순이익</h1>
+          <div className="mt-0.5 text-[11px] text-mute">{me.nickname} · 매장 수수료(시간당 {won(STORE_FEE_PER_HOUR)})를 뺀 금액이에요</div>
         </div>
         <div className="flex items-center gap-1.5">
           <Link href={`?month=${format(addMonths(mStart, -1), "yyyy-MM")}`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink">‹ 이전</Link>
@@ -121,22 +126,18 @@ export default async function StaffEarningsPage({
       </div>
 
       {/* 요약 */}
-      <div className="mt-4 grid grid-cols-2 gap-2.5 md:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-2.5 md:grid-cols-3">
         <Card className="border-brand/40 bg-blush-lt/30 p-4">
-          <div className="text-[11px] font-semibold text-mute">이번 달 매출</div>
+          <div className="text-[11px] font-semibold text-mute">이번 달 순이익</div>
           <div className="mt-1 font-serif text-[22px] font-bold text-brand">{wonShort(revenue)}</div>
-          <div className="mt-1 text-[11px] text-mute">
+          <div className="mt-1 text-[10px] text-mute">매출 {wonShort(grossRevenue)} · {earning.length}건 {hours}시간</div>
+          <div className="mt-0.5 text-[11px] text-mute">
             {diffPct === null ? "지난달 기록 없음" : (
               <span className={diff >= 0 ? "text-[#2E8B57]" : "text-[#C0392B]"}>
                 지난달 대비 {diff >= 0 ? "▲" : "▼"} {Math.abs(diffPct)}%
               </span>
             )}
           </div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-[11px] font-semibold text-mute">방문완료 기준</div>
-          <div className="mt-1 font-serif text-[22px] font-bold text-ink">{wonShort(doneRevenue)}</div>
-          <div className="mt-1 text-[11px] text-mute">{done.length}건 · {hours}시간</div>
         </Card>
         <Card className="p-4">
           <div className="text-[11px] font-semibold text-mute">재방문율</div>
@@ -167,13 +168,13 @@ export default async function StaffEarningsPage({
           ))}
         </div>
         {(noshow > 0 || cancelled > 0) && (
-          <div className="mt-2.5 text-[11px] text-mute">이번 달 노쇼 {noshow}건 · 취소 {cancelled}건 (매출에 미포함)</div>
+          <div className="mt-2.5 text-[11px] text-mute">이번 달 노쇼 {noshow}건 · 취소 {cancelled}건 (순이익에 미포함)</div>
         )}
       </Card>
 
       {/* 일자별 */}
       <Card className="mt-3 p-4">
-        <div className="text-[12px] font-bold text-ink">일자별 매출</div>
+        <div className="text-[12px] font-bold text-ink">일자별 순이익</div>
         <div className="mt-3 flex items-end gap-[3px]" style={{ height: 90 }}>
           {daysInMonth.map((d) => {
             const v = byDay.get(ymd(d)) ?? 0;
@@ -192,7 +193,7 @@ export default async function StaffEarningsPage({
       {/* 손님별 지출 */}
       <Card className="mt-3 p-4">
         <div className="text-[12px] font-bold text-ink">이번 달 오신 손님</div>
-        <div className="mt-0.5 text-[11px] text-mute">많이 쓰신 순 · 재방문 손님은 배지가 붙어요</div>
+        <div className="mt-0.5 text-[11px] text-mute">내 순이익 많은 순 · 재방문 손님은 배지가 붙어요</div>
         {spenders.length === 0 ? (
           <div className="mt-3 rounded-2xl border border-dashed border-line py-8 text-center text-[12px] text-mute">이 달 예약이 없어요</div>
         ) : (

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { requireStaff } from "@/lib/auth";
 import { businessDayOf, businessDayRange, getSlotsFor } from "@/lib/slots";
-import { cn, startOfDayLocal, toLocalDate, WEEKDAYS_KO, ymd } from "@/lib/utils";
+import { cn, startOfDayLocal, STORE_FEE_PER_HOUR, toLocalDate, won, WEEKDAYS_KO, ymd } from "@/lib/utils";
 import { Card, Chip, Empty, StatusChip } from "@/components/ui";
 import { InstallApp } from "@/components/install-app";
 
@@ -23,7 +23,7 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
 
   // 본인 예약만 조회 (RBAC)
   const [reservations, slots, upcomingCount, myShifts, myOffs] = await Promise.all([
-    prisma.reservation.findMany({ where: { staffId: me.id, startTime: { gte: range.start, lt: range.end } }, orderBy: { startTime: "asc" }, include: { customer: true } }),
+    prisma.reservation.findMany({ where: { staffId: me.id, startTime: { gte: range.start, lt: range.end } }, orderBy: { startTime: "asc" }, include: { customer: true, options: true } }),
     getSlotsFor(store, staff, date),
     prisma.reservation.count({ where: { staffId: me.id, status: "CONFIRMED", startTime: { gte: new Date() } } }),
     prisma.shiftAssignment.findMany({ where: { staffId: me.id, date }, include: { room: { select: { name: true } } } }),
@@ -34,6 +34,10 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
   const sched = staff.schedules.filter((s) => s.weekday === dayStart.getDay());
   const isOff = offSet.has(date) || sched.length === 0;
   const active = reservations.filter((r) => r.status !== "CANCELLED");
+  // 손님이 할인을 받아도 캐치걸 몫은 줄지 않는다 — 할인은 매장이 부담하므로 정가 기준이다
+  const listOf = (r: { totalPrice: number; discountAmount: number }) => r.totalPrice + r.discountAmount;
+  const myShare = (r: { totalPrice: number; discountAmount: number; hours: number }) =>
+    listOf(r) - r.hours * STORE_FEE_PER_HOUR;
 
   return (
     <div className="animate-fade">
@@ -118,9 +122,25 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
                     <span className="font-bold text-ink">{r.customer.nickname}</span>
                     {r.customer.adminMemo && <span className="truncate text-[11px] text-mute" title={r.customer.adminMemo}>{r.customer.adminMemo}</span>}
                   </div>
+                  {r.options.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {r.options.map((o) => (
+                        <span key={o.id} className="rounded-md bg-blush-lt px-1.5 py-0.5 text-[10px] font-bold text-brand">
+                          {o.name} +{won(o.price)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {r.requestNote && <div className="mt-1 text-[11px] text-mute">“{r.requestNote}”</div>}
                 </div>
-                <StatusChip status={r.status} />
+                <div className="shrink-0 text-right">
+                  <StatusChip status={r.status} />
+                  <div className="mt-1.5 font-serif text-[15px] font-bold text-ink">{won(myShare(r))}</div>
+                  <div className="text-[10px] text-mute">내 몫</div>
+                  {r.discountAmount > 0 && (
+                    <div className="text-[10px] text-mute">{r.discountLabel} −{won(r.discountAmount)} (매장 부담)</div>
+                  )}
+                </div>
               </div>
             </Card>
           ))}
