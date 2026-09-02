@@ -135,10 +135,17 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
                 </div>
                 <div className="shrink-0 text-right">
                   <StatusChip status={r.status} />
-                  <div className="mt-1.5 font-serif text-[15px] font-bold text-ink">{won(myShare(r))}</div>
-                  <div className="text-[10px] text-mute">내 몫</div>
+                  {/* 손님에게 받을 돈과 내가 가져갈 돈은 다르다 — 차액이 매장 몫이다 */}
+                  <div className="mt-1.5 flex items-baseline justify-end gap-1.5">
+                    <span className="text-[10px] text-mute">받을 돈</span>
+                    <span className="font-serif text-[15px] font-bold text-ink">{won(r.totalPrice)}</span>
+                  </div>
+                  <div className="mt-0.5 flex items-baseline justify-end gap-1.5">
+                    <span className="text-[10px] text-mute">내 몫</span>
+                    <span className="font-serif text-[15px] font-bold text-brand">{won(myShare(r))}</span>
+                  </div>
                   {r.discountAmount > 0 && (
-                    <div className="text-[10px] text-mute">{r.discountLabel} −{won(r.discountAmount)} (매장 부담)</div>
+                    <div className="mt-0.5 text-[10px] text-mute">{r.discountLabel} −{won(r.discountAmount)} (매장 부담)</div>
                   )}
                 </div>
               </div>
