@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { PLANS, planOf } from "@/lib/plans";
 import { logoutAdmin } from "@/app/[slug]/admin/actions";
+import { NewReservationAlert } from "@/components/new-reservation-alert";
 
 const NAV = [
   { href: "", label: "대시보드", icon: "◫" },
@@ -65,7 +66,10 @@ export function AdminNav({ slug, storeName, logoUrl, adminName, plan }: { slug: 
             );
           })}
         </nav>
-        <div className="mt-auto rounded-2xl bg-blush-lt p-3 text-[11px]">
+        <div className="mt-auto flex justify-center pb-2">
+          <NewReservationAlert slug={slug} />
+        </div>
+        <div className="rounded-2xl bg-blush-lt p-3 text-[11px]">
           <div className="font-bold text-ink">{adminName}</div>
           <div className="mt-0.5 text-mute">관리자</div>
           <div className="mt-2 flex gap-2">
@@ -83,6 +87,10 @@ export function AdminNav({ slug, storeName, logoUrl, adminName, plan }: { slug: 
             <Link key={n.href} href={href} className={cn("shrink-0 px-3 py-3 text-[12px] font-bold", on ? "border-b-2 border-brand text-brand" : "text-mute")}>{n.label}</Link>
           );
         })}
+      </div>
+      {/* 모바일은 사이드바가 없으므로 알림을 따로 띄운다 — 매장에선 폰으로 본다 */}
+      <div className="fixed bottom-5 right-4 z-40 md:hidden">
+        <NewReservationAlert slug={slug} />
       </div>
     </>
   );

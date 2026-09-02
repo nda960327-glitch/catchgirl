@@ -57,6 +57,8 @@ model AdminUser {
   email        String @unique
   passwordHash String
   name         String @default("관리자")
+  // 새 예약 알림 기준 — 이 시각 이후에 들어온 예약이 "새 예약" 이다
+  lastSeenReservationAt DateTime?
   store        Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }
 
