@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { prisma } from "@/lib/db";
 
 /**
  * 직원 앱으로 따로 설치되도록 매니페스트와 아이콘을 여기서 준다.
@@ -6,8 +7,9 @@ import type { Metadata } from "next";
  */
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
+  const store = await prisma.store.findUnique({ where: { slug }, select: { name: true } });
   return {
-    title: "캐치걸_어나더 직원",
+    title: `${store?.name ?? "캐치걸_어나더"} 직원`,
     manifest: `/${slug}/staff/manifest.webmanifest`,
     icons: { icon: "/assets/icon-staff-192.png", apple: "/assets/icon-staff-192.png" },
   };

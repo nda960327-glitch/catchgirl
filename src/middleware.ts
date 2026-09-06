@@ -22,6 +22,9 @@ async function roleOk(token: string | undefined, role: string) {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // 플랫폼 콘솔은 매장이 아니다 — 자체 비밀번호로 잠근다
+  if (pathname === "/platform" || pathname.startsWith("/platform/")) return NextResponse.next();
+
   const cust = pathname.match(/^\/([^/]+)(\/.*)?$/);
   if (cust && !/^\/(admin|staff)(\/|$)/.test(cust[2] ?? "")) {
     const [, slug, rest = ""] = cust;
