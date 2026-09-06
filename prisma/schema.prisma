@@ -37,6 +37,12 @@ model Store {
   // 손님이 바로 물어볼 수 있는 창구. 앱에서 눌러 전화·텔레그램으로 이어진다.
   contactPhone        String   @default("")
   contactTelegram     String   @default("") // @ 없이 아이디만 저장한다
+  // ── 파는 쪽(플랫폼)만 보는 값. 업체의 관리자 화면에는 절대 나가지 않는다 ──
+  ownerContact        String   @default("") // 업체 담당자 연락처
+  platformMemo        String   @default("") // 계약·응대 메모
+  // 미납 등으로 잠그면 손님·직원·관리자 모두 안내 화면만 본다
+  isSuspended         Boolean  @default(false)
+  suspendedReason     String   @default("")
   noshowPolicy        String   @default("노쇼 3회 누적 시 예약이 제한될 수 있어요.")
   createdAt           DateTime @default(now())
 
@@ -55,6 +61,38 @@ model Store {
   gradeBenefits GradeBenefit[]
   promotions    DayPromotion[]
   sources       ReferralSource[]
+  payments      Payment[]
+  platformLogs  PlatformLog[]
+}
+
+/**
+ * 월 구독료 입금 기록. 청구 예정은 planStartedAt 에서 매달 계산하고,
+ * 실제로 들어온 달만 여기에 남긴다. 없는 달이 곧 미납이다.
+ */
+model Payment {
+  id        String   @id @default(cuid())
+  storeId   String
+  month     String // YYYY-MM
+  amount    Int
+  paidAt    DateTime @default(now())
+  memo      String   @default("")
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, month])
+}
+
+/** 플랫폼 콘솔에서 한 일의 기록 — 누가 언제 어느 업체에 무엇을 했는지 */
+model PlatformLog {
+  id        String   @id @default(cuid())
+  storeId   String?
+  action    String // STORE_CREATED | PLAN_CHANGED | ADMIN_RESET | ENTERED_AS_ADMIN | SUSPENDED | RESUMED | PAID | UNPAID | BROADCAST | STORE_DELETED | CONTRACT_UPDATED
+  detail    String   @default("")
+  createdAt DateTime @default(now())
+
+  store Store? @relation(fields: [storeId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
 }
 
 /**
