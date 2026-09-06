@@ -15,7 +15,7 @@ export function ProfileClient({
   slug, staff, stats, reviews, comments, loggedIn, favorited, votes,
 }: {
   slug: string;
-  staff: { id: string; nickname: string; bio: string; tags: string[]; photos: string[]; hourlyPrice: number };
+  staff: { id: string; nickname: string; bio: string; tags: string[]; photos: string[]; hourlyPrice: number; facts: { label: string; value: string }[] };
   stats: { rating: number | null; reviewCount: number; revisitRate: number };
   reviews: ReviewItem[];
   comments: CommentItem[];
@@ -96,6 +96,17 @@ export function ProfileClient({
           </button>
         </div>
         <p className="mt-2 text-[13px] leading-[1.85] text-mute">{staff.bio}</p>
+
+        {/* 프로필 — 흡연·문신은 미리 알고 고르고 싶어 하는 분들이 있어 함께 적어요 */}
+        {staff.facts.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {staff.facts.map((f) => (
+              <span key={f.label} className="rounded-xl border border-line bg-white px-2.5 py-1.5 text-[11px]">
+                <span className="text-mute">{f.label}</span> <span className="font-bold text-ink">{f.value}</span>
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="mt-5 flex rounded-[20px] border border-line bg-white py-4">
           {[

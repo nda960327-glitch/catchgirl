@@ -5,6 +5,7 @@ import { getStoreBySlug } from "@/lib/store";
 import { getCustomer } from "@/lib/auth";
 import { staffStats } from "@/lib/metrics";
 import { computeCustomerStats } from "@/lib/metrics";
+import { profileChips } from "@/lib/profile";
 import { parseJsonArray } from "@/lib/utils";
 import { TopBar } from "@/components/ui";
 import { ProfileClient, type ReviewItem, type CommentItem } from "./profile-client";
@@ -59,7 +60,7 @@ export default async function BartenderDetail({ params }: { params: Promise<{ sl
       <TopBar title={staff.nickname} back={`/${slug}/bartenders`} />
       <ProfileClient
         slug={slug}
-        staff={{ id: staff.id, nickname: staff.nickname, bio: staff.bio, tags: parseJsonArray(staff.tags), photos: parseJsonArray(staff.photos), hourlyPrice: staff.hourlyPrice }}
+        staff={{ id: staff.id, nickname: staff.nickname, bio: staff.bio, tags: parseJsonArray(staff.tags), photos: parseJsonArray(staff.photos), hourlyPrice: staff.hourlyPrice, facts: profileChips(staff) }}
         stats={{ rating: stats.rating, reviewCount: stats.reviewCount, revisitRate: Math.round(stats.revisitRate * 100) }}
         reviews={reviewItems}
         comments={commentItems}

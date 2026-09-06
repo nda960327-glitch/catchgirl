@@ -20,6 +20,8 @@ export default async function StaffPage({ params, searchParams }: { params: Prom
       return {
         id: s.id, nickname: s.nickname, bio: s.bio, tags: parseJsonArray(s.tags), photos: parseJsonArray(s.photos),
         isActive: s.isActive, capacityPerSlot: s.capacityPerSlot, hourlyPrice: s.hourlyPrice, adminMemo: s.adminMemo, loginId: s.loginId ?? "",
+        heightCm: s.heightCm, weightKg: s.weightKg, bustSize: s.bustSize, bustNatural: s.bustNatural,
+        smoker: s.smoker, tattoo: s.tattoo, tattooNote: s.tattooNote,
         optionIds: s.options.map((o) => o.id),
         stats: {
           rating: st.rating, reviewCount: st.reviewCount, reservationCount: st.reservationCount, completedCount: st.completedCount,

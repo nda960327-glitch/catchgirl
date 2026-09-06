@@ -8,7 +8,7 @@ import { uploadImages } from "@/lib/image-client";
 import { cn, themeVars, WEEKDAYS_KO } from "@/lib/utils";
 import { saveStoreSettings, triggerReminders } from "../../actions";
 
-type Init = { name: string; tagline: string; heroTitle: string; logoUrl: string | null; coverUrl: string | null; themeColor: string; openTime: string; closeTime: string; shiftSplitTime: string; slotMinutes: number; closedDays: number[]; cancelDeadlineHours: number; maxAdvanceDays: number; noshowPolicy: string };
+type Init = { name: string; tagline: string; heroTitle: string; logoUrl: string | null; coverUrl: string | null; themeColor: string; openTime: string; closeTime: string; shiftSplitTime: string; slotMinutes: number; closedDays: number[]; cancelDeadlineHours: number; maxAdvanceDays: number; noshowPolicy: string; contactPhone: string; contactTelegram: string };
 
 const PRESETS = ["#B4586A", "#C8A46A", "#5B6C8F", "#3E7C6A", "#8A5BB5", "#C4642F", "#1F1F24"];
 
@@ -106,6 +106,22 @@ export function SettingsForm({ slug, init }: { slug: string; init: Init }) {
           </div>
           <div className="mt-4">
             <Field label="노쇼 정책 문구 (고객 화면 노출)"><Textarea rows={2} value={f.noshowPolicy} onChange={(e) => setF({ ...f, noshowPolicy: e.target.value })} /></Field>
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <div className="text-[14px] font-bold text-ink">문의 창구</div>
+          <div className="mt-1 text-[11px] leading-[1.7] text-mute">
+            손님 화면 오른쪽 아래 <b className="text-ink">문의</b> 버튼에 들어가요. 누르면 텔레그램 대화나 전화로 바로 이어져요.
+            비워 두면 버튼이 나오지 않아요.
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <Field label="문의 전화번호" hint="누르면 바로 걸려요">
+              <Input value={f.contactPhone} onChange={(e) => setF({ ...f, contactPhone: e.target.value })} placeholder="010-0000-0000" className="h-11" />
+            </Field>
+            <Field label="텔레그램 아이디" hint="@ 없이 아이디만">
+              <Input value={f.contactTelegram} onChange={(e) => setF({ ...f, contactTelegram: e.target.value.replace(/^@/, "") })} placeholder="BGT_OP" className="h-11" />
+            </Field>
           </div>
         </Card>
 

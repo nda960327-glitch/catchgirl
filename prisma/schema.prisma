@@ -32,6 +32,9 @@ model Store {
   closedDays          String   @default("[]")    // JSON: 정기 휴무 요일 [0(일)~6(토)]
   cancelDeadlineHours Int      @default(2)
   maxAdvanceDays      Int      @default(14)
+  // 손님이 바로 물어볼 수 있는 창구. 앱에서 눌러 전화·텔레그램으로 이어진다.
+  contactPhone        String   @default("")
+  contactTelegram     String   @default("") // @ 없이 아이디만 저장한다
   noshowPolicy        String   @default("노쇼 3회 누적 시 예약이 제한될 수 있어요.")
   createdAt           DateTime @default(now())
 
@@ -93,6 +96,15 @@ model Staff {
   isActive        Boolean  @default(true)
   capacityPerSlot Int      @default(1)
   hourlyPrice     Int      @default(300000) // 시간당 요금 (원)
+  // 프로필 — 손님이 고를 때 실제로 보는 값들.
+  // 흡연은 대화 거리가 가까워서, 문신은 싫어하는 손님이 있어서 미리 밝힌다.
+  heightCm        Int?
+  weightKg        Int?
+  bustSize        String   @default("") // A~G 컵 표기. 빈 값이면 표시하지 않는다
+  bustNatural     Boolean  @default(false)
+  smoker          Boolean  @default(false)
+  tattoo          Boolean  @default(false)
+  tattooNote      String   @default("") // 위치·크기 (예: 손목 작게)
   adminMemo       String   @default("") // 관리자 전용 메모 (캐치걸에겐 안 보임)
   sortOrder       Int      @default(0)
   loginId         String?  @unique // 관리자가 발급한 계정

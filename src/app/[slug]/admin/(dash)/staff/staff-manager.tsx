@@ -3,14 +3,16 @@
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Avatar, Button, Card, Chip, Field, Input, Textarea } from "@/components/ui";
+import { Avatar, Button, Card, Chip, Field, Input, Select, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { uploadImages } from "@/lib/image-client";
 import { cn } from "@/lib/utils";
+import { BUST_SIZES } from "@/lib/profile";
 import { deleteStaff, saveStaff, staffDeletionImpact } from "../../actions";
 
 export type StaffFull = {
   id: string; nickname: string; bio: string; tags: string[]; photos: string[]; isActive: boolean; capacityPerSlot: number; hourlyPrice: number; adminMemo: string; loginId: string;
+  heightCm: number | null; weightKg: number | null; bustSize: string; bustNatural: boolean; smoker: boolean; tattoo: boolean; tattooNote: string;
   optionIds: string[];
   stats: {
     rating: number | null; reviewCount: number; reservationCount: number; completedCount: number; noshowRate: number; revisitRate: number;
@@ -20,7 +22,8 @@ export type StaffFull = {
 export type StoreOptionLite = { id: string; name: string; price: number };
 
 const EMPTY: StaffFull = {
-  id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, hourlyPrice: 300000, adminMemo: "", loginId: "", optionIds: [],
+  id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, hourlyPrice: 300000, adminMemo: "", loginId: "",
+  heightCm: null, weightKg: null, bustSize: "", bustNatural: false, smoker: false, tattoo: false, tattooNote: "", optionIds: [],
   stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0, upCount: 0, downCount: 0, customerCount: 0, repeatCustomers: 0, newCustomers30d: 0 },
 };
 
@@ -100,6 +103,8 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
       const r = await saveStaff(slug, {
         id: f.id || undefined, nickname: f.nickname, bio: f.bio, tags: f.tags, photos: f.photos, isActive: f.isActive,
         capacityPerSlot: f.capacityPerSlot, hourlyPrice: f.hourlyPrice, adminMemo: f.adminMemo, optionIds: f.optionIds,
+        heightCm: f.heightCm, weightKg: f.weightKg, bustSize: f.bustSize, bustNatural: f.bustNatural,
+        smoker: f.smoker, tattoo: f.tattoo, tattooNote: f.tattooNote,
         loginId: f.loginId, password: f.password,
       });
       if (!r.ok) return toast(r.error, "error");
@@ -142,6 +147,43 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
           </Field>
         </div>
         <Field label="한 줄 소개"><Textarea rows={2} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} /></Field>
+
+        {/* 프로필 — 손님이 고를 때 실제로 보는 값들. 모르는 건 비워 두면 화면에 안 나온다. */}
+        <div className="rounded-2xl border border-line bg-white p-3.5">
+          <div className="text-[12px] font-bold text-ink">프로필</div>
+          <div className="mt-0.5 text-[10px] leading-[1.7] text-mute">손님이 고를 때 보는 값이에요. 비워 두면 그 항목은 화면에 안 나와요.</div>
+          <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <Field label="키" hint="cm">
+              <Input type="number" min={120} max={220} value={f.heightCm ?? ""} onChange={(e) => setF({ ...f, heightCm: e.target.value ? Number(e.target.value) : null })} className="h-11" />
+            </Field>
+            <Field label="몸무게" hint="kg">
+              <Input type="number" min={30} max={200} value={f.weightKg ?? ""} onChange={(e) => setF({ ...f, weightKg: e.target.value ? Number(e.target.value) : null })} className="h-11" />
+            </Field>
+            <Field label="가슴">
+              <Select value={f.bustSize} onChange={(e) => setF({ ...f, bustSize: e.target.value })} className="w-full">
+                <option value="">미기재</option>
+                {BUST_SIZES.map((b) => <option key={b} value={b}>{b}컵</option>)}
+              </Select>
+            </Field>
+            <label className="flex items-end gap-1.5 pb-2.5 text-[12px] font-semibold text-mute">
+              <input type="checkbox" checked={f.bustNatural} disabled={!f.bustSize} onChange={(e) => setF({ ...f, bustNatural: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
+              자연
+            </label>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
+              <input type="checkbox" checked={f.smoker} onChange={(e) => setF({ ...f, smoker: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
+              흡연
+            </label>
+            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
+              <input type="checkbox" checked={f.tattoo} onChange={(e) => setF({ ...f, tattoo: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
+              문신
+            </label>
+            {f.tattoo && (
+              <Input value={f.tattooNote} onChange={(e) => setF({ ...f, tattooNote: e.target.value })} placeholder="위치·크기 (예: 손목 작게)" maxLength={60} className="h-10 w-[220px] text-[12px]" />
+            )}
+          </div>
+        </div>
 
         {/* 제공 옵션 — 캐치걸 본인도 '내 설정'에서 바꿀 수 있다 */}
         <div>

@@ -10,6 +10,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function CustomerLayout({ children, params }: { children: React.ReactNode; params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  await getStoreBySlug(slug);
-  return <CustomerShell slug={slug}>{children}</CustomerShell>;
+  const store = await getStoreBySlug(slug);
+  return (
+    <CustomerShell slug={slug} contact={{ phone: store.contactPhone, telegram: store.contactTelegram }}>
+      {children}
+    </CustomerShell>
+  );
 }

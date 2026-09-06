@@ -130,6 +130,14 @@ const staffSchema = z.object({
   capacityPerSlot: z.coerce.number().int().min(1).max(10).default(1),
   hourlyPrice: z.coerce.number().int().min(0).max(100_000_000).default(300_000),
   adminMemo: z.string().max(500).optional().default(""),
+  // 프로필 — 손님이 고를 때 보는 값. 모르는 항목은 비워 두고 화면에도 안 띄운다.
+  heightCm: z.coerce.number().int().min(120).max(220).nullable().optional().default(null),
+  weightKg: z.coerce.number().int().min(30).max(200).nullable().optional().default(null),
+  bustSize: z.string().trim().max(2).optional().default(""),
+  bustNatural: z.boolean().optional().default(false),
+  smoker: z.boolean().optional().default(false),
+  tattoo: z.boolean().optional().default(false),
+  tattooNote: z.string().trim().max(60).optional().default(""),
   optionIds: z.array(z.string()).max(20).optional().default([]),
   loginId: z.string().trim().max(30).optional().default(""),
   password: z.string().max(50).optional().default(""),
@@ -146,6 +154,8 @@ export async function saveStaff(slug: string, input: z.input<typeof staffSchema>
     const base = {
       nickname: d.nickname, bio: d.bio, tags: JSON.stringify(d.tags), photos: JSON.stringify(d.photos),
       isActive: d.isActive, capacityPerSlot: d.capacityPerSlot, hourlyPrice: d.hourlyPrice, adminMemo: d.adminMemo, loginId: d.loginId || null,
+      heightCm: d.heightCm, weightKg: d.weightKg, bustSize: d.bustSize, bustNatural: d.bustNatural,
+      smoker: d.smoker, tattoo: d.tattoo, tattooNote: d.tattoo ? d.tattooNote : "",
       ...(d.password ? { passwordHash: await bcrypt.hash(d.password, 10) } : {}),
     };
     const optionIds = d.optionIds.map((oid) => ({ id: oid }));
@@ -944,6 +954,8 @@ const storeSchema = z.object({
   cancelDeadlineHours: z.coerce.number().int().min(0).max(72),
   maxAdvanceDays: z.coerce.number().int().min(1).max(90),
   noshowPolicy: z.string().trim().max(300).default(""),
+  contactPhone: z.string().trim().max(30).default(""),
+  contactTelegram: z.string().trim().max(40).default(""),
 });
 export async function saveStoreSettings(slug: string, input: z.input<typeof storeSchema>): Promise<R> {
   try {
