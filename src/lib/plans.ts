@@ -36,7 +36,7 @@ export const PLANS: Record<Plan, {
   MAX: {
     name: "Max",
     price: 390_000,
-    limits: { customers: 3_000, staff: null, rooms: null },
+    limits: { customers: null, staff: null, rooms: null },
     dataExport: true,
     prioritySupport: true,
     tagline: "캐치걸도 룸도 늘려 가는 매장을 위한 요금제",
@@ -82,6 +82,7 @@ export const POLICY: { title: string; body: string }[] = [
     title: "고객 수는 어떻게 세나요",
     body:
       "연결코드를 받아 등록된 계정 수예요. 아직 앱을 시작하지 않은 분도 등록된 것으로 세요.\n" +
+      "Max 는 손님 수에 제한이 없어요. 이 기준은 Pro 한도를 볼 때만 써요.\n" +
       "삭제하신 고객은 세지 않아요. 다만 그 손님의 방문·매출 기록도 함께 사라지니 신중히 지워 주세요.\n" +
       "블랙리스트로 표시하신 분은 계정이 남아 있으므로 계속 세요.",
   },
