@@ -27,7 +27,7 @@ export const PLANS: Record<Plan, {
 }> = {
   PRO: {
     name: "Pro",
-    price: 190_000,
+    price: 150_000,
     limits: { customers: 500, staff: 10, rooms: 5 },
     dataExport: false,
     prioritySupport: false,
@@ -35,7 +35,7 @@ export const PLANS: Record<Plan, {
   },
   MAX: {
     name: "Max",
-    price: 390_000,
+    price: 300_000,
     limits: { customers: null, staff: null, rooms: null },
     dataExport: true,
     prioritySupport: true,
