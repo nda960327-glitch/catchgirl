@@ -36,9 +36,9 @@ export function HistoryTabs({ slug, items }: { slug: string; items: HistoryItem[
 
   return (
     <div className="mt-3">
-      <div className="flex rounded-2xl bg-[#F4EDEE] p-1">
+      <div className="flex rounded-2xl bg-well-2 p-1">
         {([["upcoming", "예정"], ["done", "완료"], ["cancelled", "취소"]] as const).map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} className={cn("flex-1 rounded-xl py-2 text-[12px] font-bold transition-all", tab === k ? "bg-white text-ink shadow-card" : "text-mute")}>
+          <button key={k} onClick={() => setTab(k)} className={cn("flex-1 rounded-xl py-2 text-[12px] font-bold transition-all", tab === k ? "bg-card text-ink shadow-card" : "text-mute")}>
             {l} {groups[k].length > 0 && <span className={cn("ml-0.5", tab === k ? "text-brand" : "")}>{groups[k].length}</span>}
           </button>
         ))}

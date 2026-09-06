@@ -110,7 +110,7 @@ export function ReservationsClient({ slug, rows, staff, customers, sources, filt
 
       {/* 리스트 */}
       <Card className="mt-3 overflow-hidden">
-        <div className="hidden grid-cols-[110px_90px_1fr_1fr_110px_170px] gap-2 border-b border-line bg-[#FAF6F7] px-4 py-2.5 text-[11px] font-semibold text-mute md:grid">
+        <div className="hidden grid-cols-[110px_90px_1fr_1fr_110px_170px] gap-2 border-b border-line bg-well px-4 py-2.5 text-[11px] font-semibold text-mute md:grid">
           <span>일시</span><span>캐치걸</span><span>고객</span><span>요청사항</span><span>상태</span><span className="text-right">처리</span>
         </div>
         {rows.length === 0 && <div className="py-10 text-center text-[12px] text-mute">조건에 맞는 예약이 없어요</div>}
@@ -138,14 +138,14 @@ export function ReservationsClient({ slug, rows, staff, customers, sources, filt
             <div className="flex flex-wrap justify-end gap-1">
               {r.status === "CONFIRMED" && (
                 <>
-                  <button disabled={pending} onClick={() => setStatus(r.id, "COMPLETED")} className="rounded-lg bg-[#E8F6EE] px-2 py-1 text-[11px] font-bold text-[#2E8B57]">방문완료</button>
-                  <button disabled={pending} onClick={() => setStatus(r.id, "NOSHOW")} className="rounded-lg bg-[#FDECEC] px-2 py-1 text-[11px] font-bold text-[#C0392B]">노쇼</button>
-                  <button disabled={pending} onClick={() => setEditing(r)} className="rounded-lg border border-line bg-white px-2 py-1 text-[11px] font-bold text-ink">수정</button>
-                  <button disabled={pending} onClick={() => setStatus(r.id, "CANCELLED")} className="rounded-lg border border-line bg-white px-2 py-1 text-[11px] font-bold text-mute">취소</button>
+                  <button disabled={pending} onClick={() => setStatus(r.id, "COMPLETED")} className="rounded-lg bg-ok-bg px-2 py-1 text-[11px] font-bold text-ok">방문완료</button>
+                  <button disabled={pending} onClick={() => setStatus(r.id, "NOSHOW")} className="rounded-lg bg-bad-bg px-2 py-1 text-[11px] font-bold text-bad">노쇼</button>
+                  <button disabled={pending} onClick={() => setEditing(r)} className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-bold text-ink">수정</button>
+                  <button disabled={pending} onClick={() => setStatus(r.id, "CANCELLED")} className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-bold text-mute">취소</button>
                 </>
               )}
               {r.status !== "CONFIRMED" && (
-                <button disabled={pending} onClick={() => setStatus(r.id, "CONFIRMED")} className="rounded-lg border border-line bg-white px-2 py-1 text-[11px] font-bold text-mute">확정으로 되돌리기</button>
+                <button disabled={pending} onClick={() => setStatus(r.id, "CONFIRMED")} className="rounded-lg border border-line bg-card px-2 py-1 text-[11px] font-bold text-mute">확정으로 되돌리기</button>
               )}
             </div>
           </div>
@@ -158,7 +158,7 @@ export function ReservationsClient({ slug, rows, staff, customers, sources, filt
           <button
             disabled={page <= 1}
             onClick={() => goPage(page - 1)}
-            className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink disabled:opacity-35"
+            className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink disabled:opacity-35"
           >
             ‹ 이전
           </button>
@@ -171,7 +171,7 @@ export function ReservationsClient({ slug, rows, staff, customers, sources, filt
                 onClick={() => goPage(n)}
                 className={cn(
                   "min-w-[36px] rounded-xl px-2.5 py-2 text-[12px] font-bold transition-colors",
-                  n === page ? "bg-brand text-white" : "border border-line bg-white text-mute hover:border-brand",
+                  n === page ? "bg-brand text-white" : "border border-line bg-card text-mute hover:border-brand",
                 )}
               >
                 {n}
@@ -181,7 +181,7 @@ export function ReservationsClient({ slug, rows, staff, customers, sources, filt
           <button
             disabled={page >= pageCount}
             onClick={() => goPage(page + 1)}
-            className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink disabled:opacity-35"
+            className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink disabled:opacity-35"
           >
             다음 ›
           </button>
@@ -203,7 +203,7 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
       <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-[28px] bg-paper p-6 shadow-pop md:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div className="font-serif text-[18px] font-bold text-ink">{title}</div>
-          <button onClick={onClose} className="h-8 w-8 rounded-full border border-line bg-white text-mute">✕</button>
+          <button onClick={onClose} className="h-8 w-8 rounded-full border border-line bg-card text-mute">✕</button>
         </div>
         {children}
       </div>
@@ -266,7 +266,7 @@ function NewReservationModal({ slug, staff, customers, sources, times, defaultDa
                 onClick={() => setForm({ ...form, channel: c.key })}
                 className={cn(
                   "flex-1 rounded-xl border py-2 text-[12px] font-bold transition-colors",
-                  form.channel === c.key ? "border-brand bg-brand text-white" : "border-line bg-white text-mute hover:border-brand",
+                  form.channel === c.key ? "border-brand bg-brand text-white" : "border-line bg-card text-mute hover:border-brand",
                 )}
               >
                 {c.label}
@@ -275,9 +275,9 @@ function NewReservationModal({ slug, staff, customers, sources, times, defaultDa
           </div>
         </div>
 
-        <div className="flex rounded-2xl bg-[#F4EDEE] p-1">
+        <div className="flex rounded-2xl bg-well-2 p-1">
           {(["existing", "new"] as const).map((m) => (
-            <button key={m} onClick={() => setMode(m)} className={cn("flex-1 rounded-xl py-2 text-[12px] font-bold", mode === m ? "bg-white text-ink shadow-card" : "text-mute")}>{m === "existing" ? "기존 손님" : "신규 손님"}</button>
+            <button key={m} onClick={() => setMode(m)} className={cn("flex-1 rounded-xl py-2 text-[12px] font-bold", mode === m ? "bg-card text-ink shadow-card" : "text-mute")}>{m === "existing" ? "기존 손님" : "신규 손님"}</button>
           ))}
         </div>
 
@@ -297,7 +297,7 @@ function NewReservationModal({ slug, staff, customers, sources, times, defaultDa
                   <button
                     key={c.id}
                     onClick={() => setForm({ ...form, customerId: c.id })}
-                    className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-left text-[12px] hover:border-brand"
+                    className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-card px-3 py-2 text-left text-[12px] hover:border-brand"
                   >
                     <span className="font-bold text-ink">{c.nickname}</span>
                     {c.contact && <span className="text-[11px] text-mute">{c.contact}</span>}

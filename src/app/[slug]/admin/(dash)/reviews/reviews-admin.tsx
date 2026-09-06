@@ -34,7 +34,7 @@ export function ReviewsAdmin({ slug, reviews, comments }: { slug: string; review
   return (
     <div className="mt-5">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex rounded-2xl bg-white p-1 shadow-card">
+        <div className="flex rounded-2xl bg-card p-1 shadow-card">
           {(["reviews", "comments"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)} className={cn("rounded-xl px-4 py-2 text-[12px] font-bold", tab === t ? "bg-brand text-white" : "text-mute")}>
               {t === "reviews" ? `후기 ${reviews.length}` : `댓글 ${comments.length}`}
@@ -44,7 +44,7 @@ export function ReviewsAdmin({ slug, reviews, comments }: { slug: string; review
         {tab === "reviews" && (
           <div className="ml-2 flex gap-1.5">
             {([["all", "전체"], ["reported", `신고됨 ${reportedCount}`], ["hidden", "숨김"]] as const).map(([k, l]) => (
-              <button key={k} onClick={() => setFilter(k)} className={cn("rounded-full px-3 py-1.5 text-[11px] font-bold", filter === k ? "bg-ink text-white" : "bg-[#F4EDEE] text-mute", k === "reported" && reportedCount > 0 && filter !== k && "text-[#C0392B]")}>{l}</button>
+              <button key={k} onClick={() => setFilter(k)} className={cn("rounded-full px-3 py-1.5 text-[11px] font-bold", filter === k ? "bg-ink text-on-ink" : "bg-well-2 text-mute", k === "reported" && reportedCount > 0 && filter !== k && "text-bad")}>{l}</button>
             ))}
           </div>
         )}
@@ -54,7 +54,7 @@ export function ReviewsAdmin({ slug, reviews, comments }: { slug: string; review
         <div className="mt-4 flex flex-col gap-3">
           {list.length === 0 && <Card className="p-8 text-center text-[12px] text-mute">해당하는 후기가 없어요</Card>}
           {list.map((r) => (
-            <Card key={r.id} className={cn("p-4", r.isReported && "border-[#F5B5B5]", r.isHidden && "opacity-60")}>
+            <Card key={r.id} className={cn("p-4", r.isReported && "border-bad/40", r.isHidden && "opacity-60")}>
               <div className="flex flex-wrap items-center gap-2 text-[12px]">
                 <span className="font-bold text-ink">{r.customerName}</span>
                 <span className="text-mute">→ {r.staffName}</span>

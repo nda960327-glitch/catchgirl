@@ -58,7 +58,7 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
           ))}
           {myShifts.length === 0 && <span className="text-[12px] text-mute">이 날은 배치가 없어요</span>}
           {myOffs.map((o) => (
-            <span key={o.id} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-mute">
+            <span key={o.id} className="rounded-full bg-card px-2.5 py-1 text-[11px] font-semibold text-mute">
               자리 비움 {o.startTime}~{o.endTime}{o.reason ? ` · ${o.reason}` : ""}
             </span>
           ))}
@@ -71,7 +71,7 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
           const on = k === date;
           const off = offSet.has(k) || !staff.schedules.some((s) => s.weekday === d.getDay());
           return (
-            <Link key={k} href={`?date=${k}`} className={cn("flex min-w-[52px] flex-col items-center rounded-2xl border py-2.5", on ? "border-brand bg-brand text-white" : off ? "border-[#F4EDEE] bg-[#F4EDEE] text-[#CDBEC1]" : "border-line bg-white text-ink")}>
+            <Link key={k} href={`?date=${k}`} className={cn("flex min-w-[52px] flex-col items-center rounded-2xl border py-2.5", on ? "border-brand bg-brand text-white" : off ? "border-well-2 bg-well-2 text-mute/60" : "border-line bg-card text-ink")}>
               <span className="text-[10px]">{WEEKDAYS_KO[d.getDay()]}</span>
               <span className="mt-0.5 font-serif text-[16px] font-bold">{d.getDate()}</span>
             </Link>
@@ -95,7 +95,7 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
           {slots.map((s) => {
             const r = active.find((x) => format(x.startTime, "HH:mm") === s.time);
             return (
-              <div key={s.time} className={cn("flex min-h-[60px] flex-col items-center justify-center rounded-[14px] border px-1 text-center", r ? "border-brand bg-blush-lt" : s.status === "off" ? "border-dashed border-[#E3D3D6] bg-[#FAF6F7] text-[#CDBEC1]" : s.status === "past" ? "border-[#F4EDEE] bg-[#F4EDEE] text-[#CDBEC1]" : "border-line bg-white text-ink")}>
+              <div key={s.time} className={cn("flex min-h-[60px] flex-col items-center justify-center rounded-[14px] border px-1 text-center", r ? "border-brand bg-blush-lt" : s.status === "off" ? "border-dashed border-line bg-well text-mute/60" : s.status === "past" ? "border-well-2 bg-well-2 text-mute/60" : "border-line bg-card text-ink")}>
                 <span className="text-[12px] font-bold">{s.time}</span>
                 {r && <span className="mt-0.5 max-w-full truncate text-[10px] font-semibold text-brand">{r.customer.nickname}</span>}
               </div>

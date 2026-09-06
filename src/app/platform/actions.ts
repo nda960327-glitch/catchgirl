@@ -9,6 +9,7 @@ import { checkPlatformPassword, clearPlatformSession, isPlatform, setPlatformSes
 import { DEFAULT_SOURCES } from "@/lib/sources";
 import { DEFAULT_GRADE_BENEFITS } from "@/lib/discounts";
 import { FIXED_NOTICE } from "@/lib/notices";
+import { THEMES } from "@/lib/themes";
 
 export type R<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 
@@ -39,6 +40,7 @@ const storeSchema = z.object({
   closeTime: z.string().regex(/^\d{2}:\d{2}$/),
   roomCount: z.coerce.number().int().min(1).max(50),
   plan: z.enum(["PRO", "MAX"]).default("PRO"),
+  theme: z.enum(["rose", "cream", "noir", "wine", "midnight"]).default("rose"),
   contactPhone: z.string().trim().max(30).default(""),
   contactTelegram: z.string().trim().max(40).default(""),
 });
@@ -72,6 +74,8 @@ export async function createStore(input: z.input<typeof storeSchema>): Promise<R
         name: d.name,
         slug: d.slug,
         plan: d.plan,
+        theme: d.theme,
+        themeColor: THEMES[d.theme].brand,
         openTime: d.openTime,
         shiftSplitTime: d.shiftSplitTime,
         closeTime: d.closeTime,

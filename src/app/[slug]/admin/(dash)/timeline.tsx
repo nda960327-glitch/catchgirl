@@ -69,16 +69,16 @@ export function Timeline({
   return (
     <>
       <div className="mt-4 flex items-center justify-end gap-1.5">
-        <button onClick={() => nudge(-1)} aria-label="이전 시간대" className="h-8 w-8 rounded-xl border border-line bg-white text-[13px] font-bold text-mute hover:border-brand hover:text-brand">‹</button>
-        <button onClick={scrollToNow} className="h-8 rounded-xl border border-line bg-white px-3 text-[11px] font-bold text-mute hover:border-brand hover:text-brand">지금</button>
-        <button onClick={() => nudge(1)} aria-label="다음 시간대" className="h-8 w-8 rounded-xl border border-line bg-white text-[13px] font-bold text-mute hover:border-brand hover:text-brand">›</button>
+        <button onClick={() => nudge(-1)} aria-label="이전 시간대" className="h-8 w-8 rounded-xl border border-line bg-card text-[13px] font-bold text-mute hover:border-brand hover:text-brand">‹</button>
+        <button onClick={scrollToNow} className="h-8 rounded-xl border border-line bg-card px-3 text-[11px] font-bold text-mute hover:border-brand hover:text-brand">지금</button>
+        <button onClick={() => nudge(1)} aria-label="다음 시간대" className="h-8 w-8 rounded-xl border border-line bg-card text-[13px] font-bold text-mute hover:border-brand hover:text-brand">›</button>
       </div>
       {/* scroll-behavior:smooth 를 켜면 일부 브라우저에서 scrollLeft 지정이 통째로 무시된다 */}
       <div ref={scroller} className="scroll-x mt-2 overflow-x-auto pb-2">
         <div style={{ minWidth: NAME_W + times.length * COL }}>
           <div className="flex">
             {/* 옆으로 밀어도 누구 줄인지 보여야 하므로 이름 칸은 붙여 둔다 */}
-            <div className="sticky left-0 z-20 shrink-0 bg-white" style={{ width: NAME_W }} />
+            <div className="sticky left-0 z-20 shrink-0 bg-card" style={{ width: NAME_W }} />
             {times.map((t, i) => (
               <div
                 key={t}
@@ -93,7 +93,7 @@ export function Timeline({
 
           {rows.map((row) => (
             <div key={row.id} className="mt-2 flex items-center">
-              <div className="sticky left-0 z-20 flex shrink-0 items-center gap-1.5 bg-white pr-2" style={{ width: NAME_W }}>
+              <div className="sticky left-0 z-20 flex shrink-0 items-center gap-1.5 bg-card pr-2" style={{ width: NAME_W }}>
                 <Avatar src={row.photo} name={row.name} size={26} rounded={9} />
                 <span className="truncate text-[12px] font-bold text-ink">{row.name}</span>
               </div>
@@ -124,8 +124,8 @@ export function Timeline({
                       className={cn(
                         "absolute inset-y-1 flex items-center justify-center gap-1 rounded-lg px-1 text-[10px] font-bold leading-tight transition-transform hover:z-10 hover:scale-[1.02]",
                         it.status === "CONFIRMED" && "bg-brand text-white",
-                        it.status === "COMPLETED" && "bg-[#E8F6EE] text-[#2E8B57]",
-                        it.status === "NOSHOW" && "bg-[#FDECEC] text-[#C0392B]",
+                        it.status === "COMPLETED" && "bg-ok-bg text-ok",
+                        it.status === "NOSHOW" && "bg-bad-bg text-bad",
                       )}
                       style={{ left: start * COL + 2, width: span * COL - 4 }}
                     >
@@ -171,10 +171,10 @@ function DetailModal({ slug, item, staffName, onClose }: { slug: string; item: T
               방문 {item.customerVisits}회 · 노쇼 {item.customerNoshows}회
             </div>
           </div>
-          <button onClick={onClose} className="h-8 w-8 shrink-0 rounded-full border border-line bg-white text-mute">✕</button>
+          <button onClick={onClose} className="h-8 w-8 shrink-0 rounded-full border border-line bg-card text-mute">✕</button>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-line bg-white px-4 py-1">
+        <div className="mt-4 rounded-2xl border border-line bg-card px-4 py-1">
           {rows.map(([k, v], i) => (
             <div key={k} className={cn("flex justify-between py-2.5 text-[12px]", i && "border-t border-line")}>
               <span className="text-mute">{k}</span>
@@ -184,7 +184,7 @@ function DetailModal({ slug, item, staffName, onClose }: { slug: string; item: T
         </div>
 
         <div className="mt-3 flex flex-col gap-2">
-          <div className="rounded-2xl bg-[#FAF6F7] px-4 py-3">
+          <div className="rounded-2xl bg-well px-4 py-3">
             <div className="text-[11px] font-semibold text-mute">요청사항</div>
             <div className="mt-1 text-[12px] leading-[1.7] text-ink">{item.requestNote || "—"}</div>
           </div>
@@ -196,7 +196,7 @@ function DetailModal({ slug, item, staffName, onClose }: { slug: string; item: T
 
         <div className="mt-4 flex gap-2">
           <Link href={`/${slug}/admin/customers/${item.customerId}`} className="flex-1 rounded-2xl bg-brand py-3 text-center text-[13px] font-bold text-white">고객 상세 보기</Link>
-          <Link href={`/${slug}/admin/reservations?view=list&focus=${item.id}`} className="flex-1 rounded-2xl border border-line bg-white py-3 text-center text-[13px] font-bold text-ink">예약 관리로</Link>
+          <Link href={`/${slug}/admin/reservations?view=list&focus=${item.id}`} className="flex-1 rounded-2xl border border-line bg-card py-3 text-center text-[13px] font-bold text-ink">예약 관리로</Link>
         </div>
         <div className="mt-2 text-center text-[11px] text-mute">현재 상태 · {STATUS_LABEL[item.status] ?? item.status}</div>
       </div>

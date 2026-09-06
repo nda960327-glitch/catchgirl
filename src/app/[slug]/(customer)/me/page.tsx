@@ -56,7 +56,7 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
       {/* 프로필 */}
       <div className="hero-grad mx-4 mt-4 rounded-[24px] p-5">
         <div className="flex items-center gap-3.5">
-          <Avatar name={me.nickname} size={56} rounded={18} className="bg-white" />
+          <Avatar name={me.nickname} size={56} rounded={18} className="bg-card" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="font-serif text-[20px] font-bold text-ink">{me.nickname}</span>
@@ -65,10 +65,10 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
             <div className="mt-1 text-[11px] text-mute">가입 {stats.visitCount > 0 ? `· 누적 ${stats.visitCount}회 방문` : "· 첫 방문을 기다리고 있어요"}</div>
           </div>
           <form action={logoutCustomer.bind(null, slug)}>
-            <button className="rounded-full border border-line bg-white px-3 py-1.5 text-[10px] font-semibold text-mute">로그아웃</button>
+            <button className="rounded-full border border-line bg-card px-3 py-1.5 text-[10px] font-semibold text-mute">로그아웃</button>
           </form>
         </div>
-        <div className="mt-4 flex rounded-2xl bg-white/80 py-3">
+        <div className="mt-4 flex rounded-2xl bg-card/80 py-3">
           {[
             ["누적 방문", `${stats.visitCount}회`],
             ["예정", `${reservations.filter((r) => r.status === "CONFIRMED").length}건`],
@@ -93,7 +93,7 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
           <h2 className="mt-1 px-1 font-serif text-[17px] font-bold text-ink">내 혜택</h2>
           <div className="mt-3 flex flex-col gap-2">
             {benefit && (
-              <div className="rounded-[18px] border border-line bg-white px-4 py-3.5">
+              <div className="rounded-[18px] border border-line bg-card px-4 py-3.5">
                 <div className="flex items-center gap-2">
                   <GradeChip grade={stats.grade} />
                   <span className="text-[13px] font-bold text-brand">예약마다 {won(benefit.amount)} 할인</span>
@@ -136,7 +136,7 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
         ) : (
           <div className="no-scrollbar mt-3 flex gap-3 overflow-x-auto pb-1">
             {favorites.map((f) => (
-              <Link key={f.id} href={`/${slug}/bartenders/${f.staffId}`} className="flex min-w-[120px] flex-col items-center rounded-[20px] border border-line bg-white p-3">
+              <Link key={f.id} href={`/${slug}/bartenders/${f.staffId}`} className="flex min-w-[120px] flex-col items-center rounded-[20px] border border-line bg-card p-3">
                 <Avatar src={parseJsonArray(f.staff.photos)[0]} name={f.staff.nickname} size={56} rounded={18} />
                 <div className="mt-2 text-[13px] font-bold text-ink">{f.staff.nickname}</div>
                 <div className="text-[10px] text-brand">♥ 찜</div>

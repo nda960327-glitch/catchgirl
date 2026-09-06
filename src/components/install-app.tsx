@@ -66,13 +66,13 @@ export function InstallApp({ role, className }: { role: keyof typeof COPY; class
     <div className={cn("rounded-[20px] border border-brand/30 bg-blush-lt/50 px-4 py-3.5", className)}>
       <div className="flex items-start gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={copy.icon} alt="" className="h-10 w-10 shrink-0 rounded-xl border border-white shadow-card" />
+        <img src={copy.icon} alt="" className="h-10 w-10 shrink-0 rounded-xl border border-card shadow-card" />
         <div className="min-w-0 flex-1">
           <div className="text-[13px] font-bold text-ink">{copy.title}</div>
           <div className="mt-0.5 text-[11px] leading-[1.7] text-mute">{copy.desc}</div>
 
           {isIOS ? (
-            <div className="mt-2 rounded-xl bg-white/80 px-3 py-2 text-[11px] leading-[1.8] text-mute">
+            <div className="mt-2 rounded-xl bg-card/80 px-3 py-2 text-[11px] leading-[1.8] text-mute">
               아이폰은 사파리 아래쪽 <b className="text-ink">공유 버튼</b>을 누르고<br />
               <b className="text-ink">홈 화면에 추가</b>를 선택하시면 돼요.
             </div>
@@ -89,7 +89,7 @@ export function InstallApp({ role, className }: { role: keyof typeof COPY; class
               앱으로 설치하기
             </button>
           ) : (
-            <div className="mt-2 rounded-xl bg-white/80 px-3 py-2 text-[11px] leading-[1.8] text-mute">
+            <div className="mt-2 rounded-xl bg-card/80 px-3 py-2 text-[11px] leading-[1.8] text-mute">
               브라우저 메뉴에서 <b className="text-ink">홈 화면에 추가</b> 또는 <b className="text-ink">앱 설치</b>를 선택해 주세요.
             </div>
           )}

@@ -23,11 +23,11 @@ export const Button = forwardRef<HTMLButtonElement, BtnProps>(function Button(
         size === "sm" && "h-9 px-3 text-[12px] rounded-xl",
         size === "md" && "h-11 px-4 text-[13px]",
         size === "lg" && "h-[54px] px-5 text-[15px] w-full",
-        variant === "primary" && "cta-grad text-white shadow-cta disabled:bg-none disabled:bg-[#EFE7E8] disabled:text-mute disabled:shadow-none",
+        variant === "primary" && "cta-grad text-white shadow-cta disabled:bg-none disabled:bg-well-2 disabled:text-mute disabled:shadow-none",
         variant === "secondary" && "bg-blush-lt text-brand disabled:opacity-50",
-        variant === "outline" && "bg-white border border-line text-ink disabled:opacity-50",
+        variant === "outline" && "bg-card border border-line text-ink disabled:opacity-50",
         variant === "ghost" && "bg-transparent text-mute hover:bg-blush-lt disabled:opacity-50",
-        variant === "danger" && "bg-[#FDECEC] text-[#C0392B] disabled:opacity-50",
+        variant === "danger" && "bg-bad-bg text-bad disabled:opacity-50",
         className,
       )}
       {...rest}
@@ -44,7 +44,7 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
     <input
       ref={ref}
       className={cn(
-        "h-12 w-full rounded-2xl border border-line bg-white px-4 text-[14px] text-ink outline-none placeholder:text-mute/70 focus:border-brand focus:ring-2 focus:ring-[rgb(var(--brand-rgb)/.15)]",
+        "h-12 w-full rounded-2xl border border-line bg-card px-4 text-[14px] text-ink outline-none placeholder:text-mute/70 focus:border-brand focus:ring-2 focus:ring-[rgb(var(--brand-rgb)/.15)]",
         className,
       )}
       {...rest}
@@ -56,7 +56,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
     <textarea
       ref={ref}
       className={cn(
-        "w-full rounded-2xl border border-line bg-white px-4 py-3 text-[14px] text-ink outline-none placeholder:text-mute/70 focus:border-brand focus:ring-2 focus:ring-[rgb(var(--brand-rgb)/.15)]",
+        "w-full rounded-2xl border border-line bg-card px-4 py-3 text-[14px] text-ink outline-none placeholder:text-mute/70 focus:border-brand focus:ring-2 focus:ring-[rgb(var(--brand-rgb)/.15)]",
         className,
       )}
       {...rest}
@@ -67,7 +67,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
   return (
     <select
       ref={ref}
-      className={cn("h-11 rounded-xl border border-line bg-white px-3 text-[13px] text-ink outline-none focus:border-brand", className)}
+      className={cn("h-11 rounded-xl border border-line bg-card px-3 text-[13px] text-ink outline-none focus:border-brand", className)}
       {...rest}
     />
   );
@@ -88,7 +88,7 @@ export function Field({ label, hint, children, className }: { label: string; hin
 /* ─── 카드/칩/기타 ─── */
 export function Card({ id, className, children, onClick }: { id?: string; className?: string; children: ReactNode; onClick?: () => void }) {
   return (
-    <div id={id} onClick={onClick} className={cn("rounded-[22px] border border-line bg-white shadow-card", onClick && "cursor-pointer", className)}>
+    <div id={id} onClick={onClick} className={cn("rounded-[22px] border border-line bg-card shadow-card", onClick && "cursor-pointer", className)}>
       {children}
     </div>
   );
@@ -100,9 +100,9 @@ export function Chip({ children, className, tone = "brand" }: { children: ReactN
         "inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold leading-none",
         tone === "brand" && "bg-blush-lt text-brand",
         tone === "gold" && "border border-gold-lt text-gold",
-        tone === "mute" && "bg-[#F4EDEE] text-mute",
-        tone === "green" && "bg-[#E8F6EE] text-[#2E8B57]",
-        tone === "red" && "bg-[#FDECEC] text-[#C0392B]",
+        tone === "mute" && "bg-well-2 text-mute",
+        tone === "green" && "bg-ok-bg text-ok",
+        tone === "red" && "bg-bad-bg text-bad",
         className,
       )}
     >
@@ -154,9 +154,9 @@ export function Empty({ sticker = "p2", title, desc, action }: { sticker?: strin
 /* ─── 모바일 상단바 ─── */
 export function TopBar({ title, back, right }: { title: string; back?: string; right?: ReactNode }) {
   return (
-    <div className="sticky top-0 z-20 flex h-14 items-center border-b border-line bg-white/90 px-4 backdrop-blur">
+    <div className="sticky top-0 z-20 flex h-14 items-center border-b border-line bg-card/90 px-4 backdrop-blur">
       {back ? (
-        <Link href={back} className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white text-ink" aria-label="뒤로">
+        <Link href={back} className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-card text-ink" aria-label="뒤로">
           ‹
         </Link>
       ) : (

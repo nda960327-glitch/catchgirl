@@ -92,7 +92,7 @@ export default async function ReservationsPage({ params, searchParams }: { param
           <Eyebrow>Reservations</Eyebrow>
           <h1 className="mt-1 font-serif text-[22px] font-bold text-ink">예약 관리</h1>
         </div>
-        <div className="flex rounded-2xl bg-white p-1 shadow-card">
+        <div className="flex rounded-2xl bg-card p-1 shadow-card">
           {(["list", "calendar"] as const).map((v) => (
             <Link key={v} href={qs({ view: v })} className={cn("rounded-xl px-4 py-2 text-[12px] font-bold", view === v ? "bg-brand text-white" : "text-mute")}>
               {v === "list" ? "리스트" : "캘린더"}
@@ -119,7 +119,7 @@ export default async function ReservationsPage({ params, searchParams }: { param
               const total = m ? [...m.values()].reduce((a, b) => a + b, 0) : 0;
               const isToday = k === todayStr;
               return (
-                <Link key={k} href={`?view=list&date=${k}`} className={cn("flex min-h-[76px] flex-col rounded-xl border p-1.5 text-left transition-colors hover:border-brand", inMonth ? "border-line bg-white" : "border-transparent bg-transparent opacity-40", isToday && "border-brand bg-blush-lt/40")}>
+                <Link key={k} href={`?view=list&date=${k}`} className={cn("flex min-h-[76px] flex-col rounded-xl border p-1.5 text-left transition-colors hover:border-brand", inMonth ? "border-line bg-card" : "border-transparent bg-transparent opacity-40", isToday && "border-brand bg-blush-lt/40")}>
                   <span className={cn("text-[11px] font-bold", isToday ? "text-brand" : "text-ink")}>{d.getDate()}</span>
                   {total > 0 && (
                     <div className="mt-1 flex flex-wrap gap-0.5">

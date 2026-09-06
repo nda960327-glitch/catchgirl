@@ -6,6 +6,7 @@
 @tailwind utilities;
 
 :root {
+  /* 매장 레이아웃이 테마 한 벌을 덮어쓴다. 여기는 그 바깥(플랫폼 콘솔 등)을 위한 기본값 — 로즈 */
   --brand: #b4586a;
   --brand-dark: #994b5a;
   --blush: #eebec8;
@@ -14,6 +15,24 @@
   --brand-rgb: 180 88 106;
   --blush-rgb: 238 190 200;
   --blush-lt-rgb: 249 231 235;
+  --paper-rgb: 252 247 246;
+  --frame-rgb: 243 233 234;
+  --card-rgb: 255 255 255;
+  --well-rgb: 250 246 247;
+  --well-2-rgb: 244 237 238;
+  --ink-rgb: 58 40 48;
+  --mute-rgb: 154 134 141;
+  --line-rgb: 240 228 229;
+  --gold-rgb: 200 164 106;
+  --on-ink-rgb: 255 255 255;
+  --ok-rgb: 46 139 87;
+  --ok-bg-rgb: 232 246 238;
+  --bad-rgb: 192 57 43;
+  --bad-bg-rgb: 253 236 236;
+  --day-rgb: 138 106 32;
+  --day-bg-rgb: 255 246 230;
+  --night-rgb: 61 78 140;
+  --night-bg-rgb: 238 241 251;
 }
 
 html, body { height: 100%; }
@@ -30,13 +49,13 @@ body {
 
 .skeleton {
   @apply rounded-xl;
-  background: linear-gradient(90deg, #f3ebec 0%, #faf4f5 40%, #f3ebec 80%);
+  background: linear-gradient(90deg, rgb(var(--well-2-rgb)) 0%, rgb(var(--well-rgb)) 40%, rgb(var(--well-2-rgb)) 80%);
   background-size: 800px 100%;
   animation: shimmer 1.4s linear infinite;
 }
 
 .cta-grad { background: linear-gradient(135deg, var(--brand), var(--blush)); }
-.hero-grad { background: linear-gradient(160deg, var(--blush-lt), #fbf3f4); }
+.hero-grad { background: linear-gradient(160deg, var(--blush-lt), rgb(var(--paper-rgb))); }
 .ring-brand { box-shadow: 0 8px 18px rgb(var(--brand-rgb) / .22); }
 
 /* 데스크톱에서 모바일 프레임 */
@@ -51,15 +70,15 @@ body {
     margin-top: 24px;
     border-radius: 34px;
     overflow: hidden;
-    border: 6px solid #fff;
+    border: 6px solid rgb(var(--card-rgb));
     box-shadow: 0 26px 60px rgba(90, 50, 62, 0.22);
   }
 }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
 /* 스크롤바를 전부 숨겨 놨지만, 옆으로 긴 표는 잡고 끌 막대가 보여야 한다 */
-.scroll-x { scrollbar-width: thin; scrollbar-color: rgb(var(--brand-rgb) / .45) #F1E7E9; }
+.scroll-x { scrollbar-width: thin; scrollbar-color: rgb(var(--brand-rgb) / .45) rgb(var(--well-2-rgb)); }
 .scroll-x::-webkit-scrollbar { display: block; height: 10px; }
-.scroll-x::-webkit-scrollbar-track { background: #F1E7E9; border-radius: 999px; }
+.scroll-x::-webkit-scrollbar-track { background: rgb(var(--well-2-rgb)); border-radius: 999px; }
 .scroll-x::-webkit-scrollbar-thumb { background: rgb(var(--brand-rgb) / .45); border-radius: 999px; }
 .scroll-x::-webkit-scrollbar-thumb:hover { background: rgb(var(--brand-rgb) / .7); }

@@ -98,16 +98,16 @@ export function WeekBoard({
           <table className="w-full min-w-[860px] border-separate border-spacing-0 text-[12px]">
             <thead>
               <tr>
-                <th className="sticky left-0 z-20 w-[88px] bg-[#FAF6F7] px-2 py-2 text-left text-[11px] font-semibold text-mute">객실</th>
-                <th className="w-[86px] bg-[#FAF6F7] px-1 py-2 text-left text-[11px] font-semibold text-mute">근무 시간</th>
+                <th className="sticky left-0 z-20 w-[88px] bg-well px-2 py-2 text-left text-[11px] font-semibold text-mute">객실</th>
+                <th className="w-[86px] bg-well px-1 py-2 text-left text-[11px] font-semibold text-mute">근무 시간</th>
                 {days.map((d) => {
                   const wd = toLocalDate(d, "00:00").getDay();
                   return (
                     <th
                       key={d}
                       className={cn(
-                        "bg-[#FAF6F7] px-1 py-2 text-center text-[11px] font-bold",
-                        d === today ? "text-brand" : wd === 0 ? "text-[#C0392B]" : "text-mute",
+                        "bg-well px-1 py-2 text-center text-[11px] font-bold",
+                        d === today ? "text-brand" : wd === 0 ? "text-bad" : "text-mute",
                       )}
                     >
                       {d.slice(5).replace("-", "/")} ({WEEKDAYS[wd]})
@@ -121,12 +121,12 @@ export function WeekBoard({
                 SHIFTS.map(([shift, label], si) => (
                   <tr key={`${room.id}-${shift}`}>
                     {si === 0 && (
-                      <td rowSpan={2} className="sticky left-0 z-10 border-t border-line bg-white px-2 py-1 align-middle font-bold text-ink">
+                      <td rowSpan={2} className="sticky left-0 z-10 border-t border-line bg-card px-2 py-1 align-middle font-bold text-ink">
                         {room.name}
                       </td>
                     )}
                     <td className={cn("border-t px-1 py-1 text-[10px] font-semibold", si === 0 ? "border-line" : "border-line/40")}>
-                      <span className={cn("rounded px-1 py-0.5", shift === "DAY" ? "bg-[#FFF6E6] text-[#8A6A20]" : "bg-[#EEF1FB] text-[#3D4E8C]")}>
+                      <span className={cn("rounded px-1 py-0.5", shift === "DAY" ? "bg-day-bg text-day" : "bg-night-bg text-night")}>
                         {label} {range(presets[shift].start, presets[shift].end)}
                       </span>
                     </td>
@@ -144,10 +144,10 @@ export function WeekBoard({
                               "flex h-9 w-full items-center justify-center rounded-md px-1 text-[11px] font-bold transition-colors",
                               a
                                 ? a.isStandby
-                                  ? "border border-dashed border-gold/70 bg-white text-[#8A6A20] hover:bg-[#FFFBF3]"
+                                  ? "border border-dashed border-gold/70 bg-card text-day hover:bg-well"
                                   : shift === "DAY"
-                                    ? "bg-[#FFF6E6] text-[#7A5A10] hover:brightness-95"
-                                    : "bg-[#EEF1FB] text-[#33427A] hover:brightness-95"
+                                    ? "bg-day-bg text-day hover:brightness-95"
+                                    : "bg-night-bg text-night hover:brightness-95"
                                 : "border border-dashed border-line text-mute/40 hover:border-brand hover:text-brand",
                             )}
                           >
@@ -235,7 +235,7 @@ function CellEditor({
               {cell.date.slice(5)} ({WEEKDAYS[weekday]}) · {label}조
             </div>
           </div>
-          <button onClick={onClose} className="h-8 w-8 shrink-0 rounded-full border border-line bg-white text-mute">✕</button>
+          <button onClick={onClose} className="h-8 w-8 shrink-0 rounded-full border border-line bg-card text-mute">✕</button>
         </div>
 
         <div className="mt-4 flex flex-col gap-3">
@@ -274,10 +274,10 @@ function CellEditor({
             onClick={() => setStandby((v) => !v)}
             className={cn(
               "flex items-start gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-colors",
-              standby ? "border-gold bg-[#FFFBF3]" : "border-line bg-white hover:border-gold/60",
+              standby ? "border-gold bg-well" : "border-line bg-card hover:border-gold/60",
             )}
           >
-            <span className={cn("mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-bold", standby ? "border-gold bg-gold text-white" : "border-line bg-white text-transparent")}>✓</span>
+            <span className={cn("mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-bold", standby ? "border-gold bg-gold text-white" : "border-line bg-card text-transparent")}>✓</span>
             <span className="min-w-0">
               <span className="block text-[12px] font-bold text-ink">예비로 걸어두기</span>
               <span className="mt-0.5 block text-[10px] leading-[1.7] text-mute">

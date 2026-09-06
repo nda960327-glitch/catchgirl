@@ -24,10 +24,10 @@ export type AttendanceRow = {
 };
 
 const MARKS = [
-  { key: "PRESENT", label: "출근", tone: "bg-[#2E8B57] text-white", ring: "border-[#2E8B57]" },
+  { key: "PRESENT", label: "출근", tone: "bg-ok text-white", ring: "border-ok" },
   { key: "LATE", label: "지각", tone: "bg-gold text-white", ring: "border-gold" },
-  { key: "NOSHOW", label: "펑크", tone: "bg-[#C0392B] text-white", ring: "border-[#C0392B]" },
-  { key: "EXCUSED", label: "사전연락", tone: "bg-ink text-white", ring: "border-ink" },
+  { key: "NOSHOW", label: "펑크", tone: "bg-bad text-white", ring: "border-bad" },
+  { key: "EXCUSED", label: "사전연락", tone: "bg-ink text-on-ink", ring: "border-ink" },
 ] as const;
 
 /**
@@ -69,7 +69,7 @@ export function AttendanceCard({ slug, date, rows }: { slug: string; date: strin
       </div>
 
       {affected > 0 && (
-        <div className="mt-2.5 rounded-2xl border border-[#C0392B]/25 bg-[#FDECEC] px-4 py-2.5 text-[11px] leading-[1.7] text-ink">
+        <div className="mt-2.5 rounded-2xl border border-bad/25 bg-bad-bg px-4 py-2.5 text-[11px] leading-[1.7] text-ink">
           펑크난 자리에 <b>예약 {affected}건</b>이 걸려 있어요. 다른 캐치걸로 옮기거나 손님께 미리 연락해 주세요.
         </div>
       )}
@@ -82,11 +82,11 @@ export function AttendanceCard({ slug, date, rows }: { slug: string; date: strin
               key={r.id}
               className={cn(
                 "rounded-2xl border px-3 py-2.5",
-                isNoshow ? "border-[#C0392B]/30 bg-[#FDECEC]" : r.attendance === "PLANNED" ? "border-line bg-white" : "border-line bg-[#FAFBFA]",
+                isNoshow ? "border-bad/30 bg-bad-bg" : r.attendance === "PLANNED" ? "border-line bg-card" : "border-line bg-ok-bg",
               )}
             >
               <div className="flex flex-wrap items-center gap-2">
-                <span className={cn("w-[44px] shrink-0 rounded-md px-1 py-0.5 text-center text-[10px] font-bold", r.shift === "DAY" ? "bg-[#FFF6E6] text-[#8A6A20]" : "bg-[#EEF1FB] text-[#3D4E8C]")}>
+                <span className={cn("w-[44px] shrink-0 rounded-md px-1 py-0.5 text-center text-[10px] font-bold", r.shift === "DAY" ? "bg-day-bg text-day" : "bg-night-bg text-night")}>
                   {SHIFT_LABEL[r.shift] ?? r.shift}
                 </span>
                 <span className="w-[62px] shrink-0 text-[12px] font-bold text-ink">{r.roomName}</span>
@@ -106,7 +106,7 @@ export function AttendanceCard({ slug, date, rows }: { slug: string; date: strin
                         onClick={() => mark(r.id, on ? "PLANNED" : m.key)}
                         className={cn(
                           "rounded-lg border px-2 py-1 text-[11px] font-bold transition-colors disabled:opacity-40",
-                          on ? `${m.tone} ${m.ring}` : "border-line bg-white text-mute hover:border-brand hover:text-brand",
+                          on ? `${m.tone} ${m.ring}` : "border-line bg-card text-mute hover:border-brand hover:text-brand",
                         )}
                       >
                         {m.label}

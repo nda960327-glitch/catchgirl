@@ -72,12 +72,12 @@ export function SourcesManager({ slug, items }: { slug: string; items: Item[] })
             key={it.id}
             className={cn(
               "flex items-center gap-1.5 rounded-2xl border px-3 py-2 text-[12px]",
-              it.isActive ? "border-line bg-white" : "border-line bg-[#FAF6F7] opacity-60",
+              it.isActive ? "border-line bg-card" : "border-line bg-well opacity-60",
             )}
           >
             <span className="font-bold text-ink">{it.name}</span>
             {it.tier && (
-              <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-bold", it.tier === "MAJOR" ? "bg-gold/25 text-[#8A6A20]" : "bg-[#E8F6EE] text-[#2E8B57]")}>
+              <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-bold", it.tier === "MAJOR" ? "bg-gold/25 text-day" : "bg-ok-bg text-ok")}>
                 {TIER_LABEL[it.tier]}
               </span>
             )}
@@ -89,7 +89,7 @@ export function SourcesManager({ slug, items }: { slug: string; items: Item[] })
             >
               {it.isActive ? "숨기기" : "다시 쓰기"}
             </button>
-            <button onClick={() => remove(it)} disabled={pending} className="text-[11px] font-bold text-mute hover:text-[#C0392B]">✕</button>
+            <button onClick={() => remove(it)} disabled={pending} className="text-[11px] font-bold text-mute hover:text-bad">✕</button>
           </div>
         ))}
       </div>

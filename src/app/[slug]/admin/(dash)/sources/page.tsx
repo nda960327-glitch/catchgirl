@@ -102,9 +102,9 @@ export default async function SourcesPage({
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          <Link href={`?month=${format(addMonths(mStart, -1), "yyyy-MM")}`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink">‹ 이전</Link>
-          {!isThisMonth && <Link href={`/${slug}/admin/sources`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-brand">이번 달</Link>}
-          <Link href={`?month=${format(addMonths(mStart, 1), "yyyy-MM")}`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink">다음 ›</Link>
+          <Link href={`?month=${format(addMonths(mStart, -1), "yyyy-MM")}`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink">‹ 이전</Link>
+          {!isThisMonth && <Link href={`/${slug}/admin/sources`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-brand">이번 달</Link>}
+          <Link href={`?month=${format(addMonths(mStart, 1), "yyyy-MM")}`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink">다음 ›</Link>
         </div>
       </div>
 
@@ -116,10 +116,10 @@ export default async function SourcesPage({
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-4">
           {byChannel.map((c) => (
-            <div key={c.key} className="rounded-2xl border border-line bg-white p-4">
+            <div key={c.key} className="rounded-2xl border border-line bg-card p-4">
               <div className="text-[11px] font-semibold text-mute">{c.label}</div>
               <div className="mt-1 font-serif text-[22px] font-bold text-ink">{c.count}건</div>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#F1E7E9]">
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-well-2">
                 <span className="block h-full rounded-full bg-brand" style={{ width: `${totalRes ? (c.count / totalRes) * 100 : 0}%` }} />
               </div>
               <div className="mt-1.5 text-[10px] text-mute">
@@ -142,7 +142,7 @@ export default async function SourcesPage({
         <div className="scroll-x overflow-x-auto">
           <table className="w-full min-w-[520px] text-[12px]">
             <thead>
-              <tr className="bg-[#FAF6F7] text-[11px] font-semibold text-mute">
+              <tr className="bg-well text-[11px] font-semibold text-mute">
                 <th className="px-5 py-2.5 text-left">사이트</th>
                 <th className="w-[70px] px-2 py-2.5 text-right">신규</th>
                 <th className="w-[64px] px-2 py-2.5 text-right">비중</th>
@@ -157,7 +157,7 @@ export default async function SourcesPage({
                     <span className="flex flex-wrap items-center gap-1.5">
                       <span className={cn("font-bold", r.count > 0 ? "text-ink" : "text-mute")}>{r.name}</span>
                       {r.tier && (
-                        <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-bold", r.tier === "MAJOR" ? "bg-gold/25 text-[#8A6A20]" : "bg-[#E8F6EE] text-[#2E8B57]")}>
+                        <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-bold", r.tier === "MAJOR" ? "bg-gold/25 text-day" : "bg-ok-bg text-ok")}>
                           {TIER_LABEL[r.tier]}
                         </span>
                       )}
@@ -166,7 +166,7 @@ export default async function SourcesPage({
                   <td className="px-2 py-2.5 text-right font-bold text-ink">{r.count || "—"}</td>
                   <td className="px-2 py-2.5 text-right text-mute">{totalNew ? `${Math.round((r.count / totalNew) * 100)}%` : "—"}</td>
                   <td className="px-3 py-2.5">
-                    <span className="block h-2 rounded-full bg-[#F1E7E9]">
+                    <span className="block h-2 rounded-full bg-well-2">
                       <span className="block h-full rounded-full bg-brand/70" style={{ width: `${(r.count / peak) * 100}%` }} />
                     </span>
                   </td>

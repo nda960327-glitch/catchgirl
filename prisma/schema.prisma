@@ -22,6 +22,8 @@ model Store {
   logoUrl             String?
   coverUrl            String?
   themeColor          String   @default("#B4586A")
+  // 화면 한 벌 (로즈·크림·누아르·와인·미드나이트). 어두운 테마도 여기서 고른다.
+  theme               String   @default("rose")
   // 구독 — 한도는 코드(plans.ts)에서 관리하고 여기엔 어느 요금제인지만 둔다
   plan                String   @default("PRO") // PRO | MAX
   planStartedAt       DateTime @default(now())

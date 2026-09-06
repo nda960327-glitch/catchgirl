@@ -59,7 +59,7 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
             </div>
             <div className="mt-1 text-[11px] text-mute">{spec.tagline}</div>
           </div>
-          <div className="rounded-2xl bg-[#FAF6F7] px-4 py-3 text-[11px] leading-[1.9]">
+          <div className="rounded-2xl bg-well px-4 py-3 text-[11px] leading-[1.9]">
             <div className="text-mute">시작일 <b className="text-ink">{format(start, "yyyy년 M월 d일", { locale: ko })}</b></div>
             <div className="text-mute">다음 청구일 <b className="text-ink">{format(next, "M월 d일", { locale: ko })}</b></div>
             <div className="text-mute">연납 시 <b className="text-ink">{won(yearlyPrice(plan))}</b> (2개월 무료)</div>
@@ -69,17 +69,17 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
         {/* 한도 사용량 */}
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           {rows.map((r) => (
-            <div key={r.label} className="rounded-2xl border border-line bg-white p-3.5">
+            <div key={r.label} className="rounded-2xl border border-line bg-card p-3.5">
               <div className="flex items-baseline justify-between">
                 <span className="text-[11px] font-semibold text-mute">{r.label}</span>
-                <span className={cn("text-[12px] font-bold", r.over ? "text-[#C0392B]" : "text-ink")}>
+                <span className={cn("text-[12px] font-bold", r.over ? "text-bad" : "text-ink")}>
                   {r.used.toLocaleString("ko-KR")}
                   <span className="text-mute"> / {r.limit === null ? "무제한" : r.limit.toLocaleString("ko-KR")}{r.limit === null ? "" : r.unit}</span>
                 </span>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#F1E7E9]">
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-well-2">
                 <span
-                  className={cn("block h-full rounded-full", r.over ? "bg-[#C0392B]" : r.ratio > 0.8 ? "bg-gold" : "bg-brand")}
+                  className={cn("block h-full rounded-full", r.over ? "bg-bad" : r.ratio > 0.8 ? "bg-gold" : "bg-brand")}
                   style={{ width: `${r.limit === null ? 6 : Math.max(4, r.ratio * 100)}%` }}
                 />
               </div>
@@ -91,7 +91,7 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
         </div>
 
         {overRows.length > 0 && (
-          <div className="mt-3 rounded-2xl border border-[#C0392B]/25 bg-[#FDECEC] px-4 py-3 text-[11px] leading-[1.8] text-ink">
+          <div className="mt-3 rounded-2xl border border-bad/25 bg-bad-bg px-4 py-3 text-[11px] leading-[1.8] text-ink">
             <b>{overRows.map((r) => r.label).join(" · ")}</b>이(가) {spec.name} 한도를 넘었어요.
             지금 당장 막히는 건 없어요 — 등록도 예약도 그대로 됩니다.
             다음 청구일({format(next, "M월 d일", { locale: ko })})까지 이대로면 Max 로 올려 드리고, 그 전에 미리 알려드려요.
@@ -108,7 +108,7 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
         <div className="scroll-x overflow-x-auto">
           <table className="w-full min-w-[440px] text-[12px]">
             <thead>
-              <tr className="bg-[#FAF6F7]">
+              <tr className="bg-well">
                 <th className="px-5 py-3 text-left font-semibold text-mute">항목</th>
                 {(Object.keys(PLANS) as Plan[]).map((p) => (
                   <th key={p} className={cn("px-4 py-3 text-center", p === plan && "bg-blush-lt/60")}>

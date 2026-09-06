@@ -6,6 +6,7 @@ import { Button, Card, Field, Input, Select } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { PLANS, billedPrice } from "@/lib/plans";
 import { won } from "@/lib/utils";
+import { THEMES, type ThemeKey } from "@/lib/themes";
 import { createStore } from "./actions";
 
 /** 매장 이름으로 주소 후보를 만든다 — 한글은 못 쓰니 영문만 남긴다 */
@@ -15,7 +16,7 @@ const slugify = (s: string) =>
 const BLANK = {
   name: "", slug: "", adminEmail: "", adminPassword: "",
   openTime: "12:00", shiftSplitTime: "20:00", closeTime: "04:00",
-  roomCount: 10, plan: "PRO" as "PRO" | "MAX", contactPhone: "", contactTelegram: "",
+  roomCount: 10, plan: "PRO" as "PRO" | "MAX", theme: "rose" as ThemeKey, contactPhone: "", contactTelegram: "",
 };
 
 /**
@@ -54,9 +55,9 @@ export function NewStoreForm() {
       </p>
 
       {done && (
-        <div className="mt-4 rounded-2xl border border-[#2E8B57]/30 bg-[#EEF7F1] p-4 text-[12px] leading-[1.9]">
-          <div className="font-bold text-[#2E8B57]">매장을 만들었어요. 관리자에게 이대로 전달하세요.</div>
-          <div className="mt-2 rounded-xl bg-white px-3 py-2 font-mono text-[11px] text-ink">
+        <div className="mt-4 rounded-2xl border border-ok/30 bg-ok-bg p-4 text-[12px] leading-[1.9]">
+          <div className="font-bold text-ok">매장을 만들었어요. 관리자에게 이대로 전달하세요.</div>
+          <div className="mt-2 rounded-xl bg-card px-3 py-2 font-mono text-[11px] text-ink">
             관리자 주소  {origin}/{done.slug}/admin<br />
             이메일      {done.email}<br />
             비밀번호    {done.password}<br />
@@ -106,6 +107,12 @@ export function NewStoreForm() {
             </Select>
           </Field>
         </div>
+
+        <Field label="화면 테마" hint={THEMES[f.theme].desc}>
+          <Select value={f.theme} onChange={(e) => setF({ ...f, theme: e.target.value as ThemeKey })} className="w-full">
+            {(Object.keys(THEMES) as ThemeKey[]).map((k) => <option key={k} value={k}>{THEMES[k].name}{THEMES[k].dark ? " (어두움)" : ""}</option>)}
+          </Select>
+        </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="문의 전화" hint="선택">

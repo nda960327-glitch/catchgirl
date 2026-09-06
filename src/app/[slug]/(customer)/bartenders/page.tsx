@@ -66,7 +66,7 @@ export default async function BartenderListPage({
           scroll={false}
           className={cn(
             "flex-1 rounded-2xl px-3 py-2.5 text-center text-[12px] font-bold transition-colors",
-            onlyNow ? "bg-[#F4EDEE] text-mute" : "bg-brand text-white",
+            onlyNow ? "bg-well-2 text-mute" : "bg-brand text-white",
           )}
         >
           전체 {all.length}
@@ -76,7 +76,7 @@ export default async function BartenderListPage({
           scroll={false}
           className={cn(
             "flex-1 rounded-2xl px-3 py-2.5 text-center text-[12px] font-bold transition-colors",
-            onlyNow ? "bg-[#2E8B57] text-white" : "bg-[#E8F6EE] text-[#2E8B57]",
+            onlyNow ? "bg-ok text-white" : "bg-ok-bg text-ok",
           )}
         >
           ● 지금 예약 가능 {nowCount}

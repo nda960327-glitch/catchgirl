@@ -7,7 +7,7 @@ export default async function AdminLoginPage({ params, searchParams }: { params:
   const store = await getStoreBySlug(slug);
   return (
     <main className="flex min-h-dvh items-center justify-center bg-frame p-6">
-      <div className="w-full max-w-sm rounded-[28px] border border-white bg-white/80 p-8 shadow-pop backdrop-blur">
+      <div className="w-full max-w-sm rounded-[28px] border border-card bg-card/80 p-8 shadow-pop backdrop-blur">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {store.logoUrl && <img src={store.logoUrl} alt="" className="h-11 w-11 rounded-[14px]" />}

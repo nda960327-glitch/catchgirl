@@ -45,11 +45,11 @@ export function ReviewForm({ slug, reservationId }: { slug: string; reservationI
   const labels = ["", "아쉬웠어요", "그저 그랬어요", "괜찮았어요", "좋았어요", "최고였어요"];
   return (
     <div className="flex flex-1 flex-col gap-5 px-5 pb-6 pt-6">
-      <div className="rounded-[20px] border border-line bg-white p-5 text-center">
+      <div className="rounded-[20px] border border-line bg-card p-5 text-center">
         <div className="text-[12px] text-mute">오늘의 시간은 어땠나요</div>
         <div className="mt-2 flex justify-center gap-1.5">
           {[1, 2, 3, 4, 5].map((i) => (
-            <button key={i} onClick={() => setRating(i)} className={cn("text-[30px] transition-transform active:scale-90", i <= rating ? "text-brand" : "text-[#E8DCDE]")} aria-label={`${i}점`}>★</button>
+            <button key={i} onClick={() => setRating(i)} className={cn("text-[30px] transition-transform active:scale-90", i <= rating ? "text-brand" : "text-line")} aria-label={`${i}점`}>★</button>
           ))}
         </div>
         <div className="mt-1 text-[12px] font-semibold text-brand">{labels[rating]}</div>
@@ -67,7 +67,7 @@ export function ReviewForm({ slug, reservationId }: { slug: string; reservationI
             </div>
           ))}
           {photos.length < 5 && (
-            <button onClick={() => fileRef.current?.click()} disabled={uploading} className="flex h-[72px] w-[72px] flex-col items-center justify-center rounded-xl border border-dashed border-blush bg-white text-mute">
+            <button onClick={() => fileRef.current?.click()} disabled={uploading} className="flex h-[72px] w-[72px] flex-col items-center justify-center rounded-xl border border-dashed border-blush bg-card text-mute">
               <span className="text-lg">{uploading ? "…" : "＋"}</span>
               <span className="text-[9px]">{uploading ? "업로드 중" : "사진 추가"}</span>
             </button>

@@ -116,7 +116,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
               주간 {store.openTime}~{store.shiftSplitTime} · 야간 {store.shiftSplitTime}~익일 {store.closeTime}
             </div>
           </div>
-          <Link href={`/${slug}/admin/staff/schedule?date=${todayStr}`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-brand">배치 짜기 ›</Link>
+          <Link href={`/${slug}/admin/staff/schedule?date=${todayStr}`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-brand">배치 짜기 ›</Link>
         </div>
 
         {todayShifts.length === 0 ? (
@@ -129,7 +129,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
             {(["DAY", "NIGHT"] as const).map((shift) => {
               const list = todayShifts.filter((a) => a.shift === shift);
               return (
-                <div key={shift} className="rounded-2xl bg-[#FAF6F7] p-3">
+                <div key={shift} className="rounded-2xl bg-well p-3">
                   <div className="flex items-center gap-1.5 px-1">
                     <span className={cn("h-2 w-2 rounded-full", shift === "DAY" ? "bg-gold" : "bg-ink")} />
                     <span className="text-[12px] font-bold text-ink">{shift === "DAY" ? "주간" : "야간"}조</span>
@@ -140,10 +140,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
                     {list.map((a) => {
                       const away = awayByStaff.get(a.staffId) ?? [];
                       return (
-                        <span key={a.id} className={cn("flex items-center gap-1.5 rounded-full border bg-white px-2 py-1 text-[11px]", away.length ? "border-[#E8C7C7]" : "border-line")}>
+                        <span key={a.id} className={cn("flex items-center gap-1.5 rounded-full border bg-card px-2 py-1 text-[11px]", away.length ? "border-blush" : "border-line")}>
                           <span className="font-bold text-brand">{a.room.name}</span>
                           <span className="font-semibold text-ink">{a.staff.nickname}</span>
-                          {away.length > 0 && <span className="text-[10px] font-bold text-[#C0392B]">외출 {away[0].startTime}~{away[0].endTime}</span>}
+                          {away.length > 0 && <span className="text-[10px] font-bold text-bad">외출 {away[0].startTime}~{away[0].endTime}</span>}
                         </span>
                       );
                     })}
@@ -155,7 +155,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
         )}
 
         {todayOffs.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl bg-[#FDECEC] px-4 py-3 text-[12px] text-[#C0392B]">
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl bg-bad-bg px-4 py-3 text-[12px] text-bad">
             <Chip tone="red">자리 비움</Chip>
             {todayOffs.map((o) => (
               <span key={o.id}>
@@ -178,7 +178,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
             { k: "예정(확정)", h: bookedHours - doneHours, v: revenueBooked - revenueDone, tone: "text-mute" },
             { k: "합계", h: bookedHours, v: revenueBooked, tone: "text-brand" },
           ].map((x) => (
-            <div key={x.k} className="rounded-2xl bg-[#FAF6F7] px-4 py-3">
+            <div key={x.k} className="rounded-2xl bg-well px-4 py-3">
               <div className="text-[11px] text-mute">{x.k} · {x.h}시간</div>
               <div className={`mt-0.5 font-serif text-[18px] font-bold ${x.tone}`}>{won(x.v)}</div>
             </div>

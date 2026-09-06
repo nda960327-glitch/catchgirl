@@ -57,7 +57,7 @@ export function RoomsManager({ slug, items }: { slug: string; items: RoomItem[] 
       <div className="mt-4 flex flex-wrap gap-2">
         {rows.length === 0 && <div className="w-full rounded-2xl border border-dashed border-line px-4 py-5 text-center text-[12px] text-mute">아직 룸이 없어요</div>}
         {rows.map((r) => (
-          <div key={r.id} className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3 py-2">
+          <div key={r.id} className="flex items-center gap-2 rounded-2xl border border-line bg-card px-3 py-2">
             <Input value={r.name} onChange={(e) => set(r.id, { name: e.target.value })} className="h-9 w-[110px] text-[13px]" />
             <label className="flex items-center gap-1 text-[11px] font-semibold text-mute">
               <input type="checkbox" checked={r.isActive} onChange={(e) => set(r.id, { isActive: e.target.checked })} className="h-3.5 w-3.5 accent-[#B4586A]" />
@@ -65,7 +65,7 @@ export function RoomsManager({ slug, items }: { slug: string; items: RoomItem[] 
             </label>
             {!r.isActive && <Chip tone="mute">미사용</Chip>}
             <Button size="sm" onClick={() => save(r)} loading={pending}>저장</Button>
-            <button onClick={() => remove(r)} disabled={pending} className="text-[11px] font-bold text-mute hover:text-[#C0392B]">삭제</button>
+            <button onClick={() => remove(r)} disabled={pending} className="text-[11px] font-bold text-mute hover:text-bad">삭제</button>
           </div>
         ))}
       </div>

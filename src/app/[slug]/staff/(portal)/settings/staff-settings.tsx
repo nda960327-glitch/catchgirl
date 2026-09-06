@@ -105,7 +105,7 @@ export function StaffSettings({
                     onClick={() => toggleSlot(wd, shift)}
                     className={cn(
                       "h-11 rounded-xl text-[11px] font-bold transition-colors",
-                      on ? "bg-brand text-white" : "border border-line bg-white text-mute hover:border-brand",
+                      on ? "bg-brand text-white" : "border border-line bg-card text-mute hover:border-brand",
                     )}
                   >
                     {on ? "가능" : "—"}
@@ -139,10 +139,10 @@ export function StaffSettings({
                 onClick={() => saveOptions(on ? optIds.filter((x) => x !== o.id) : [...optIds, o.id])}
                 className={cn(
                   "flex h-12 items-center gap-3 rounded-2xl border px-4 text-[13px] transition-all active:scale-[.99]",
-                  on ? "border-brand bg-blush-lt" : "border-line bg-white",
+                  on ? "border-brand bg-blush-lt" : "border-line bg-card",
                 )}
               >
-                <span className={cn("flex h-5 w-5 items-center justify-center rounded-md border text-[11px]", on ? "border-brand bg-brand text-white" : "border-line bg-white text-transparent")}>✓</span>
+                <span className={cn("flex h-5 w-5 items-center justify-center rounded-md border text-[11px]", on ? "border-brand bg-brand text-white" : "border-line bg-card text-transparent")}>✓</span>
                 <span className={cn("font-semibold", on ? "text-brand" : "text-ink")}>{o.name}</span>
                 <span className="ml-auto text-mute">+{won(o.price)}</span>
               </button>
@@ -179,14 +179,14 @@ export function StaffSettings({
         <div className="mt-3 flex flex-col gap-2">
           {timeOffs.length === 0 && <div className="rounded-2xl border border-dashed border-line px-4 py-5 text-center text-[12px] text-mute">예정된 자리 비움이 없어요</div>}
           {timeOffs.map((t) => (
-            <div key={t.id} className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3.5 py-2.5 text-[12px]">
+            <div key={t.id} className="flex items-center gap-2 rounded-2xl border border-line bg-card px-3.5 py-2.5 text-[12px]">
               <span className="font-semibold text-ink">{format(toLocalDate(t.date, "00:00"), "M월 d일 (EEE)", { locale: ko })}</span>
               <span className="text-brand">{t.startTime}~{t.endTime}</span>
               {t.reason && <span className="truncate text-mute">{t.reason}</span>}
               {t.createdBy === "ADMIN" ? (
                 <Chip tone="mute" className="ml-auto">매장 등록</Chip>
               ) : (
-                <button onClick={() => removeOff(t)} disabled={pending} className="ml-auto text-[11px] font-bold text-mute hover:text-[#C0392B]">삭제</button>
+                <button onClick={() => removeOff(t)} disabled={pending} className="ml-auto text-[11px] font-bold text-mute hover:text-bad">삭제</button>
               )}
             </div>
           ))}

@@ -62,7 +62,7 @@ export function PromotionsManager({ slug, today, items }: { slug: string; today:
               <button
                 key={p.name}
                 onClick={() => setForm({ ...form, name: p.name, amount: p.amount })}
-                className="rounded-full border border-line bg-white px-3 py-1.5 text-[11px] font-bold text-mute hover:border-brand hover:text-brand"
+                className="rounded-full border border-line bg-card px-3 py-1.5 text-[11px] font-bold text-mute hover:border-brand hover:text-brand"
               >
                 {p.name} {won(p.amount)}
               </button>
@@ -96,7 +96,7 @@ export function PromotionsManager({ slug, today, items }: { slug: string; today:
       <div className="mt-4 flex flex-col gap-2">
         {items.length === 0 && <div className="rounded-2xl border border-dashed border-line px-4 py-5 text-center text-[12px] text-mute">걸어 둔 할인이 없어요</div>}
         {items.map((p) => (
-          <div key={p.id} className={cn("flex flex-wrap items-center gap-2 rounded-2xl border px-4 py-3", running(p) ? "border-brand/40 bg-blush-lt/40" : "border-line bg-white")}>
+          <div key={p.id} className={cn("flex flex-wrap items-center gap-2 rounded-2xl border px-4 py-3", running(p) ? "border-brand/40 bg-blush-lt/40" : "border-line bg-card")}>
             {running(p) ? <Chip>진행 중</Chip> : !p.isActive ? <Chip tone="mute">꺼짐</Chip> : <Chip tone="mute">대기</Chip>}
             <span className="text-[13px] font-bold text-ink">{p.name}</span>
             <span className="text-[13px] font-bold text-brand">{won(p.amount)}</span>
@@ -105,7 +105,7 @@ export function PromotionsManager({ slug, today, items }: { slug: string; today:
             </span>
             <div className="ml-auto flex gap-1.5">
               <Button size="sm" variant="outline" onClick={() => { setForm(p); setOpen(true); }}>수정</Button>
-              <button onClick={() => remove(p)} disabled={pending} className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-bold text-mute hover:text-[#C0392B]">삭제</button>
+              <button onClick={() => remove(p)} disabled={pending} className="rounded-lg border border-line bg-card px-2.5 py-1.5 text-[11px] font-bold text-mute hover:text-bad">삭제</button>
             </div>
           </div>
         ))}

@@ -119,9 +119,9 @@ export default async function StaffEarningsPage({
           <div className="mt-0.5 text-[11px] text-mute">{me.nickname} · 매장 수수료(시간당 {won(STORE_FEE_PER_HOUR)})를 뺀 금액이에요</div>
         </div>
         <div className="flex items-center gap-1.5">
-          <Link href={`?month=${format(addMonths(mStart, -1), "yyyy-MM")}`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink">‹ 이전</Link>
-          {!isThisMonth && <Link href={`/${slug}/staff/earnings`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-brand">이번 달</Link>}
-          <Link href={`?month=${format(addMonths(mStart, 1), "yyyy-MM")}`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink">다음 ›</Link>
+          <Link href={`?month=${format(addMonths(mStart, -1), "yyyy-MM")}`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink">‹ 이전</Link>
+          {!isThisMonth && <Link href={`/${slug}/staff/earnings`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-brand">이번 달</Link>}
+          <Link href={`?month=${format(addMonths(mStart, 1), "yyyy-MM")}`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink">다음 ›</Link>
         </div>
       </div>
 
@@ -133,7 +133,7 @@ export default async function StaffEarningsPage({
           <div className="mt-1 text-[10px] text-mute">매출 {wonShort(grossRevenue)} · {earning.length}건 {hours}시간</div>
           <div className="mt-0.5 text-[11px] text-mute">
             {diffPct === null ? "지난달 기록 없음" : (
-              <span className={diff >= 0 ? "text-[#2E8B57]" : "text-[#C0392B]"}>
+              <span className={diff >= 0 ? "text-ok" : "text-bad"}>
                 지난달 대비 {diff >= 0 ? "▲" : "▼"} {Math.abs(diffPct)}%
               </span>
             )}
@@ -158,9 +158,9 @@ export default async function StaffEarningsPage({
           {[
             { k: format(prevStart, "M월", { locale: ko }), v: wonShort(lastRevenue), s: `${lastHours}시간`, tone: "text-mute" },
             { k: format(mStart, "M월", { locale: ko }), v: wonShort(revenue), s: `${hours}시간`, tone: "text-brand" },
-            { k: "차이", v: `${diff >= 0 ? "+" : "−"}${wonShort(Math.abs(diff))}`, s: diffPct === null ? "—" : `${diff >= 0 ? "+" : "−"}${Math.abs(diffPct)}%`, tone: diff >= 0 ? "text-[#2E8B57]" : "text-[#C0392B]" },
+            { k: "차이", v: `${diff >= 0 ? "+" : "−"}${wonShort(Math.abs(diff))}`, s: diffPct === null ? "—" : `${diff >= 0 ? "+" : "−"}${Math.abs(diffPct)}%`, tone: diff >= 0 ? "text-ok" : "text-bad" },
           ].map((x) => (
-            <div key={x.k} className="rounded-2xl bg-[#FAF6F7] px-2 py-3">
+            <div key={x.k} className="rounded-2xl bg-well px-2 py-3">
               <div className="text-[10px] text-mute">{x.k}</div>
               <div className={cn("mt-0.5 font-serif text-[16px] font-bold", x.tone)}>{x.v}</div>
               <div className="text-[10px] text-mute">{x.s}</div>

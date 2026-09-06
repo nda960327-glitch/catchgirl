@@ -68,7 +68,7 @@ export default async function BartenderDetail({ params }: { params: Promise<{ sl
         favorited={!!fav}
         votes={{ up: countOf("UP"), down: countOf("DOWN"), my: (myVote?.value as "UP" | "DOWN" | undefined) ?? null }}
       />
-      <div className="sticky bottom-0 border-t border-line bg-white/95 p-4 backdrop-blur">
+      <div className="sticky bottom-0 border-t border-line bg-card/95 p-4 backdrop-blur">
         <Link href={`/${slug}/book/${staff.id}`} className="cta-grad flex h-[54px] w-full items-center justify-center rounded-2xl text-[15px] font-bold text-white shadow-cta">
           {staff.nickname} 예약하기
         </Link>

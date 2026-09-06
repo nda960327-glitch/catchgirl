@@ -151,9 +151,9 @@ export default async function RevenuePage({
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          <Link href={`?month=${prev}`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink">‹ 이전</Link>
-          {!isThisMonth && <Link href={`/${slug}/admin/revenue`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-brand">이번 달</Link>}
-          <Link href={`?month=${next}`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink">다음 ›</Link>
+          <Link href={`?month=${prev}`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink">‹ 이전</Link>
+          {!isThisMonth && <Link href={`/${slug}/admin/revenue`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-brand">이번 달</Link>}
+          <Link href={`?month=${next}`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink">다음 ›</Link>
         </div>
       </div>
 
@@ -169,7 +169,7 @@ export default async function RevenuePage({
       </div>
 
       {noshowLoss > 0 && (
-        <div className="mt-3 flex items-center gap-2 rounded-2xl bg-[#FDECEC] px-4 py-3 text-[12px] text-[#C0392B]">
+        <div className="mt-3 flex items-center gap-2 rounded-2xl bg-bad-bg px-4 py-3 text-[12px] text-bad">
           <Chip tone="red">노쇼</Chip>
           노쇼로 놓친 매출 <b>{won(noshowLoss)}</b> — 매출에는 넣지 않았어요.
         </div>
@@ -198,7 +198,7 @@ export default async function RevenuePage({
                 href={`/${slug}/admin/reservations?view=list&date=${k}`}
                 className={cn(
                   "flex min-h-[74px] flex-col rounded-xl border p-1.5 text-left transition-colors hover:border-brand",
-                  inMonth ? "border-line bg-white" : "border-transparent bg-transparent opacity-35",
+                  inMonth ? "border-line bg-card" : "border-transparent bg-transparent opacity-35",
                   isToday && "border-brand",
                 )}
                 style={v && inMonth ? { background: `rgb(var(--brand-rgb) / ${0.06 + heat * 0.26})` } : undefined}
@@ -284,7 +284,7 @@ export default async function RevenuePage({
               {byWeekday.map((d, i) => (
                 <div key={d.label} className="flex items-center gap-2 text-[12px]">
                   <span className={cn("w-5 font-semibold", i === 0 ? "text-brand" : "text-mute")}>{d.label}</span>
-                  <span className="block h-4 flex-1 overflow-hidden rounded bg-[#F4EDEE]">
+                  <span className="block h-4 flex-1 overflow-hidden rounded bg-well-2">
                     <span className="block h-full rounded bg-brand/70" style={{ width: `${(d.hours / peakWeekday) * 100}%` }} />
                   </span>
                   <span className="w-[70px] text-right font-semibold text-ink">{wonShort(fee(d.hours))}</span>
@@ -330,7 +330,7 @@ export default async function RevenuePage({
               <a
                 key={t}
                 href={`/${slug}/admin/export/${t}?month=${format(mStart, "yyyy-MM")}`}
-                className="rounded-2xl border border-line bg-white px-4 py-2.5 transition-colors hover:border-brand"
+                className="rounded-2xl border border-line bg-card px-4 py-2.5 transition-colors hover:border-brand"
               >
                 <span className="block text-[12px] font-bold text-ink">{label} ↓</span>
                 <span className="block text-[10px] text-mute">{hint}</span>
@@ -338,7 +338,7 @@ export default async function RevenuePage({
             ))}
           </div>
         ) : (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl bg-[#FAF6F7] px-4 py-3">
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl bg-well px-4 py-3">
             <span className="text-[11px] text-mute">Max 요금제로 올리시면 예약 내역·캐치걸 정산·고객 명단을 CSV 로 내려받으실 수 있어요.</span>
             <Link href={`/${slug}/admin/plan`} className="text-[11px] font-bold text-brand underline-offset-2 hover:underline">요금제 보기 ›</Link>
           </div>

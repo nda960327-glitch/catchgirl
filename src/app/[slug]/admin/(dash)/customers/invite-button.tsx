@@ -35,7 +35,7 @@ export function InviteButton({ slug }: { slug: string }) {
               <br />앱 첫 화면 <b className="text-ink">&ldquo;처음이에요&rdquo;</b>에서 코드를 넣고
               <br />닉네임과 PIN을 정하면 시작됩니다.
             </p>
-            <div className="mt-3 rounded-2xl bg-[#FAF6F7] px-4 py-2.5 text-[11px] text-mute">고객 목록에서 이 코드로 찾을 수 있어요.</div>
+            <div className="mt-3 rounded-2xl bg-well px-4 py-2.5 text-[11px] text-mute">고객 목록에서 이 코드로 찾을 수 있어요.</div>
             <Button className="mt-4" onClick={() => setIssued(null)}>확인</Button>
           </div>
         </div>

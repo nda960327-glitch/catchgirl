@@ -28,7 +28,7 @@ export function PlanBadge({ plan, className }: { plan: string; className?: strin
     <span
       className={cn(
         "inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[.1em]",
-        p === "MAX" ? "bg-gold text-white" : "bg-ink text-white",
+        p === "MAX" ? "bg-gold text-white" : "bg-ink text-on-ink",
         className,
       )}
     >
@@ -43,7 +43,7 @@ export function AdminNav({ slug, storeName, logoUrl, adminName, plan }: { slug: 
   return (
     <>
       {/* 데스크톱 사이드바 */}
-      <aside className="sticky top-0 hidden h-dvh w-[220px] shrink-0 flex-col border-r border-line bg-white/80 px-4 py-6 backdrop-blur md:flex">
+      <aside className="sticky top-0 hidden h-dvh w-[220px] shrink-0 flex-col border-r border-line bg-card/80 px-4 py-6 backdrop-blur md:flex">
         <Link href={`/${slug}`} className="flex items-center gap-2.5 px-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {logoUrl ? <img src={logoUrl} alt="" className="h-9 w-9 rounded-xl" /> : <span className="h-9 w-9 rounded-xl bg-blush-lt" />}
@@ -80,7 +80,7 @@ export function AdminNav({ slug, storeName, logoUrl, adminName, plan }: { slug: 
         </div>
       </aside>
       {/* 모바일 상단 탭 */}
-      <div className="fixed inset-x-0 top-0 z-30 flex overflow-x-auto border-b border-line bg-white/95 px-2 backdrop-blur md:hidden">
+      <div className="fixed inset-x-0 top-0 z-30 flex overflow-x-auto border-b border-line bg-card/95 px-2 backdrop-blur md:hidden">
         {NAV.map((n) => {
           const href = base + n.href;
           const on = n.href === "" ? path === base : path.startsWith(href);

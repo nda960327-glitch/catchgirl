@@ -87,12 +87,12 @@ export default async function CollectPage({
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          <Link href={`?date=${shift(date, -1)}`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-mute hover:border-brand">‹</Link>
-          <span className="rounded-xl bg-white px-3 py-2 text-[12px] font-bold text-ink shadow-card">
+          <Link href={`?date=${shift(date, -1)}`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-mute hover:border-brand">‹</Link>
+          <span className="rounded-xl bg-card px-3 py-2 text-[12px] font-bold text-ink shadow-card">
             {format(new Date(`${date}T00:00:00`), "M월 d일 (E)", { locale: ko })}
             {date === today && <span className="ml-1 text-brand">오늘</span>}
           </span>
-          <Link href={`?date=${shift(date, 1)}`} className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-mute hover:border-brand">›</Link>
+          <Link href={`?date=${shift(date, 1)}`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-mute hover:border-brand">›</Link>
         </div>
       </div>
 

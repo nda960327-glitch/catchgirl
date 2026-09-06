@@ -70,11 +70,11 @@ export default async function CustomersPage({ params, searchParams }: { params: 
       <Card className="mt-5 flex flex-wrap items-center gap-2 p-3">
         <span className="px-1 text-[11px] font-semibold text-mute">정렬</span>
         {SORTS.map(([k, l]) => (
-          <Link key={k} href={qs({ sort: k })} className={cn("rounded-full px-3 py-1.5 text-[11px] font-bold", sort === k ? "bg-brand text-white" : "bg-[#F4EDEE] text-mute")}>{l}</Link>
+          <Link key={k} href={qs({ sort: k })} className={cn("rounded-full px-3 py-1.5 text-[11px] font-bold", sort === k ? "bg-brand text-white" : "bg-well-2 text-mute")}>{l}</Link>
         ))}
         <span className="ml-3 px-1 text-[11px] font-semibold text-mute">필터</span>
         {FILTERS.map(([k, l]) => (
-          <Link key={k} href={qs({ filter: k })} className={cn("rounded-full px-3 py-1.5 text-[11px] font-bold", filter === k ? "bg-ink text-white" : "bg-[#F4EDEE] text-mute")}>{l}</Link>
+          <Link key={k} href={qs({ filter: k })} className={cn("rounded-full px-3 py-1.5 text-[11px] font-bold", filter === k ? "bg-ink text-on-ink" : "bg-well-2 text-mute")}>{l}</Link>
         ))}
         <form className="ml-auto" action="">
           <input type="hidden" name="sort" value={sort} />
@@ -84,7 +84,7 @@ export default async function CustomersPage({ params, searchParams }: { params: 
       </Card>
 
       <Card className="mt-3 overflow-hidden">
-        <div className="hidden grid-cols-[1.3fr_130px_90px_100px_90px_110px_80px_80px_90px_1fr] gap-2 border-b border-line bg-[#FAF6F7] px-4 py-2.5 text-[11px] font-semibold text-mute md:grid">
+        <div className="hidden grid-cols-[1.3fr_130px_90px_100px_90px_110px_80px_80px_90px_1fr] gap-2 border-b border-line bg-well px-4 py-2.5 text-[11px] font-semibold text-mute md:grid">
           <span>고객</span><span>연락처·텔레</span><span>등급</span><span className="text-right">누적 지출</span><span>방문 횟수</span><span>최근 방문일</span><span>취소</span><span>노쇼</span><span>재방문 수</span><span>주 지정 캐치걸</span>
         </div>
         {rows.length === 0 && <div className="py-10 text-center text-[12px] text-mute">조건에 맞는 고객이 없어요</div>}
@@ -113,7 +113,7 @@ export default async function CustomersPage({ params, searchParams }: { params: 
             <div className="text-ink"><span className="md:hidden text-mute">방문 </span>{s.visitCount}회</div>
             <div className="text-mute">{s.lastVisitAt ? format(s.lastVisitAt, "yyyy.MM.dd") : "—"}</div>
             <div className="text-mute"><span className="md:hidden">취소 </span>{s.cancelCount}</div>
-            <div className={cn(s.noshowCount > 0 ? "font-bold text-[#C0392B]" : "text-mute")}><span className="md:hidden">노쇼 </span>{s.noshowCount}</div>
+            <div className={cn(s.noshowCount > 0 ? "font-bold text-bad" : "text-mute")}><span className="md:hidden">노쇼 </span>{s.noshowCount}</div>
             <div className="font-semibold text-brand"><span className="md:hidden text-mute">재방문 </span>{s.revisitCount}</div>
             <div className="text-ink">{s.mainStaffName ?? "—"}</div>
           </Link>
@@ -125,7 +125,7 @@ export default async function CustomersPage({ params, searchParams }: { params: 
             <Link
               key={n}
               href={qs({ page: n === 1 ? undefined : String(n) })}
-              className={cn("min-w-[36px] rounded-xl px-2.5 py-2 text-center text-[12px] font-bold transition-colors", n === Math.min(page, pageCount) ? "bg-brand text-white" : "border border-line bg-white text-mute hover:border-brand")}
+              className={cn("min-w-[36px] rounded-xl px-2.5 py-2 text-center text-[12px] font-bold transition-colors", n === Math.min(page, pageCount) ? "bg-brand text-white" : "border border-line bg-card text-mute hover:border-brand")}
             >
               {n}
             </Link>

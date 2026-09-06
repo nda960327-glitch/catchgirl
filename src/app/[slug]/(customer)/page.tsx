@@ -40,7 +40,7 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
         <div className="flex items-center gap-2">
           {store.logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={store.logoUrl} alt={store.name} className="h-8 w-8 rounded-[10px] border border-white shadow-card" />
+            <img src={store.logoUrl} alt={store.name} className="h-8 w-8 rounded-[10px] border border-card shadow-card" />
           )}
           <Eyebrow>{store.name}</Eyebrow>
           <Chip tone={closed ? "mute" : "green"} className="ml-auto">
@@ -87,7 +87,7 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
                 key={n.id}
                 className={cn(
                   "rounded-[20px] border px-[18px] py-4",
-                  n.isPinned ? "border-brand/30 bg-blush-lt/60" : "border-line bg-white",
+                  n.isPinned ? "border-brand/30 bg-blush-lt/60" : "border-line bg-card",
                 )}
               >
                 <div className="flex items-start gap-2">

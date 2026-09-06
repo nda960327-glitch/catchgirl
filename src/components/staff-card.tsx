@@ -20,16 +20,16 @@ export function StaffCard({ s, href }: { s: StaffSummary; href: string }) {
 
           {/* 고를 때 실제로 보는 값들 — 목록에서도 바로 비교할 수 있게 한 줄로 */}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px]">
-            {s.heightCm && <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-ink">{s.heightCm}cm</span>}
-            {s.weightKg && <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-ink">{s.weightKg}kg</span>}
+            {s.heightCm && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{s.heightCm}cm</span>}
+            {s.weightKg && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{s.weightKg}kg</span>}
             {s.bustSize && (
-              <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-ink">
+              <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">
                 {s.bustSize}컵{s.bustNatural && <span className="text-brand"> 자연</span>}
               </span>
             )}
-            {!s.smoker && <span className="rounded-md bg-[#E8F6EE] px-1.5 py-0.5 font-semibold text-[#2E8B57]">비흡연</span>}
-            {!s.tattoo && <span className="rounded-md bg-[#E8F6EE] px-1.5 py-0.5 font-semibold text-[#2E8B57]">문신 없음</span>}
-            {s.tattoo && <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-mute">문신 {s.tattooNote || "있음"}</span>}
+            {!s.smoker && <span className="rounded-md bg-ok-bg px-1.5 py-0.5 font-semibold text-ok">비흡연</span>}
+            {!s.tattoo && <span className="rounded-md bg-ok-bg px-1.5 py-0.5 font-semibold text-ok">문신 없음</span>}
+            {s.tattoo && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-mute">문신 {s.tattooNote || "있음"}</span>}
             {s.optionNames.map((n) => (
               <span key={n} className="rounded-md bg-blush-lt px-1.5 py-0.5 font-semibold text-brand">{n}</span>
             ))}
@@ -43,7 +43,7 @@ export function StaffCard({ s, href }: { s: StaffSummary; href: string }) {
           <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1">
             {/* 지금 되는 사람은 배지 두 개, 오늘만 되는 사람은 '오늘' 하나 */}
             {s.availableNow && (
-              <span className="rounded-full bg-[#E8F6EE] px-2 py-[3px] text-[10px] font-bold text-[#2E8B57]">● 지금 예약 가능</span>
+              <span className="rounded-full bg-ok-bg px-2 py-[3px] text-[10px] font-bold text-ok">● 지금 예약 가능</span>
             )}
             {s.remainingHoursToday > 0 && (
               <span className="rounded-full bg-blush-lt px-2 py-[3px] text-[10px] font-bold text-brand">오늘 예약 가능</span>

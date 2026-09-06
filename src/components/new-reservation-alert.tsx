@@ -92,7 +92,7 @@ export function NewReservationAlert({ slug }: { slug: string }) {
         aria-label={n > 0 ? `새 예약 ${n}건` : "새 예약 없음"}
         className={cn(
           "relative flex h-9 items-center gap-1.5 rounded-xl border px-3 text-[12px] font-bold transition-colors",
-          n > 0 ? "border-brand bg-brand text-white shadow-cta" : "border-line bg-white text-mute hover:border-brand",
+          n > 0 ? "border-brand bg-brand text-white shadow-cta" : "border-line bg-card text-mute hover:border-brand",
         )}
       >
         <span aria-hidden>♪</span>
@@ -104,7 +104,7 @@ export function NewReservationAlert({ slug }: { slug: string }) {
           <div className="max-h-[70dvh] w-full max-w-md overflow-y-auto rounded-[24px] bg-paper p-5 shadow-pop" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <span className="font-serif text-[16px] font-bold text-ink">새 예약 {n}건</span>
-              <button onClick={() => setOpen(false)} className="h-7 w-7 rounded-full border border-line bg-white text-mute">✕</button>
+              <button onClick={() => setOpen(false)} className="h-7 w-7 rounded-full border border-line bg-card text-mute">✕</button>
             </div>
 
             {canNotify === "default" && (
@@ -115,7 +115,7 @@ export function NewReservationAlert({ slug }: { slug: string }) {
               </button>
             )}
             {canNotify === "denied" && (
-              <div className="mt-3 rounded-2xl bg-[#FAF6F7] px-4 py-2.5 text-[11px] leading-[1.7] text-mute">
+              <div className="mt-3 rounded-2xl bg-well px-4 py-2.5 text-[11px] leading-[1.7] text-mute">
                 브라우저에서 알림이 막혀 있어요. 주소창 옆 자물쇠에서 알림을 허용하시면 화면 밖에서도 알려드려요.
               </div>
             )}
@@ -123,7 +123,7 @@ export function NewReservationAlert({ slug }: { slug: string }) {
             <div className="mt-3 flex flex-col gap-2">
               {n === 0 && <div className="rounded-2xl border border-dashed border-line py-8 text-center text-[12px] text-mute">확인하지 않은 예약이 없어요</div>}
               {items.map((i) => (
-                <div key={i.id} className="rounded-2xl border border-line bg-white px-4 py-3 text-[12px]">
+                <div key={i.id} className="rounded-2xl border border-line bg-card px-4 py-3 text-[12px]">
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-ink">{i.customer}</span>
                     <span className="text-mute">· {i.staff}</span>
@@ -142,7 +142,7 @@ export function NewReservationAlert({ slug }: { slug: string }) {
               </button>
               <button
                 onClick={() => { setOpen(false); router.push(`/${slug}/admin/reservations`); }}
-                className="rounded-2xl border border-line bg-white px-4 py-3 text-[13px] font-bold text-ink"
+                className="rounded-2xl border border-line bg-card px-4 py-3 text-[13px] font-bold text-ink"
               >
                 예약 관리
               </button>

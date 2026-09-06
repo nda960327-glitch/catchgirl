@@ -23,7 +23,7 @@ export function PlatformLoginForm() {
       <Field label="비밀번호">
         <Input name="password" type="password" autoFocus className="h-11" />
       </Field>
-      {error && <div className="text-[12px] font-semibold text-[#C0392B]">{error}</div>}
+      {error && <div className="text-[12px] font-semibold text-bad">{error}</div>}
       <Button type="submit" loading={pending}>들어가기</Button>
     </form>
   );

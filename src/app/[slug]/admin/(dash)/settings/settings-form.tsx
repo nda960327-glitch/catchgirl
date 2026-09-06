@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { uploadImages } from "@/lib/image-client";
-import { cn, themeVars, WEEKDAYS_KO } from "@/lib/utils";
+import { cn, WEEKDAYS_KO } from "@/lib/utils";
+import { THEMES, themeStyle, type ThemeKey } from "@/lib/themes";
 import { saveStoreSettings, triggerReminders } from "../../actions";
 
-type Init = { name: string; tagline: string; heroTitle: string; logoUrl: string | null; coverUrl: string | null; themeColor: string; openTime: string; closeTime: string; shiftSplitTime: string; slotMinutes: number; closedDays: number[]; cancelDeadlineHours: number; maxAdvanceDays: number; noshowPolicy: string; contactPhone: string; contactTelegram: string };
+type Init = { name: string; tagline: string; heroTitle: string; logoUrl: string | null; coverUrl: string | null; themeColor: string; openTime: string; closeTime: string; shiftSplitTime: string; slotMinutes: number; closedDays: number[]; cancelDeadlineHours: number; maxAdvanceDays: number; noshowPolicy: string; contactPhone: string; contactTelegram: string; theme: ThemeKey };
 
 const PRESETS = ["#B4586A", "#C8A46A", "#5B6C8F", "#3E7C6A", "#8A5BB5", "#C4642F", "#1F1F24"];
 
@@ -71,12 +72,33 @@ export function SettingsForm({ slug, init }: { slug: string; init: Init }) {
                 <input ref={coverRef} type="file" accept="image/*" hidden onChange={(e) => upload("cover", e.target.files)} />
               </div>
             </Field>
+            <Field label="화면 테마" hint="어두운 테마도 있어요 · 메인 컬러는 따로 고를 수 있어요">
+              <div className="grid grid-cols-5 gap-1.5">
+                {(Object.keys(THEMES) as ThemeKey[]).map((k) => {
+                  const t = THEMES[k];
+                  const on = f.theme === k;
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setF({ ...f, theme: k, themeColor: t.brand })}
+                      aria-pressed={on}
+                      title={t.desc}
+                      className={cn("overflow-hidden rounded-xl border-2 text-left transition-colors", on ? "border-brand" : "border-line hover:border-mute")}
+                    >
+                      <span className="block h-9 w-full" style={{ background: `linear-gradient(135deg, ${t.paper} 55%, ${t.brand} 55%)` }} />
+                      <span className="block px-1.5 py-1 text-[10px] font-bold" style={{ background: t.card, color: t.ink }}>{t.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
             <Field label="메인 컬러">
               <div className="flex flex-wrap items-center gap-2">
                 {PRESETS.map((c) => (
-                  <button key={c} onClick={() => setF({ ...f, themeColor: c })} className={cn("h-8 w-8 rounded-full border-2", f.themeColor.toLowerCase() === c.toLowerCase() ? "border-ink" : "border-white")} style={{ background: c }} aria-label={c} />
+                  <button key={c} onClick={() => setF({ ...f, themeColor: c })} className={cn("h-8 w-8 rounded-full border-2", f.themeColor.toLowerCase() === c.toLowerCase() ? "border-ink" : "border-card")} style={{ background: c }} aria-label={c} />
                 ))}
-                <input type="color" value={f.themeColor} onChange={(e) => setF({ ...f, themeColor: e.target.value })} className="h-8 w-10 cursor-pointer rounded-lg border border-line bg-white" />
+                <input type="color" value={f.themeColor} onChange={(e) => setF({ ...f, themeColor: e.target.value })} className="h-8 w-10 cursor-pointer rounded-lg border border-line bg-card" />
                 <Input value={f.themeColor} onChange={(e) => setF({ ...f, themeColor: e.target.value })} className="h-9 w-[110px] text-[12px]" />
               </div>
             </Field>
@@ -99,7 +121,7 @@ export function SettingsForm({ slug, init }: { slug: string; init: Init }) {
               <div className="flex gap-1">
                 {WEEKDAYS_KO.map((d, wd) => {
                   const on = f.closedDays.includes(wd);
-                  return <button key={d} onClick={() => setF({ ...f, closedDays: on ? f.closedDays.filter((x) => x !== wd) : [...f.closedDays, wd].sort() })} className={cn("h-9 flex-1 rounded-lg text-[12px] font-bold", on ? "bg-ink text-white" : "border border-line bg-white text-mute")}>{d}</button>;
+                  return <button key={d} onClick={() => setF({ ...f, closedDays: on ? f.closedDays.filter((x) => x !== wd) : [...f.closedDays, wd].sort() })} className={cn("h-9 flex-1 rounded-lg text-[12px] font-bold", on ? "bg-ink text-on-ink" : "border border-line bg-card text-mute")}>{d}</button>;
                 })}
               </div>
             </Field>
@@ -143,8 +165,8 @@ export function SettingsForm({ slug, init }: { slug: string; init: Init }) {
             </Field>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <span className="rounded-xl bg-[#FFF6E6] px-3 py-2 text-[12px] font-bold text-[#8A6A20]">주간 {f.openTime} ~ {f.shiftSplitTime}</span>
-            <span className="rounded-xl bg-[#EEF1FB] px-3 py-2 text-[12px] font-bold text-[#3D4E8C]">야간 {f.shiftSplitTime} ~ {f.closeTime < f.openTime ? "익일 " : ""}{f.closeTime}</span>
+            <span className="rounded-xl bg-day-bg px-3 py-2 text-[12px] font-bold text-day">주간 {f.openTime} ~ {f.shiftSplitTime}</span>
+            <span className="rounded-xl bg-night-bg px-3 py-2 text-[12px] font-bold text-night">야간 {f.shiftSplitTime} ~ {f.closeTime < f.openTime ? "익일 " : ""}{f.closeTime}</span>
           </div>
         </Card>
 
@@ -160,18 +182,18 @@ export function SettingsForm({ slug, init }: { slug: string; init: Init }) {
       {/* 라이브 프리뷰 */}
       <div className="xl:sticky xl:top-6 xl:self-start">
         <div className="mb-2 text-[11px] font-semibold text-mute">고객 화면 미리보기</div>
-        <div style={themeVars(f.themeColor) as React.CSSProperties} className="overflow-hidden rounded-[28px] border-[5px] border-white bg-paper shadow-pop">
+        <div style={themeStyle(f.theme, f.themeColor) as React.CSSProperties} className="overflow-hidden rounded-[28px] border-[5px] border-card bg-paper text-ink shadow-pop">
           <div className="hero-grad relative overflow-hidden px-5 pb-7 pt-7">
             <div className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {f.logoUrl && <img src={f.logoUrl} alt="" className="h-7 w-7 rounded-lg border border-white" />}
+              {f.logoUrl && <img src={f.logoUrl} alt="" className="h-7 w-7 rounded-lg border border-card" />}
               <span className="text-[10px] font-semibold uppercase tracking-[.2em] text-gold">{f.name || "매장명"}</span>
             </div>
             <div className="mt-3 font-serif text-[20px] font-bold leading-[1.5] text-ink">오늘 자리를 지키는<br />세 사람</div>
             <div className="mt-2 text-[11px] text-mute">{f.tagline || "태그라인"} · {f.openTime} 오픈</div>
           </div>
           <div className="p-4">
-            <div className="flex items-center gap-3 rounded-[20px] border border-line bg-white p-3">
+            <div className="flex items-center gap-3 rounded-[20px] border border-line bg-card p-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blush-lt font-serif font-bold text-brand">준</div>
               <div className="flex-1">
                 <div className="flex items-center gap-2"><span className="font-serif text-[15px] font-bold text-ink">준희</span><span className="rounded-full bg-blush-lt px-2 py-0.5 text-[9px] font-bold text-brand">★ 4.9</span></div>

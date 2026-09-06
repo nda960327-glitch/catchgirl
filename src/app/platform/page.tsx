@@ -38,7 +38,7 @@ export default async function PlatformPage() {
             </div>
           </div>
           <form action={logoutPlatform}>
-            <button className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-mute">나가기</button>
+            <button className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-mute">나가기</button>
           </form>
         </div>
 
@@ -65,11 +65,11 @@ export default async function PlatformPage() {
                       </div>
                     </div>
                     <div className="ml-auto flex gap-1.5">
-                      <Link href={`/${s.slug}/admin/login`} target="_blank" className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink">관리자 ↗</Link>
-                      <Link href={`/${s.slug}/login`} target="_blank" className="rounded-xl border border-line bg-white px-3 py-2 text-[12px] font-bold text-ink">손님 ↗</Link>
+                      <Link href={`/${s.slug}/admin/login`} target="_blank" className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink">관리자 ↗</Link>
+                      <Link href={`/${s.slug}/login`} target="_blank" className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink">손님 ↗</Link>
                     </div>
                   </div>
-                  <div className="mt-3 grid grid-cols-4 gap-2 rounded-2xl bg-[#FAF6F7] p-3 text-center">
+                  <div className="mt-3 grid grid-cols-4 gap-2 rounded-2xl bg-well p-3 text-center">
                     {[
                       ["고객", s._count.customers],
                       ["캐치걸", s._count.staff],

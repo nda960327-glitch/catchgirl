@@ -27,9 +27,9 @@ function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             className={cn(
               "animate-fade max-w-sm rounded-2xl px-4 py-3 text-[13px] font-semibold shadow-pop backdrop-blur",
-              t.kind === "error" && "bg-[#3A2830] text-white",
+              t.kind === "error" && "bg-ink text-white",
               t.kind === "success" && "bg-brand text-white",
-              t.kind === "info" && "bg-white/95 text-ink border border-line",
+              t.kind === "info" && "bg-card/95 text-ink border border-line",
             )}
           >
             {t.message}

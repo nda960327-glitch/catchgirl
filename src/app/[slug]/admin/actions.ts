@@ -956,6 +956,7 @@ const storeSchema = z.object({
   noshowPolicy: z.string().trim().max(300).default(""),
   contactPhone: z.string().trim().max(30).default(""),
   contactTelegram: z.string().trim().max(40).default(""),
+  theme: z.enum(["rose", "cream", "noir", "wine", "midnight"]).default("rose"),
 });
 export async function saveStoreSettings(slug: string, input: z.input<typeof storeSchema>): Promise<R> {
   try {

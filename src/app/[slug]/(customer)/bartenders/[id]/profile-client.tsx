@@ -90,7 +90,7 @@ export function ProfileClient({
             onClick={onFav}
             disabled={pending}
             aria-label="찜하기"
-            className={cn("flex h-10 w-10 items-center justify-center rounded-full border text-[18px] transition-all active:scale-90", fav ? "border-brand bg-blush-lt text-brand" : "border-line bg-white text-blush")}
+            className={cn("flex h-10 w-10 items-center justify-center rounded-full border text-[18px] transition-all active:scale-90", fav ? "border-brand bg-blush-lt text-brand" : "border-line bg-card text-blush")}
           >
             {fav ? "♥" : "♡"}
           </button>
@@ -101,14 +101,14 @@ export function ProfileClient({
         {staff.facts.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {staff.facts.map((f) => (
-              <span key={f.label} className="rounded-xl border border-line bg-white px-2.5 py-1.5 text-[11px]">
+              <span key={f.label} className="rounded-xl border border-line bg-card px-2.5 py-1.5 text-[11px]">
                 <span className="text-mute">{f.label}</span> <span className="font-bold text-ink">{f.value}</span>
               </span>
             ))}
           </div>
         )}
 
-        <div className="mt-5 flex rounded-[20px] border border-line bg-white py-4">
+        <div className="mt-5 flex rounded-[20px] border border-line bg-card py-4">
           {[
             ["평점", stats.rating !== null ? stats.rating.toFixed(1) : "–"],
             ["후기", String(stats.reviewCount)],
@@ -129,7 +129,7 @@ export function ProfileClient({
             disabled={pending}
             className={cn(
               "flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border text-[13px] font-bold transition-all active:scale-[.97]",
-              vote.my === "UP" ? "border-brand bg-blush-lt text-brand" : "border-line bg-white text-mute",
+              vote.my === "UP" ? "border-brand bg-blush-lt text-brand" : "border-line bg-card text-mute",
             )}
           >
             👍 추천 <span className="font-serif">{vote.up}</span>
@@ -139,7 +139,7 @@ export function ProfileClient({
             disabled={pending}
             className={cn(
               "flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border text-[13px] font-bold transition-all active:scale-[.97]",
-              vote.my === "DOWN" ? "border-ink bg-[#F1ECED] text-ink" : "border-line bg-white text-mute",
+              vote.my === "DOWN" ? "border-ink bg-well-2 text-ink" : "border-line bg-card text-mute",
             )}
           >
             👎 비추천 <span className="font-serif">{vote.down}</span>
@@ -241,7 +241,7 @@ function CommentsTab({ slug, staffId, staffName, comments, loggedIn, requireLogi
 
   return (
     <div className="mt-4">
-      <div className="rounded-2xl border border-line bg-white p-3">
+      <div className="rounded-2xl border border-line bg-card p-3">
         {replyTo && (
           <div className="mb-2 flex items-center justify-between text-[11px] text-brand">
             <span>답글 작성 중</span>
@@ -276,7 +276,7 @@ function CommentsTab({ slug, staffId, staffName, comments, loggedIn, requireLogi
 function CommentRow({ c, onReply }: { c: CommentItem; onReply?: () => void }) {
   const isStaff = c.authorType !== "CUSTOMER";
   return (
-    <div className={cn("flex gap-2.5 rounded-2xl p-3", isStaff ? "bg-blush-lt" : "border border-line bg-white")}>
+    <div className={cn("flex gap-2.5 rounded-2xl p-3", isStaff ? "bg-blush-lt" : "border border-line bg-card")}>
       <Avatar name={c.authorName} size={30} rounded={10} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">

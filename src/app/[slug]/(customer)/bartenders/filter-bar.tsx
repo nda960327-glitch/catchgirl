@@ -62,7 +62,7 @@ export function FilterBar({
               aria-pressed={on}
               className={cn(
                 "rounded-full border px-3 py-1.5 text-[11px] font-bold transition-colors",
-                on ? "border-brand bg-brand text-white" : "border-line bg-white text-mute hover:border-brand",
+                on ? "border-brand bg-brand text-white" : "border-line bg-card text-mute hover:border-brand",
               )}
             >
               {f.label} <span className={cn(on ? "opacity-80" : "text-mute/70")}>{n}</span>
@@ -84,7 +84,7 @@ export function FilterBar({
         <select
           value={order}
           onChange={(e) => setOrder(e.target.value)}
-          className="h-10 flex-1 rounded-xl border border-line bg-white px-3 text-[12px] font-semibold text-ink outline-none focus:border-brand"
+          className="h-10 flex-1 rounded-xl border border-line bg-card px-3 text-[12px] font-semibold text-ink outline-none focus:border-brand"
         >
           {STAFF_SORTS.map(([k, l]) => (
             <option key={k} value={k}>{l}</option>

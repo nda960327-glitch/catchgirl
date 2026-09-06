@@ -36,7 +36,7 @@ export function BenefitsForm({ slug, benefits }: { slug: string; benefits: Benef
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {rows.map((r) => (
-          <div key={r.grade} className={cn("rounded-2xl border p-4", r.isActive ? "border-brand/30 bg-blush-lt/40" : "border-line bg-white")}>
+          <div key={r.grade} className={cn("rounded-2xl border p-4", r.isActive ? "border-brand/30 bg-blush-lt/40" : "border-line bg-card")}>
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-serif text-[16px] font-bold text-ink">{r.grade}</span>
               {!r.saved && <Chip tone="mute">권장값</Chip>}

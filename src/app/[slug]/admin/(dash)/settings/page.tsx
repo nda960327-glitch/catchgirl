@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
 import { parseJsonArray } from "@/lib/utils";
 import { Eyebrow } from "@/components/ui";
+import { themeOf } from "@/lib/themes";
 import { SettingsForm } from "./settings-form";
 import { OptionsManager } from "./options-manager";
 import { NoticesManager } from "./notices-manager";
@@ -25,7 +26,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
         init={{
           name: store.name, tagline: store.tagline, heroTitle: store.heroTitle, logoUrl: store.logoUrl, coverUrl: store.coverUrl, themeColor: store.themeColor,
           openTime: store.openTime, closeTime: store.closeTime, shiftSplitTime: store.shiftSplitTime, slotMinutes: store.slotMinutes,
-          contactPhone: store.contactPhone, contactTelegram: store.contactTelegram, closedDays: parseJsonArray<number>(store.closedDays),
+          contactPhone: store.contactPhone, contactTelegram: store.contactTelegram, theme: themeOf(store.theme), closedDays: parseJsonArray<number>(store.closedDays),
           cancelDeadlineHours: store.cancelDeadlineHours, maxAdvanceDays: store.maxAdvanceDays, noshowPolicy: store.noshowPolicy,
         }}
       />

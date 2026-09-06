@@ -46,7 +46,7 @@ export function NoticesManager({ slug, items }: { slug: string; items: NoticeIte
 
       <div className="mt-4 flex flex-col gap-2.5">
         {/* 고정 안내 — 코드에 박혀 있어 여기서도 손댈 수 없다 */}
-        <div className="rounded-2xl border border-gold/40 bg-[#FFFBF3] p-3.5">
+        <div className="rounded-2xl border border-gold/40 bg-well p-3.5">
           <div className="flex flex-wrap items-center gap-1.5">
             <Chip tone="gold">고정</Chip>
             <span className="text-[13px] font-bold text-ink">{FIXED_NOTICE.title}</span>
@@ -59,14 +59,14 @@ export function NoticesManager({ slug, items }: { slug: string; items: NoticeIte
         </div>
         {items.length === 0 && <div className="rounded-2xl border border-dashed border-line px-4 py-5 text-center text-[12px] text-mute">아직 매장 공지가 없어요</div>}
         {items.map((n) => (
-          <div key={n.id} className="rounded-2xl border border-line bg-white p-3.5">
+          <div key={n.id} className="rounded-2xl border border-line bg-card p-3.5">
             <div className="flex flex-wrap items-center gap-1.5">
               {n.isPinned && <Chip>필독</Chip>}
               {!n.isActive && <Chip tone="mute">숨김</Chip>}
               <span className="text-[13px] font-bold text-ink">{n.title}</span>
               <div className="ml-auto flex gap-1.5">
                 <Button size="sm" variant="outline" onClick={() => setEditing(n)}>수정</Button>
-                <button onClick={() => remove(n)} disabled={pending} className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-bold text-mute hover:text-[#C0392B]">삭제</button>
+                <button onClick={() => remove(n)} disabled={pending} className="rounded-lg border border-line bg-card px-2.5 py-1.5 text-[11px] font-bold text-mute hover:text-bad">삭제</button>
               </div>
             </div>
             <p className="mt-1.5 whitespace-pre-line text-[12px] leading-[1.7] text-mute">{n.body}</p>

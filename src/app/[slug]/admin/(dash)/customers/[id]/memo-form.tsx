@@ -38,7 +38,7 @@ export function CustomerInfoForm({ slug, customerId, init, sources }: { slug: st
       <Field label="고정 메모" hint="고객 목록·예약 화면에 항상 같이 보여요">
         <Textarea rows={3} value={f.adminMemo} onChange={(e) => set("adminMemo", e.target.value)} placeholder="예: 조용한 대화 선호, 창가 자리" />
       </Field>
-      <label className="flex items-center gap-2 text-[12px] font-semibold text-[#C0392B]">
+      <label className="flex items-center gap-2 text-[12px] font-semibold text-bad">
         <input type="checkbox" checked={f.isBlacklisted} onChange={(e) => set("isBlacklisted", e.target.checked)} className="h-4 w-4 accent-[#C0392B]" /> 블랙리스트 지정 (고객 예약 차단)
       </label>
       <Button
@@ -89,7 +89,7 @@ export function CustomerAccount({
 
   return (
     <div className="mt-3 flex flex-col gap-3">
-      <div className="rounded-2xl bg-[#FAF6F7] px-4 py-3">
+      <div className="rounded-2xl bg-well px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold text-mute">연결코드</span>
           {hasPin ? <Chip tone="mute">사용 완료</Chip> : <Chip>미사용</Chip>}
@@ -111,7 +111,7 @@ export function CustomerAccount({
         <Button size="sm" variant="secondary" onClick={issue} loading={pending} className="mt-2">새 코드로 교체</Button>
       </div>
 
-      <div className="flex items-center gap-2 rounded-2xl bg-[#FAF6F7] px-4 py-3">
+      <div className="flex items-center gap-2 rounded-2xl bg-well px-4 py-3">
         <div className="min-w-0 flex-1">
           <div className="text-[11px] font-semibold text-mute">PIN</div>
           <div className="mt-0.5 text-[12px] text-ink">{hasPin ? "설정됨 (매장은 볼 수 없어요)" : "미설정 — 연결코드로 새로 정해요"}</div>
@@ -165,11 +165,11 @@ export function CustomerNotes({ slug, customerId, notes }: { slug: string; custo
       ) : (
         <div className="flex flex-col gap-2">
           {notes.map((n) => (
-            <div key={n.id} className="group rounded-2xl border border-line bg-white p-3">
+            <div key={n.id} className="group rounded-2xl border border-line bg-card p-3">
               <div className="flex items-center gap-2 text-[10px] text-mute">
                 <span className="font-semibold text-ink">{n.authorName}</span>
                 <span>{n.createdAt}</span>
-                <button onClick={() => remove(n.id)} className="ml-auto text-mute opacity-0 transition-opacity hover:text-[#C0392B] group-hover:opacity-100">삭제</button>
+                <button onClick={() => remove(n.id)} className="ml-auto text-mute opacity-0 transition-opacity hover:text-bad group-hover:opacity-100">삭제</button>
               </div>
               <p className="mt-1 whitespace-pre-wrap text-[12px] leading-[1.7] text-ink">{n.content}</p>
             </div>

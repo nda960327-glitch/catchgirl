@@ -34,7 +34,7 @@ export function ContactFab({ phone, telegram }: { phone: string; telegram: strin
                 <div className="font-serif text-[18px] font-bold text-ink">무엇이든 물어보세요</div>
                 <div className="mt-0.5 text-[11px] text-mute">예약·자리·시간 안내를 바로 도와드려요.</div>
               </div>
-              <button onClick={() => setOpen(false)} className="h-8 w-8 shrink-0 rounded-full border border-line bg-white text-mute">✕</button>
+              <button onClick={() => setOpen(false)} className="h-8 w-8 shrink-0 rounded-full border border-line bg-card text-mute">✕</button>
             </div>
 
             <div className="mt-4 flex flex-col gap-2">
@@ -43,9 +43,9 @@ export function ContactFab({ phone, telegram }: { phone: string; telegram: strin
                   href={`https://t.me/${tg}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3.5"
+                  className="flex items-center gap-3 rounded-2xl border border-line bg-card px-4 py-3.5"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF4FB] text-[17px]" aria-hidden>✈</span>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-night-bg text-[17px]" aria-hidden>✈</span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[13px] font-bold text-ink">텔레그램으로 문의</span>
                     <span className="block text-[11px] text-mute">@{tg}</span>
@@ -54,7 +54,7 @@ export function ContactFab({ phone, telegram }: { phone: string; telegram: strin
                 </a>
               )}
               {phone && (
-                <a href={`tel:${phone.replace(/[^0-9+]/g, "")}`} className="flex items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3.5">
+                <a href={`tel:${phone.replace(/[^0-9+]/g, "")}`} className="flex items-center gap-3 rounded-2xl border border-line bg-card px-4 py-3.5">
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blush-lt text-[17px]" aria-hidden>✆</span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[13px] font-bold text-ink">전화로 문의</span>

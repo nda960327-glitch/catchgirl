@@ -29,7 +29,7 @@ export function LoginForm({ slug, next }: { slug: string; next?: string }) {
         <Input name="pin" type="password" placeholder="••••" inputMode="numeric" pattern="\d{4,6}" maxLength={6} autoComplete="current-password" required />
       </Field>
       {/* 초대받은 분만 쓰는 공간이라, 처음 시작할 땐 코드가 반드시 있어야 한다 */}
-      <div className="flex rounded-2xl bg-[#F4EDEE] p-1">
+      <div className="flex rounded-2xl bg-well-2 p-1">
         {([
           ["first", "처음이에요"],
           ["again", "전에 왔어요"],
@@ -38,7 +38,7 @@ export function LoginForm({ slug, next }: { slug: string; next?: string }) {
             key={k}
             type="button"
             onClick={() => setMode(k)}
-            className={cn("flex-1 rounded-xl py-2.5 text-[12px] font-bold transition-all", mode === k ? "bg-white text-ink shadow-card" : "text-mute")}
+            className={cn("flex-1 rounded-xl py-2.5 text-[12px] font-bold transition-all", mode === k ? "bg-card text-ink shadow-card" : "text-mute")}
           >
             {label}
           </button>

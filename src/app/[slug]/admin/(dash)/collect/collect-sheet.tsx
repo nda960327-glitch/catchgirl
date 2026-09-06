@@ -74,8 +74,8 @@ export function CollectSheet({ date, rows }: { date: string; rows: CollectRow[] 
   return (
     <>
       {ready && done.size > 0 && (
-        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-[#EEF7F1] px-4 py-3 text-[12px]">
-          <span className="font-bold text-[#2E8B57]">받음 {won(gotAmount)}</span>
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-ok-bg px-4 py-3 text-[12px]">
+          <span className="font-bold text-ok">받음 {won(gotAmount)}</span>
           <span className="text-mute">·</span>
           <span className="font-bold text-ink">남음 {won(left)}</span>
           <button
@@ -98,7 +98,7 @@ export function CollectSheet({ date, rows }: { date: string; rows: CollectRow[] 
           const allDone = roomLeft === 0;
           return (
             <Card key={room} className={cn("overflow-hidden", allDone && ready && "opacity-60")}>
-              <div className="flex flex-wrap items-center gap-2 border-b border-line bg-[#FAF6F7] px-4 py-2.5">
+              <div className="flex flex-wrap items-center gap-2 border-b border-line bg-well px-4 py-2.5">
                 <span className="font-serif text-[15px] font-bold text-ink">{room}</span>
                 {allDone && ready && <Chip tone="green">수금 완료</Chip>}
                 <span className="ml-auto font-serif text-[16px] font-bold text-brand">{won(roomTotal)}</span>
@@ -111,12 +111,12 @@ export function CollectSheet({ date, rows }: { date: string; rows: CollectRow[] 
                       key={r.id}
                       onClick={() => toggle(r.id)}
                       aria-pressed={on}
-                      className={cn("flex w-full flex-wrap items-center gap-2 px-4 py-3 text-left text-[12px] transition-colors", on ? "bg-[#F4FAF6]" : "hover:bg-blush-lt/30")}
+                      className={cn("flex w-full flex-wrap items-center gap-2 px-4 py-3 text-left text-[12px] transition-colors", on ? "bg-ok-bg" : "hover:bg-blush-lt/30")}
                     >
-                      <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[11px] font-bold", on ? "border-[#2E8B57] bg-[#2E8B57] text-white" : "border-line bg-white text-transparent")}>
+                      <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[11px] font-bold", on ? "border-ok bg-ok text-white" : "border-line bg-card text-transparent")}>
                         ✓
                       </span>
-                      <span className={cn("w-[42px] shrink-0 rounded-md px-1.5 py-0.5 text-center text-[10px] font-bold", r.shift === "DAY" ? "bg-[#FFF6E6] text-[#8A6A20]" : "bg-[#EEF1FB] text-[#3D4E8C]")}>
+                      <span className={cn("w-[42px] shrink-0 rounded-md px-1.5 py-0.5 text-center text-[10px] font-bold", r.shift === "DAY" ? "bg-day-bg text-day" : "bg-night-bg text-night")}>
                         {SHIFT_LABEL[r.shift] ?? r.shift}
                       </span>
                       <span className="w-[86px] shrink-0 font-semibold text-ink">{r.time}~{r.endTime}</span>
@@ -128,7 +128,7 @@ export function CollectSheet({ date, rows }: { date: string; rows: CollectRow[] 
                           <span className="block text-[10px] text-brand">{r.discountLabel} −{won(Math.min(r.fee, r.discount))}</span>
                         )}
                       </span>
-                      <span className={cn("shrink-0 font-serif text-[15px] font-bold", on ? "text-[#2E8B57] line-through" : "text-ink")}>
+                      <span className={cn("shrink-0 font-serif text-[15px] font-bold", on ? "text-ok line-through" : "text-ink")}>
                         {won(r.collect)}
                       </span>
                     </button>

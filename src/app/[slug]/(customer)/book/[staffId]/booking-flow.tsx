@@ -122,8 +122,8 @@ export function BookingFlow({
   return (
     <div className="flex min-h-full flex-1 flex-col">
       {/* 상단바 */}
-      <div className="sticky top-0 z-20 flex h-14 items-center border-b border-line bg-white/90 px-4 backdrop-blur">
-        <button onClick={back} className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white text-ink" aria-label="뒤로">‹</button>
+      <div className="sticky top-0 z-20 flex h-14 items-center border-b border-line bg-card/90 px-4 backdrop-blur">
+        <button onClick={back} className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-card text-ink" aria-label="뒤로">‹</button>
         <div className="flex-1 text-center font-serif text-[15px] font-bold text-ink">{title}</div>
         <div className="w-8 text-right text-[12px] font-semibold text-blush">{step}/3</div>
       </div>
@@ -140,7 +140,7 @@ export function BookingFlow({
         </div>
         <div className="ml-auto flex gap-1">
           {[1, 2, 3].map((i) => (
-            <span key={i} className={cn("h-1.5 w-5 rounded-full", i <= step ? "bg-brand" : "bg-[#E8DCDE]")} />
+            <span key={i} className={cn("h-1.5 w-5 rounded-full", i <= step ? "bg-brand" : "bg-well-2")} />
           ))}
         </div>
       </div>
@@ -161,8 +161,8 @@ export function BookingFlow({
                     title={d.reason}
                     className={cn(
                       "flex min-h-[64px] flex-col items-center justify-center rounded-2xl border py-2 transition-all",
-                      d.disabled && "cursor-not-allowed border-[#F4EDEE] bg-[#F4EDEE] text-[#CDBEC1]",
-                      !d.disabled && !on && "border-line bg-white text-ink",
+                      d.disabled && "cursor-not-allowed border-well-2 bg-well-2 text-mute/60",
+                      !d.disabled && !on && "border-line bg-card text-ink",
                       on && "ring-brand border-brand bg-brand text-white",
                     )}
                   >
@@ -180,9 +180,9 @@ export function BookingFlow({
           <div className="animate-fade">
             <div className="mb-3.5 flex items-center gap-3.5 px-0.5">
               {[
-                ["가능", "bg-white border-line"],
-                ["마감", "bg-[#F4EDEE] border-[#F4EDEE]"],
-                ["근무 외", "bg-[#FAF6F7] border-dashed border-[#E3D3D6]"],
+                ["가능", "bg-card border-line"],
+                ["마감", "bg-well-2 border-well-2"],
+                ["근무 외", "bg-well border-dashed border-line"],
                 ["선택", "bg-brand border-brand"],
               ].map(([l, c]) => (
                 <div key={l} className="flex items-center gap-1.5">
@@ -209,10 +209,10 @@ export function BookingFlow({
                       className={cn(
                         "h-12 rounded-[14px] border text-[13px] font-semibold transition-all",
                         on && "ring-brand border-brand bg-brand text-white",
-                        !on && s.status === "open" && "border-line bg-white text-ink active:scale-95",
-                        s.status === "full" && "cursor-not-allowed border-[#F4EDEE] bg-[#F4EDEE] text-[#CDBEC1] line-through",
-                        s.status === "past" && "cursor-not-allowed border-[#F4EDEE] bg-[#F4EDEE] text-[#CDBEC1]",
-                        s.status === "off" && "cursor-not-allowed border-dashed border-[#E3D3D6] bg-[#FAF6F7] text-[#CDBEC1]",
+                        !on && s.status === "open" && "border-line bg-card text-ink active:scale-95",
+                        s.status === "full" && "cursor-not-allowed border-well-2 bg-well-2 text-mute/60 line-through",
+                        s.status === "past" && "cursor-not-allowed border-well-2 bg-well-2 text-mute/60",
+                        s.status === "off" && "cursor-not-allowed border-dashed border-line bg-well text-mute/60",
                       )}
                     >
                       {s.time}
@@ -243,7 +243,7 @@ export function BookingFlow({
                       onClick={() => setHours(h)}
                       className={cn(
                         "h-12 rounded-[14px] border text-[13px] font-semibold transition-all",
-                        hours === h ? "border-brand bg-brand text-white" : "border-line bg-white text-ink active:scale-95",
+                        hours === h ? "border-brand bg-brand text-white" : "border-line bg-card text-ink active:scale-95",
                       )}
                     >
                       {h}시간
@@ -268,7 +268,7 @@ export function BookingFlow({
 
         {step === 3 && (
           <div className="animate-fade flex flex-col gap-4">
-            <div className="rounded-[18px] border border-line bg-white p-4">
+            <div className="rounded-[18px] border border-line bg-card p-4">
               <div className="text-[11px] text-mute">예약 정보</div>
               <div className="mt-1 font-serif text-[16px] font-bold text-ink">
                 {format(dateObj, "M월 d일 (EEE)", { locale: ko })} {time} ~ {time && endLabel(time, hours)}
@@ -295,10 +295,10 @@ export function BookingFlow({
                         onClick={() => setOptIds((v) => (on ? v.filter((x) => x !== o.id) : [...v, o.id]))}
                         className={cn(
                           "flex h-12 items-center gap-3 rounded-2xl border px-4 text-[13px] transition-all active:scale-[.99]",
-                          on ? "border-brand bg-blush-lt" : "border-line bg-white",
+                          on ? "border-brand bg-blush-lt" : "border-line bg-card",
                         )}
                       >
-                        <span className={cn("flex h-5 w-5 items-center justify-center rounded-md border text-[11px]", on ? "border-brand bg-brand text-white" : "border-line bg-white text-transparent")}>✓</span>
+                        <span className={cn("flex h-5 w-5 items-center justify-center rounded-md border text-[11px]", on ? "border-brand bg-brand text-white" : "border-line bg-card text-transparent")}>✓</span>
                         <span className={cn("font-semibold", on ? "text-brand" : "text-ink")}>{o.name}</span>
                         <span className="ml-auto text-mute">+{won(o.price)}</span>
                       </button>
@@ -310,7 +310,7 @@ export function BookingFlow({
 
             {/* 쿠폰 — 자동 할인 위에 한 장 더 쓸 수 있다 */}
             {coupons.length > 0 && (
-              <div className="rounded-[18px] border border-line bg-white p-4">
+              <div className="rounded-[18px] border border-line bg-card p-4">
                 <div className="text-[12px] font-bold text-ink">쿠폰</div>
                 <div className="mt-0.5 text-[10px] text-mute">한 번 쓰면 사라져요. 예약 1건에 한 장만 쓰실 수 있어요.</div>
                 <div className="mt-2.5 flex flex-col gap-1.5">
@@ -324,7 +324,7 @@ export function BookingFlow({
                         onClick={() => setCouponId(on ? null : c.id)}
                         className={cn(
                           "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-[12px] transition-colors",
-                          on ? "border-brand bg-blush-lt/60" : "border-line bg-white hover:border-brand/50",
+                          on ? "border-brand bg-blush-lt/60" : "border-line bg-card hover:border-brand/50",
                         )}
                       >
                         <span className={cn("h-4 w-4 shrink-0 rounded-full border", on ? "border-[5px] border-brand" : "border-line")} />
@@ -341,7 +341,7 @@ export function BookingFlow({
             )}
 
             {/* 금액 */}
-            <div className="rounded-[18px] border border-line bg-white p-4">
+            <div className="rounded-[18px] border border-line bg-card p-4">
               <div className="flex justify-between text-[12px] text-mute">
                 <span>{staff.nickname} {won(staff.hourlyPrice)} × {hours}시간</span>
                 <span className="text-ink">{won(staff.hourlyPrice * hours)}</span>
@@ -375,9 +375,9 @@ export function BookingFlow({
             </div>
             <Field label="닉네임">
               {customer ? (
-                <Input value={customer.nickname} readOnly className="bg-[#FAF6F7]" />
+                <Input value={customer.nickname} readOnly className="bg-well" />
               ) : (
-                <div className="flex h-12 items-center justify-between rounded-2xl border border-dashed border-blush bg-white px-4 text-[13px]">
+                <div className="flex h-12 items-center justify-between rounded-2xl border border-dashed border-blush bg-card px-4 text-[13px]">
                   <span className="text-mute">다음 단계에서 닉네임·PIN을 입력해요</span>
                 </div>
               )}
@@ -385,7 +385,7 @@ export function BookingFlow({
             <Field label="요청사항" hint="선택 · 200자">
               <Textarea rows={3} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} placeholder="창가 자리, 조용한 자리, 축하 세팅 등" />
             </Field>
-            <div className="rounded-2xl bg-[#FAF6F7] px-4 py-3 text-[11px] leading-[1.7] text-mute">
+            <div className="rounded-2xl bg-well px-4 py-3 text-[11px] leading-[1.7] text-mute">
               <Chip tone="mute" className="mr-1.5">노쇼 정책</Chip>
               예약 시간 15분 경과 시 노쇼 처리돼요. 못 오시게 되면 {store.cancelDeadlineHours}시간 전까지 취소를 부탁드려요.
             </div>
@@ -394,7 +394,7 @@ export function BookingFlow({
       </div>
 
       {/* 하단 CTA */}
-      <div className="sticky bottom-0 border-t border-line bg-white/95 p-4 backdrop-blur">
+      <div className="sticky bottom-0 border-t border-line bg-card/95 p-4 backdrop-blur">
         {step === 1 && <Button size="lg" onClick={() => setStep(2)}>{format(dateObj, "M월 d일", { locale: ko })} 시간 보기</Button>}
         {step === 2 && (
           <Button size="lg" disabled={!time} onClick={() => setStep(3)}>

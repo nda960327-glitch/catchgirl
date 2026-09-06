@@ -50,7 +50,7 @@ export function OptionsManager({ slug, items }: { slug: string; items: OptionIte
       <div className="mt-4 flex flex-col gap-2.5">
         {rows.length === 0 && <div className="rounded-2xl border border-dashed border-line px-4 py-5 text-center text-[12px] text-mute">아직 옵션이 없어요</div>}
         {rows.map((o) => (
-          <div key={o.id} className="flex flex-wrap items-end gap-2.5 rounded-2xl border border-line bg-white p-3">
+          <div key={o.id} className="flex flex-wrap items-end gap-2.5 rounded-2xl border border-line bg-card p-3">
             <Field label="이름" className="min-w-[130px] flex-1">
               <Input value={o.name} onChange={(e) => set(o.id, { name: e.target.value })} className="h-10 text-[13px]" />
             </Field>
@@ -64,7 +64,7 @@ export function OptionsManager({ slug, items }: { slug: string; items: OptionIte
             {!o.isActive && <Chip tone="mute" className="mb-2.5">숨김</Chip>}
             <div className="mb-1 ml-auto flex gap-1.5">
               <Button size="sm" onClick={() => save(o)} loading={pending}>저장</Button>
-              <button onClick={() => remove(o)} disabled={pending} className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-bold text-mute hover:text-[#C0392B]">삭제</button>
+              <button onClick={() => remove(o)} disabled={pending} className="rounded-lg border border-line bg-card px-2.5 py-1.5 text-[11px] font-bold text-mute hover:text-bad">삭제</button>
             </div>
           </div>
         ))}

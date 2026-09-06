@@ -49,17 +49,17 @@ export function StaffManager({ slug, items, storeOptions, initialEdit }: { slug:
                 <div className="mt-1 truncate text-[11px] text-mute">{s.tags.map((t) => `#${t}`).join(" ") || "태그 없음"}</div>
                 {/* 손님이 보는 값들 — 여기서도 한눈에 확인하고 바로 고칠 수 있게 */}
                 <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
-                  {s.heightCm && <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-ink">{s.heightCm}cm</span>}
-                  {s.weightKg && <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-ink">{s.weightKg}kg</span>}
+                  {s.heightCm && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{s.heightCm}cm</span>}
+                  {s.weightKg && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{s.weightKg}kg</span>}
                   {s.bustSize && (
-                    <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-ink">
+                    <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">
                       {s.bustSize}컵{s.bustNatural && <span className="text-brand"> 자연</span>}
                     </span>
                   )}
-                  <span className={cn("rounded-md px-1.5 py-0.5 font-semibold", s.smoker ? "bg-[#FDECEC] text-[#C0392B]" : "bg-[#E8F6EE] text-[#2E8B57]")}>
+                  <span className={cn("rounded-md px-1.5 py-0.5 font-semibold", s.smoker ? "bg-bad-bg text-bad" : "bg-ok-bg text-ok")}>
                     {s.smoker ? "흡연" : "비흡연"}
                   </span>
-                  <span className={cn("rounded-md px-1.5 py-0.5 font-semibold", s.tattoo ? "bg-[#F6F1F2] text-mute" : "bg-[#E8F6EE] text-[#2E8B57]")}>
+                  <span className={cn("rounded-md px-1.5 py-0.5 font-semibold", s.tattoo ? "bg-well-2 text-mute" : "bg-ok-bg text-ok")}>
                     {s.tattoo ? `문신 ${s.tattooNote || "있음"}` : "문신 없음"}
                   </span>
                   {storeOptions.filter((o) => s.optionIds.includes(o.id)).map((o) => (
@@ -71,7 +71,7 @@ export function StaffManager({ slug, items, storeOptions, initialEdit }: { slug:
               <Button variant="outline" size="sm" onClick={() => setEditing(s)}>수정</Button>
             </div>
             {/* 실적 */}
-            <div className="mt-3 grid grid-cols-4 gap-2 rounded-2xl bg-[#FAF6F7] p-3 text-center md:grid-cols-8">
+            <div className="mt-3 grid grid-cols-4 gap-2 rounded-2xl bg-well p-3 text-center md:grid-cols-8">
               {[
                 ["예약 수", `${s.stats.reservationCount}`],
                 ["방문완료", `${s.stats.completedCount}`],
@@ -137,7 +137,7 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
     <Card className="p-5">
       <div className="flex items-center justify-between">
         <div className="font-serif text-[17px] font-bold text-ink">{f.id ? `${init.nickname} 수정` : "새 캐치걸"}</div>
-        <button onClick={onClose} className="h-8 w-8 rounded-full border border-line bg-white text-mute">✕</button>
+        <button onClick={onClose} className="h-8 w-8 rounded-full border border-line bg-card text-mute">✕</button>
       </div>
       <div className="mt-4 flex flex-col gap-3.5">
         {/* 사진 */}
@@ -148,11 +148,11 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p} alt="" className="h-full w-full object-cover" />
                 <button onClick={() => setF({ ...f, photos: f.photos.filter((_, j) => j !== i) })} className="absolute right-0.5 top-0.5 h-5 w-5 rounded-full bg-black/50 text-[10px] text-white">✕</button>
-                {i > 0 && <button onClick={() => setF({ ...f, photos: [p, ...f.photos.filter((_, j) => j !== i)] })} className="absolute bottom-0.5 left-0.5 rounded bg-white/90 px-1 text-[8px] font-bold text-brand">대표</button>}
+                {i > 0 && <button onClick={() => setF({ ...f, photos: [p, ...f.photos.filter((_, j) => j !== i)] })} className="absolute bottom-0.5 left-0.5 rounded bg-card/90 px-1 text-[8px] font-bold text-brand">대표</button>}
               </div>
             ))}
             {f.photos.length < 10 && (
-              <button onClick={() => fileRef.current?.click()} disabled={uploading} className="flex h-16 w-16 flex-col items-center justify-center rounded-xl border border-dashed border-blush bg-white text-[10px] text-mute">
+              <button onClick={() => fileRef.current?.click()} disabled={uploading} className="flex h-16 w-16 flex-col items-center justify-center rounded-xl border border-dashed border-blush bg-card text-[10px] text-mute">
                 {uploading ? "…" : "＋ 추가"}
               </button>
             )}
@@ -168,7 +168,7 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
         <Field label="한 줄 소개"><Textarea rows={2} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} /></Field>
 
         {/* 프로필 — 손님이 고를 때 실제로 보는 값들. 모르는 건 비워 두면 화면에 안 나온다. */}
-        <div className="rounded-2xl border border-line bg-white p-3.5">
+        <div className="rounded-2xl border border-line bg-card p-3.5">
           <div className="text-[12px] font-bold text-ink">프로필</div>
           <div className="mt-0.5 text-[10px] leading-[1.7] text-mute">손님이 고를 때 보는 값이에요. 비워 두면 그 항목은 화면에 안 나와요.</div>
           <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -220,7 +220,7 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
                   type="button"
                   aria-pressed={on}
                   onClick={() => setF({ ...f, optionIds: on ? f.optionIds.filter((x) => x !== o.id) : [...f.optionIds, o.id] })}
-                  className={cn("rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors", on ? "bg-brand text-white" : "bg-[#F4EDEE] text-mute")}
+                  className={cn("rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors", on ? "bg-brand text-white" : "bg-well-2 text-mute")}
                 >
                   {o.name} +{o.price.toLocaleString("ko-KR")}원
                 </button>
@@ -233,7 +233,7 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
           <Textarea rows={2} value={f.adminMemo} onChange={(e) => setF({ ...f, adminMemo: e.target.value })} placeholder="예: 지명 많음. 주말 야간 고정 선호" />
         </Field>
         <Field label="태그" hint="Enter로 추가">
-          <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-line bg-white px-3 py-2">
+          <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-line bg-card px-3 py-2">
             {f.tags.map((t) => (
               <button key={t} onClick={() => setF({ ...f, tags: f.tags.filter((x) => x !== t) })} className="rounded-full bg-blush-lt px-2.5 py-1 text-[11px] font-bold text-brand">#{t} ✕</button>
             ))}
@@ -258,7 +258,7 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
         </label>
 
         {/* 근무일은 출근 배치가 곧 근무표다 — 여기서 따로 짜면 기준이 둘이 되어 어긋난다 */}
-        <div className="rounded-2xl bg-[#FAF6F7] px-4 py-3 text-[11px] leading-[1.7] text-mute">
+        <div className="rounded-2xl bg-well px-4 py-3 text-[11px] leading-[1.7] text-mute">
           근무일과 시간대는 <Link href={`/${slug}/admin/staff/schedule`} className="font-bold text-brand">출근 · 룸 배치</Link>에서 정해요.
           <br />배치된 날의 배치된 조(주간/야간)에만 손님이 예약할 수 있어요.
         </div>
@@ -300,7 +300,7 @@ function DeleteStaffButton({ slug, staffId, onDeleted }: { slug: string; staffId
   };
 
   return (
-    <button onClick={onClick} disabled={pending} className="h-11 rounded-2xl border border-[#E8C7C7] bg-white text-[13px] font-bold text-[#C0392B] transition-colors hover:bg-[#FDECEC] disabled:opacity-50">
+    <button onClick={onClick} disabled={pending} className="h-11 rounded-2xl border border-blush bg-card text-[13px] font-bold text-bad transition-colors hover:bg-bad-bg disabled:opacity-50">
       {pending ? "확인 중…" : "캐치걸 삭제"}
     </button>
   );

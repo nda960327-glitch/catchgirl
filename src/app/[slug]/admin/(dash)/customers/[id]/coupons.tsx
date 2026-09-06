@@ -67,7 +67,7 @@ export function Coupons({ slug, customerId, coupons }: { slug: string; customerI
               <button
                 key={p.name}
                 onClick={() => setForm({ ...form, name: p.name, amount: p.amount, memo: p.memo })}
-                className="rounded-full border border-line bg-white px-3 py-1.5 text-[11px] font-bold text-mute hover:border-brand hover:text-brand"
+                className="rounded-full border border-line bg-card px-3 py-1.5 text-[11px] font-bold text-mute hover:border-brand hover:text-brand"
               >
                 {p.name} {won(p.amount)}
               </button>
@@ -107,7 +107,7 @@ export function Coupons({ slug, customerId, coupons }: { slug: string; customerI
             key={c.id}
             className={cn(
               "flex flex-wrap items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-[12px]",
-              c.usedAt || c.expired ? "border-line bg-white opacity-70" : "border-brand/30 bg-blush-lt/40",
+              c.usedAt || c.expired ? "border-line bg-card opacity-70" : "border-brand/30 bg-blush-lt/40",
             )}
           >
             {c.usedAt ? <Chip tone="mute">사용함</Chip> : c.expired ? <Chip tone="mute">기한 지남</Chip> : <Chip>사용 가능</Chip>}
@@ -118,7 +118,7 @@ export function Coupons({ slug, customerId, coupons }: { slug: string; customerI
             </span>
             {c.memo && <span className="truncate text-[10px] text-mute">· {c.memo}</span>}
             {!c.usedAt && (
-              <button onClick={() => remove(c)} disabled={pending} className="ml-auto text-[11px] font-bold text-mute hover:text-[#C0392B]">회수</button>
+              <button onClick={() => remove(c)} disabled={pending} className="ml-auto text-[11px] font-bold text-mute hover:text-bad">회수</button>
             )}
           </div>
         ))}

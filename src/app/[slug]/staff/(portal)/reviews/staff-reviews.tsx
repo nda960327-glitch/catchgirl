@@ -30,7 +30,7 @@ export function StaffReviews({ slug, reviews, comments, stats }: { slug: string;
 
   return (
     <div className="animate-fade">
-      <div className="flex rounded-[20px] border border-line bg-white py-4">
+      <div className="flex rounded-[20px] border border-line bg-card py-4">
         {[["평점", stats.rating !== null ? stats.rating.toFixed(1) : "–"], ["후기", String(stats.reviewCount)], ["재방문", `${stats.revisitRate}%`]].map(([k, v], i) => (
           <div key={k} className={cn("flex-1 text-center", i > 0 && "border-l border-line")}>
             <div className="font-serif text-[19px] font-bold text-brand">{v}</div>

@@ -123,7 +123,7 @@ export function ScheduleBoard({
               scroll={false}
               className={cn(
                 "flex min-w-[68px] shrink-0 flex-col items-center rounded-2xl border px-2 py-2 transition-colors",
-                on ? "border-brand bg-brand text-white" : "border-line bg-white hover:border-brand",
+                on ? "border-brand bg-brand text-white" : "border-line bg-card hover:border-brand",
               )}
             >
               <span className={cn("text-[10px]", on ? "opacity-80" : dt.getDay() === 0 ? "text-brand" : "text-mute")}>
@@ -149,19 +149,19 @@ export function ScheduleBoard({
             ))}
           </Select>
           <Button size="sm" variant="secondary" onClick={doCopy} loading={pending} disabled={!copyFrom}>복사</Button>
-          <button onClick={doClear} disabled={pending || cur.length === 0} className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-[11px] font-bold text-mute hover:text-[#C0392B] disabled:opacity-40">비우기</button>
+          <button onClick={doClear} disabled={pending || cur.length === 0} className="rounded-lg border border-line bg-card px-2.5 py-1.5 text-[11px] font-bold text-mute hover:text-bad disabled:opacity-40">비우기</button>
         </div>
       </Card>
 
       {/* 이 요일에 가능하다고 알렸는데 아직 안 넣은 사람 */}
       {availableUnassigned.length > 0 && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl bg-[#FAF6F7] px-4 py-3">
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl bg-well px-4 py-3">
           <span className="text-[12px] font-bold text-ink">이 요일 가능 · 미배치 {availableUnassigned.length}명</span>
           {availableUnassigned.map((s) => {
             // 어느 조가 된다고 했는지까지 보여야 어디에 넣을지 바로 안다
             const shifts = SHIFTS.filter(([sh]) => canWork(s, sh)).map(([, l]) => l).join("·");
             return (
-              <span key={s.id} className="flex items-center gap-1.5 rounded-full border border-line bg-white px-2 py-1 text-[11px] font-semibold text-ink">
+              <span key={s.id} className="flex items-center gap-1.5 rounded-full border border-line bg-card px-2 py-1 text-[11px] font-semibold text-ink">
                 <Avatar src={s.photo} name={s.name} size={18} rounded={6} />
                 {s.name}
                 <span className="text-mute">{shifts}</span>
@@ -217,7 +217,7 @@ export function ScheduleBoard({
                           <span
                             key={o.id}
                             title={`외출 ${o.startTime}~${o.endTime}`}
-                            className="absolute inset-y-1 rounded-md bg-[#C0392B]/75"
+                            className="absolute inset-y-1 rounded-md bg-bad/75"
                             style={{ left: s * 26 + 1, width: Math.max(10, span * 26 - 2) }}
                           />
                         );
@@ -237,7 +237,7 @@ export function ScheduleBoard({
         <div className="mt-0.5 text-[11px] text-mute">출근은 했지만 그 시간엔 예약을 받지 않아요. 캐치걸이 직접 넣은 것도 여기 보여요.</div>
 
         {/* 매장에서 직접 등록 — "얘 지금 나가 있음" 을 표시 */}
-        <div className="mt-3 flex flex-wrap items-end gap-2 rounded-2xl bg-[#FAF6F7] p-3">
+        <div className="mt-3 flex flex-wrap items-end gap-2 rounded-2xl bg-well p-3">
           <Field label="캐치걸" className="min-w-[130px] flex-1">
             <Select value={offForm.staffId} onChange={(e) => setOffForm({ ...offForm, staffId: e.target.value })} className="h-9 w-full text-[12px]">
               <option value="">선택…</option>
@@ -265,12 +265,12 @@ export function ScheduleBoard({
         ) : (
           <div className="mt-3 flex flex-wrap gap-2">
             {offToday.map((t) => (
-              <div key={t.id} className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3 py-2 text-[12px]">
+              <div key={t.id} className="flex items-center gap-2 rounded-2xl border border-line bg-card px-3 py-2 text-[12px]">
                 <span className="font-bold text-ink">{staffName(t.staffId)}</span>
                 <span className="text-brand">{t.startTime}~{t.endTime}</span>
                 {t.reason && <span className="text-mute">{t.reason}</span>}
                 <Chip tone="mute">{t.createdBy === "ADMIN" ? "매장" : "본인"}</Chip>
-                <button onClick={() => removeOff(t)} disabled={pending} className="text-[11px] font-bold text-mute hover:text-[#C0392B]">✕</button>
+                <button onClick={() => removeOff(t)} disabled={pending} className="text-[11px] font-bold text-mute hover:text-bad">✕</button>
               </div>
             ))}
           </div>
@@ -287,7 +287,7 @@ export function ScheduleBoard({
           <table className="w-full min-w-[620px] border-separate border-spacing-0 text-[11px]">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 bg-white px-1 pb-2 text-left font-semibold text-mute">캐치걸</th>
+                <th className="sticky left-0 z-10 bg-card px-1 pb-2 text-left font-semibold text-mute">캐치걸</th>
                 {WEEKDAYS.map((d, wd) => (
                   <th key={d} className={cn("px-1 pb-2 text-center font-semibold", wd === weekday ? "text-brand" : "text-mute")}>{d}</th>
                 ))}
@@ -299,7 +299,7 @@ export function ScheduleBoard({
                 const said = s.available.length > 0;
                 return (
                   <tr key={s.id}>
-                    <td className="sticky left-0 z-10 border-t border-line bg-white py-1.5 pr-2">
+                    <td className="sticky left-0 z-10 border-t border-line bg-card py-1.5 pr-2">
                       <span className="flex items-center gap-1.5">
                         <Avatar src={s.photo} name={s.name} size={20} rounded={6} />
                         <span className="font-bold text-ink">{s.name}</span>
@@ -320,8 +320,8 @@ export function ScheduleBoard({
                                 className={cn(
                                   "h-6 w-6 rounded-md text-[10px] font-bold transition-colors disabled:opacity-40",
                                   on
-                                    ? shift === "DAY" ? "bg-gold text-white" : "bg-ink text-white"
-                                    : "border border-line bg-white text-mute/50 hover:border-brand",
+                                    ? shift === "DAY" ? "bg-gold text-white" : "bg-ink text-on-ink"
+                                    : "border border-line bg-card text-mute/50 hover:border-brand",
                                 )}
                               >
                                 {label[0]}

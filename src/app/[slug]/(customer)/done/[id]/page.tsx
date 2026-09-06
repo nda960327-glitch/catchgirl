@@ -44,14 +44,14 @@ export default async function DonePage({ params }: { params: Promise<{ slug: str
             <div className="mt-0.5 text-[11px] opacity-85">도착하시면 이 자리로 오시면 돼요</div>
           </div>
         ) : (
-          <div className="mt-3 rounded-2xl border border-dashed border-blush bg-white px-5 py-3 text-center">
+          <div className="mt-3 rounded-2xl border border-dashed border-blush bg-card px-5 py-3 text-center">
             <div className="text-[12px] font-bold text-ink">자리는 곧 안내해 드려요</div>
             <div className="mt-0.5 text-[11px] text-mute">배정되면 이 화면과 예약 내역에 표시돼요</div>
           </div>
         )
       )}
 
-      <div className="mt-[22px] w-full max-w-[300px] rounded-[22px] border border-line bg-white px-[22px] py-5 shadow-card">
+      <div className="mt-[22px] w-full max-w-[300px] rounded-[22px] border border-line bg-card px-[22px] py-5 shadow-card">
         {rows.map(([k, v], i) => (
           <div key={k} className={`flex justify-between py-[9px] ${i ? "border-t border-line" : ""}`}>
             <span className="text-[12px] font-medium text-mute">{k}</span>

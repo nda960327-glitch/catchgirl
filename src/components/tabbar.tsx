@@ -27,10 +27,10 @@ export function CustomerShell({ slug, children, contact }: { slug: string; child
       {/* 로그인 전에도 물어볼 수 있어야 한다 — 연결코드를 받으려면 매장에 연락해야 하므로 */}
       <ContactFab phone={contact.phone} telegram={contact.telegram} />
       {visible && (
-        <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto flex h-[66px] max-w-[430px] border-t border-line bg-white/95 backdrop-blur md:absolute md:max-w-none md:rounded-b-[28px]">
+        <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto flex h-[66px] max-w-[430px] border-t border-line bg-card/95 backdrop-blur md:absolute md:max-w-none md:rounded-b-[28px]">
           {tabs.map((t) => (
             <Link key={t.l} href={t.href} className="flex flex-1 flex-col items-center justify-center gap-1.5">
-              <span className={cn("h-[7px] w-[7px] rounded-full transition-colors", t.on ? "bg-brand" : "bg-[#DED2D4]")} />
+              <span className={cn("h-[7px] w-[7px] rounded-full transition-colors", t.on ? "bg-brand" : "bg-well-2")} />
               <span className={cn("text-[10px] font-semibold", t.on ? "text-brand" : "text-mute")}>{t.l}</span>
             </Link>
           ))}
