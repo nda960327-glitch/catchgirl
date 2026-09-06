@@ -8,11 +8,13 @@ import { prisma } from "@/lib/db";
  */
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const store = await prisma.store.findUnique({ where: { slug }, select: { name: true } });
+  const store = await prisma.store.findUnique({ where: { slug }, select: { name: true, logoUrl: true } });
   return {
     title: `${store?.name ?? "캐치걸_어나더"} 관리자`,
     manifest: `/${slug}/admin/manifest.webmanifest`,
-    icons: { icon: "/assets/icon-admin-192.png", apple: "/assets/icon-admin-192.png" },
+    icons: store?.logoUrl
+      ? { icon: `/${slug}/app-icon?role=admin&size=192`, apple: `/${slug}/app-icon?role=admin&size=192` }
+      : { icon: "/assets/icon-admin-192.png", apple: "/assets/icon-admin-192.png" },
   };
 }
 

@@ -29,7 +29,7 @@ export async function middleware(req: NextRequest) {
   if (cust && !/^\/(admin|staff)(\/|$)/.test(cust[2] ?? "")) {
     const [, slug, rest = ""] = cust;
     // 로그인 화면과 앱 설치 정보는 열려 있어야 한다 — 그래야 코드를 넣고 들어온다
-    const open = rest.startsWith("/login") || rest === "/manifest.webmanifest";
+    const open = rest.startsWith("/login") || rest === "/manifest.webmanifest" || rest === "/app-icon";
     if (!open && !(await roleOk(req.cookies.get("cg_customer")?.value, "customer"))) {
       const url = req.nextUrl.clone();
       url.pathname = `/${slug}/login`;

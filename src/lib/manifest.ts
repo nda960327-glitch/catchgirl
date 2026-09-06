@@ -26,7 +26,7 @@ const DESC: Record<AppRole, string> = {
 };
 
 export async function buildManifest(slug: string, role: AppRole) {
-  const store = await prisma.store.findUnique({ where: { slug }, select: { name: true } });
+  const store = await prisma.store.findUnique({ where: { slug }, select: { name: true, logoUrl: true } });
   const name = store?.name ?? "캐치걸_어나더";
   const r = ROLE[role];
   const base = `/${slug}${r.path}`;
@@ -43,8 +43,9 @@ export async function buildManifest(slug: string, role: AppRole) {
     orientation: "portrait",
     background_color: "#FCF7F6",
     theme_color: r.theme,
+    // 로고가 있으면 매장 아이콘으로 — 여러 매장 앱이 홈 화면에서 같은 고양이로 보이지 않게
     icons: [192, 512].map((size) => ({
-      src: `/assets/icon-${r.icon}-${size}.png`,
+      src: store?.logoUrl ? `${base.replace(r.path, "")}/app-icon?role=${role}&size=${size}` : `/assets/icon-${r.icon}-${size}.png`,
       sizes: `${size}x${size}`,
       type: "image/png",
       purpose: "any",
