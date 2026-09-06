@@ -11,7 +11,8 @@ const TIMES = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 type Room = { id: string; name: string };
-type StaffLite = { id: string; name: string; available: { weekday: number; shift: string }[] };
+/** 누적 펑크 횟수까지 들고 온다 — 같은 자리에 또 넣기 전에 보이도록 */
+type StaffLite = { id: string; name: string; available: { weekday: number; shift: string }[]; noshowCount: number };
 type Assignment = { id: string; date: string; shift: string; roomId: string; staffId: string; startTime: string; endTime: string; isStandby: boolean };
 
 /** "13:00" → "13", "13:30" → "13:30" — 칸이 좁아 정시는 시만 적는다 */
@@ -220,6 +221,7 @@ function CellEditor({
       {s.name}
       {taken.has(s.id) && s.id !== current?.staffId ? " (다른 룸)" : ""}
       {` · 이번 주 ${countIn(s.id)}회`}
+      {s.noshowCount > 0 ? ` · 펑크 ${s.noshowCount}회` : ""}
     </option>
   );
 

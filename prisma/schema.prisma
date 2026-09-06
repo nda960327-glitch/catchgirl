@@ -319,6 +319,11 @@ model ShiftAssignment {
   // 예비로 걸어 둔 자리. 실제 근무가 아니므로 예약을 받지 않는다 —
   // 자리를 잡아 두되 손님에게는 열리지 않게 하는 표시다.
   isStandby Boolean  @default(false)
+  // 그날 실제로 나왔는지. 배치를 아무리 미리 짜도 안 나오는 일이 잦아,
+  // 누가 몇 번 펑크냈는지 남겨 두어야 다음 배치를 짤 수 있다.
+  attendance String  @default("PLANNED") // PLANNED | PRESENT | LATE | NOSHOW | EXCUSED
+  attendanceNote String @default("")
+  checkedAt  DateTime?
   createdAt DateTime @default(now())
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)

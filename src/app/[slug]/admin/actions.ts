@@ -693,6 +693,44 @@ export async function adminCommentAction(slug: string, commentId: string, action
   }
 }
 
+/* ─── 출근 체크 ─── */
+
+/**
+ * 배치해 둔 사람이 그날 실제로 나왔는지 표시한다.
+ *
+ * 미리 짠 배치는 계획일 뿐이고, 안 나오면 그 방이 빈다. 누가 몇 번 펑크냈는지
+ * 남아 있어야 다음 주 배치를 짤 때 같은 자리에 또 넣지 않는다.
+ */
+export async function setAttendance(
+  slug: string,
+  assignmentId: string,
+  attendance: "PLANNED" | "PRESENT" | "LATE" | "NOSHOW" | "EXCUSED",
+  note?: string,
+): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    if (!["PLANNED", "PRESENT", "LATE", "NOSHOW", "EXCUSED"].includes(attendance)) {
+      return { ok: false, error: "상태를 확인해 주세요." };
+    }
+    const a = await prisma.shiftAssignment.findUnique({ where: { id: assignmentId } });
+    if (!a || a.storeId !== store.id) return { ok: false, error: "배치를 찾을 수 없어요." };
+    await prisma.shiftAssignment.update({
+      where: { id: assignmentId },
+      data: {
+        attendance,
+        attendanceNote: (note ?? a.attendanceNote).trim().slice(0, 200),
+        // 아직 표시 전으로 되돌리면 찍은 시각도 지운다
+        checkedAt: attendance === "PLANNED" ? null : new Date(),
+      },
+    });
+    revalidatePath(`/${slug}/admin`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 /* ─── 할인 ─── */
 
 const couponSchema = z.object({

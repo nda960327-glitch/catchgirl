@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
-import { businessDayOf, storeSlotTimes } from "@/lib/slots";
+import { businessDayOf, businessDayRange, storeSlotTimes } from "@/lib/slots";
 import { parseJsonArray, ymd } from "@/lib/utils";
 import { Eyebrow } from "@/components/ui";
 import { ScheduleBoard } from "./schedule-board";
 import { WeekBoard } from "./week-board";
+import { AttendanceCard, type AttendanceRow } from "./attendance-card";
 
 export const dynamic = "force-dynamic";
 
@@ -36,9 +37,43 @@ export default async function SchedulePage({
       orderBy: { sortOrder: "asc" },
       select: { id: true, nickname: true, photos: true, schedules: { select: { weekday: true, shift: true } } },
     }),
-    prisma.shiftAssignment.findMany({ where: { storeId: store.id, date: { in: days } }, select: { id: true, date: true, shift: true, roomId: true, staffId: true, startTime: true, endTime: true, isStandby: true } }),
+    prisma.shiftAssignment.findMany({ where: { storeId: store.id, date: { in: days } }, select: { id: true, date: true, shift: true, roomId: true, staffId: true, startTime: true, endTime: true, isStandby: true, attendance: true, attendanceNote: true } }),
     prisma.staffTimeOff.findMany({ where: { date: { in: days }, staff: { storeId: store.id } }, select: { id: true, staffId: true, date: true, startTime: true, endTime: true, reason: true, createdBy: true } }),
   ]);
+
+  // 출근 체크 — 예비는 근무가 아니므로 뺀다.
+  // 펑크나면 그 사람에게 걸린 그날 예약이 곧 사고라 건수를 같이 보여 준다.
+  const dayRange = businessDayRange(store, date);
+  const [dayBookings, noshowStats] = await Promise.all([
+    prisma.reservation.groupBy({
+      by: ["staffId"],
+      where: { storeId: store.id, status: { in: ["CONFIRMED", "COMPLETED"] }, startTime: { gte: dayRange.start, lt: dayRange.end } },
+      _count: { _all: true },
+    }),
+    prisma.shiftAssignment.groupBy({
+      by: ["staffId"],
+      where: { storeId: store.id, attendance: "NOSHOW" },
+      _count: { _all: true },
+    }),
+  ]);
+  const bookingsBy = new Map(dayBookings.map((b) => [b.staffId, b._count._all]));
+  const noshowBy = new Map(noshowStats.map((b) => [b.staffId, b._count._all]));
+  const attendanceRows: AttendanceRow[] = assignments
+    .filter((a) => a.date === date && !a.isStandby)
+    .map((a) => ({
+      id: a.id,
+      roomName: rooms.find((r) => r.id === a.roomId)?.name ?? "—",
+      shift: a.shift,
+      staffId: a.staffId,
+      staffName: staff.find((s) => s.id === a.staffId)?.nickname ?? "—",
+      startTime: a.startTime,
+      endTime: a.endTime,
+      attendance: a.attendance,
+      note: a.attendanceNote,
+      bookings: bookingsBy.get(a.staffId) ?? 0,
+      noshowCount: noshowBy.get(a.staffId) ?? 0,
+    }))
+    .sort((a, b) => a.shift.localeCompare(b.shift) || a.roomName.localeCompare(b.roomName, "ko"));
 
   return (
     <div className="animate-fade">
@@ -73,6 +108,7 @@ export default async function SchedulePage({
               id: s.id,
               name: s.nickname,
               available: s.schedules.map((x) => ({ weekday: x.weekday, shift: x.shift })),
+              noshowCount: noshowBy.get(s.id) ?? 0,
             }))}
             assignments={assignments}
             presets={{
@@ -80,6 +116,7 @@ export default async function SchedulePage({
               NIGHT: { start: store.shiftSplitTime, end: store.closeTime },
             }}
           />
+          <AttendanceCard slug={slug} date={date} rows={attendanceRows} />
         <ScheduleBoard
           slug={slug}
           today={today}
