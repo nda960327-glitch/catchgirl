@@ -45,7 +45,24 @@ export const STAFF_SORTS = [
   ["down", "비추천순"],
   ["price-high", "가격 높은순"],
   ["price-low", "가격 낮은순"],
+  ["height-high", "키 큰순"],
+  ["height-low", "키 작은순"],
+  ["weight-low", "몸무게 적은순"],
+  ["weight-high", "몸무게 많은순"],
 ] as const;
+
+/**
+ * 조건 검색 — 중고차 고르듯 체크해서 좁힌다.
+ * 값이 비어 있는 캐치걸은 그 조건에서 빠진다 (모르는 걸 "아니오" 로 치지 않는다).
+ */
+export const STAFF_FILTERS = [
+  { key: "natural", label: "자연" },
+  { key: "nosmoke", label: "비흡연" },
+  { key: "notattoo", label: "문신 없음" },
+  { key: "opt1", label: "옵션1 가능" },
+  { key: "opt2", label: "옵션2 가능" },
+] as const;
+export type StaffFilter = (typeof STAFF_FILTERS)[number]["key"];
 export type StaffSort = (typeof STAFF_SORTS)[number][0];
 
 export function parseJsonArray<T = string>(s: string | null | undefined): T[] {

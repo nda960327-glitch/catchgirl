@@ -47,6 +47,25 @@ export function StaffManager({ slug, items, storeOptions, initialEdit }: { slug:
                   <Chip tone="mute">슬롯당 {s.capacityPerSlot}팀</Chip>
                 </div>
                 <div className="mt-1 truncate text-[11px] text-mute">{s.tags.map((t) => `#${t}`).join(" ") || "태그 없음"}</div>
+                {/* 손님이 보는 값들 — 여기서도 한눈에 확인하고 바로 고칠 수 있게 */}
+                <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
+                  {s.heightCm && <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-ink">{s.heightCm}cm</span>}
+                  {s.weightKg && <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-ink">{s.weightKg}kg</span>}
+                  {s.bustSize && (
+                    <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-ink">
+                      {s.bustSize}컵{s.bustNatural && <span className="text-brand"> 자연</span>}
+                    </span>
+                  )}
+                  <span className={cn("rounded-md px-1.5 py-0.5 font-semibold", s.smoker ? "bg-[#FDECEC] text-[#C0392B]" : "bg-[#E8F6EE] text-[#2E8B57]")}>
+                    {s.smoker ? "흡연" : "비흡연"}
+                  </span>
+                  <span className={cn("rounded-md px-1.5 py-0.5 font-semibold", s.tattoo ? "bg-[#F6F1F2] text-mute" : "bg-[#E8F6EE] text-[#2E8B57]")}>
+                    {s.tattoo ? `문신 ${s.tattooNote || "있음"}` : "문신 없음"}
+                  </span>
+                  {storeOptions.filter((o) => s.optionIds.includes(o.id)).map((o) => (
+                    <span key={o.id} className="rounded-md bg-blush-lt px-1.5 py-0.5 font-semibold text-brand">{o.name}</span>
+                  ))}
+                </div>
                 {s.adminMemo && <div className="mt-1 truncate text-[10px] text-mute" title={s.adminMemo}>📝 {s.adminMemo}</div>}
               </div>
               <Button variant="outline" size="sm" onClick={() => setEditing(s)}>수정</Button>

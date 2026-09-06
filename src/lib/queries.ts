@@ -25,6 +25,16 @@ export type StaffSummary = {
   /** 오늘 남은 가장 이른 예약 가능 시각 (HH:mm) — 없으면 null */
   nextOpenTime: string | null;
   isActive: boolean;
+  /** 손님이 고를 때 보는 값들 — 비어 있으면 화면에 안 내보낸다 */
+  heightCm: number | null;
+  weightKg: number | null;
+  bustSize: string;
+  bustNatural: boolean;
+  smoker: boolean;
+  tattoo: boolean;
+  tattooNote: string;
+  /** 이 캐치걸이 제공하는 옵션 이름 (예: 옵션1) */
+  optionNames: string[];
 };
 
 export function sortStaffSummaries(list: StaffSummary[], sort: string): StaffSummary[] {
@@ -43,6 +53,15 @@ export function sortStaffSummaries(list: StaffSummary[], sort: string): StaffSum
       return s.sort((a, b) => b.hourlyPrice - a.hourlyPrice || a.nickname.localeCompare(b.nickname));
     case "price-low":
       return s.sort((a, b) => a.hourlyPrice - b.hourlyPrice || a.nickname.localeCompare(b.nickname));
+    // 키·몸무게는 안 적어 둔 사람이 있어 없는 값은 항상 뒤로 보낸다
+    case "height-high":
+      return s.sort((a, b) => (b.heightCm ?? -1) - (a.heightCm ?? -1));
+    case "height-low":
+      return s.sort((a, b) => (a.heightCm ?? 9999) - (b.heightCm ?? 9999));
+    case "weight-low":
+      return s.sort((a, b) => (a.weightKg ?? 9999) - (b.weightKg ?? 9999));
+    case "weight-high":
+      return s.sort((a, b) => (b.weightKg ?? -1) - (a.weightKg ?? -1));
     default:
       return s;
   }
@@ -56,6 +75,7 @@ export async function listStaffSummaries(store: Store, includeInactive = false):
       schedules: true,
       reviews: { where: { isHidden: false }, select: { rating: true } },
       votes: { select: { value: true } },
+      options: { where: { isActive: true }, select: { name: true }, orderBy: { sortOrder: "asc" } },
     },
   });
   const now = new Date();
@@ -83,6 +103,14 @@ export async function listStaffSummaries(store: Store, includeInactive = false):
         availableNow: !!next && new Date(next.startsAt).getTime() <= nowCutoff,
         nextOpenTime: next?.time ?? null,
         isActive: s.isActive,
+        heightCm: s.heightCm,
+        weightKg: s.weightKg,
+        bustSize: s.bustSize,
+        bustNatural: s.bustNatural,
+        smoker: s.smoker,
+        tattoo: s.tattoo,
+        tattooNote: s.tattooNote,
+        optionNames: s.options.map((o) => o.name),
       };
     }),
   );

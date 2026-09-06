@@ -17,6 +17,24 @@ export function StaffCard({ s, href }: { s: StaffSummary; href: string }) {
             )}
           </div>
           <div className="mt-1.5 truncate text-[12px] text-mute">{s.tags.slice(0, 3).map((t) => `#${t}`).join(" ")}</div>
+
+          {/* 고를 때 실제로 보는 값들 — 목록에서도 바로 비교할 수 있게 한 줄로 */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px]">
+            {s.heightCm && <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-ink">{s.heightCm}cm</span>}
+            {s.weightKg && <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-ink">{s.weightKg}kg</span>}
+            {s.bustSize && (
+              <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-ink">
+                {s.bustSize}컵{s.bustNatural && <span className="text-brand"> 자연</span>}
+              </span>
+            )}
+            {!s.smoker && <span className="rounded-md bg-[#E8F6EE] px-1.5 py-0.5 font-semibold text-[#2E8B57]">비흡연</span>}
+            {!s.tattoo && <span className="rounded-md bg-[#E8F6EE] px-1.5 py-0.5 font-semibold text-[#2E8B57]">문신 없음</span>}
+            {s.tattoo && <span className="rounded-md bg-[#F6F1F2] px-1.5 py-0.5 font-semibold text-mute">문신 {s.tattooNote || "있음"}</span>}
+            {s.optionNames.map((n) => (
+              <span key={n} className="rounded-md bg-blush-lt px-1.5 py-0.5 font-semibold text-brand">{n}</span>
+            ))}
+          </div>
+
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-semibold">
             <span className={s.upCount > 0 ? "text-brand" : "text-mute"}>👍 {s.upCount}</span>
             {s.downCount > 0 && <span className="text-mute">👎 {s.downCount}</span>}
