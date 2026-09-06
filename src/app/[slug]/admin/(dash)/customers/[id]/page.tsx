@@ -23,6 +23,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
     },
   });
   if (!c || c.storeId !== store.id) notFound();
+  const sources = await prisma.referralSource.findMany({ where: { storeId: store.id, isActive: true }, orderBy: { sortOrder: "asc" } });
   const s = computeCustomerStats(c.reservations);
   const perStaff = new Map<string, { name: string; photo: string | null; n: number }>();
   for (const r of c.reservations.filter((r) => r.status !== "CANCELLED")) {
@@ -131,7 +132,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
           <Card className="p-5">
             <Eyebrow>Customer Info</Eyebrow>
             <div className="mt-1 text-[14px] font-bold text-ink">고객 정보</div>
-            <CustomerInfoForm slug={slug} customerId={c.id} init={{ nickname: c.nickname, adminContact: c.adminContact, adminMemo: c.adminMemo, isBlacklisted: c.isBlacklisted }} />
+            <CustomerInfoForm slug={slug} customerId={c.id} init={{ nickname: c.nickname, adminContact: c.adminContact, adminMemo: c.adminMemo, isBlacklisted: c.isBlacklisted, sourceId: c.sourceId ?? "" }} sources={sources.map((s) => ({ id: s.id, name: s.name, tier: s.tier }))} />
           </Card>
           <Card className="p-5">
             <Eyebrow>Account</Eyebrow>

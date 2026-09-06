@@ -2,15 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Chip, Field, Input, Textarea } from "@/components/ui";
+import { Button, Chip, Field, Input, Select, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { addCustomerNote, deleteCustomerNote, issueInviteCode, resetCustomerPin, saveCustomerInfo } from "../../../actions";
 
-export type CustomerInfo = { nickname: string; adminContact: string; adminMemo: string; isBlacklisted: boolean };
+export type CustomerInfo = { nickname: string; adminContact: string; adminMemo: string; isBlacklisted: boolean; sourceId: string };
+export type SourceOption = { id: string; name: string; tier: string };
 export type NoteItem = { id: string; authorName: string; content: string; createdAt: string };
 
 /** 관리자 — 고객 기본 정보 + 상단 고정 메모 */
-export function CustomerInfoForm({ slug, customerId, init }: { slug: string; customerId: string; init: CustomerInfo }) {
+export function CustomerInfoForm({ slug, customerId, init, sources }: { slug: string; customerId: string; init: CustomerInfo; sources: SourceOption[] }) {
   const [f, setF] = useState(init);
   const [pending, start] = useTransition();
   const router = useRouter();
@@ -27,6 +28,12 @@ export function CustomerInfoForm({ slug, customerId, init }: { slug: string; cus
           placeholder="예: 010-1234-5678 · 텔레 @nickname"
           className="h-10 text-[13px]"
         />
+      </Field>
+      <Field label="방문 경로" hint="이 손님이 처음 어디를 보고 왔는지">
+        <Select value={f.sourceId} onChange={(e) => set("sourceId", e.target.value)} className="w-full">
+          <option value="">미기록</option>
+          {sources.map((s) => <option key={s.id} value={s.id}>{s.name}{s.tier ? ` (${s.tier})` : ""}</option>)}
+        </Select>
       </Field>
       <Field label="고정 메모" hint="고객 목록·예약 화면에 항상 같이 보여요">
         <Textarea rows={3} value={f.adminMemo} onChange={(e) => set("adminMemo", e.target.value)} placeholder="예: 조용한 대화 선호, 창가 자리" />

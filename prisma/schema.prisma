@@ -49,6 +49,26 @@ model Store {
   coupons       Coupon[]
   gradeBenefits GradeBenefit[]
   promotions    DayPromotion[]
+  sources       ReferralSource[]
+}
+
+/**
+ * 방문 경로. 신규 손님이 처음 어디서 알고 왔는지 — 사이트, 텔레그램 문의 등.
+ * tier 는 그 사이트가 무료 등록인지 유료 메이저인지 표시해, 돈 쓴 곳이 실제로
+ * 손님을 데려오는지 한눈에 비교하려는 것이다.
+ */
+model ReferralSource {
+  id        String  @id @default(cuid())
+  storeId   String
+  name      String
+  tier      String  @default("") // FREE | MAJOR | ""
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  store     Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customers Customer[]
+
+  @@unique([storeId, name])
 }
 
 model AdminUser {
@@ -136,6 +156,8 @@ model Customer {
   // 매장이 직접 적어 두는 연락처 (전화·텔레그램 등). 손님이 입력하는 값이 아니고
   // 고객 화면에는 절대 나가지 않는다 — 매장 운영용 기록이다.
   adminContact  String   @default("")
+  // 처음 어디를 통해 왔는지. 신규가 어느 사이트에서 오는지 알아야 광고비를 어디에 쓸지 정한다.
+  sourceId      String?
   adminMemo     String   @default("") // 상단 고정 메모 (한눈에 보는 핵심)
   isBlacklisted Boolean  @default(false)
   createdAt     DateTime @default(now())
@@ -148,6 +170,7 @@ model Customer {
   notes        CustomerNote[]
   votes        StaffVote[]
   coupons      Coupon[]
+  source       ReferralSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
 
   @@unique([storeId, nickname])
   @@index([storeId, inviteCode])
@@ -246,6 +269,9 @@ model Reservation {
   purposeTag   String    @default("")
   status       String    @default("CONFIRMED") // CONFIRMED | COMPLETED | CANCELLED | NOSHOW
   createdBy    String    @default("CUSTOMER") // CUSTOMER | ADMIN
+  // 이 예약이 어디로 들어왔는지. 앱으로만 받는 게 아니라 전화·텔레그램·워크인이 섞인다.
+  // 손님이 처음 매장을 알게 된 경로(Customer.sourceId)와는 다른 값이다.
+  channel      String    @default("APP") // APP | PHONE | TELEGRAM | WALK_IN
   hourlyPrice  Int       @default(0) // 예약 시점 시급 스냅샷 — 이후 요금이 바뀌어도 과거 금액 보존
   optionsPrice Int       @default(0)
   // 할인은 매장이 부담한다. 캐치걸 몫은 정가 기준 그대로이고 매장 몫에서만 빠진다.

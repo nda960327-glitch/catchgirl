@@ -18,7 +18,16 @@ export default async function ReservationsPage({ params, searchParams }: { param
   const view = sp.view === "calendar" ? "calendar" : "list";
   const staff = await prisma.staff.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" } });
   const staffLite = staff.map((s) => ({ id: s.id, nickname: s.nickname, isActive: s.isActive }));
-  const customers = await prisma.customer.findMany({ where: { storeId: store.id }, select: { id: true, nickname: true }, orderBy: { nickname: "asc" } });
+  // 전화 받으면서 고르는 목록이라 연락처와 방문 횟수까지 같이 보여 준다
+  const [customerRows, sources] = await Promise.all([
+    prisma.customer.findMany({
+      where: { storeId: store.id },
+      select: { id: true, nickname: true, adminContact: true, _count: { select: { reservations: true } } },
+      orderBy: { nickname: "asc" },
+    }),
+    prisma.referralSource.findMany({ where: { storeId: store.id, isActive: true }, orderBy: { sortOrder: "asc" } }),
+  ]);
+  const customers = customerRows.map((c) => ({ id: c.id, nickname: c.nickname, contact: c.adminContact, visits: c._count.reservations }));
 
   // ── 리스트 뷰 ── 날짜 필터는 달력 날짜가 아니라 영업일 단위로 자른다
   const todayStr = businessDayOf(store);
@@ -135,6 +144,7 @@ export default async function ReservationsPage({ params, searchParams }: { param
           totalCount={totalCount}
           staff={staffLite}
           customers={customers}
+          sources={sources.map((s) => ({ id: s.id, name: s.name, tier: s.tier }))}
           filters={{ date, staffId: sp.staffId ?? "", q: sp.q ?? "", status: sp.status ?? "" }}
           times={storeSlotTimes(store)}
           openNew={sp.new === "1"}

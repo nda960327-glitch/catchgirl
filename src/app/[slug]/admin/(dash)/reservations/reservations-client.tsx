@@ -8,6 +8,7 @@ import { ko } from "date-fns/locale";
 import { Avatar, Button, Card, Chip, Field, Input, Select, StatusChip, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { cn, ymd } from "@/lib/utils";
+import { CHANNELS, CHANNEL_LABEL, type Channel } from "@/lib/sources";
 import { adminCreateReservation, adminSetReservationStatus, adminUpdateReservation } from "../../actions";
 
 export type ResRow = {
@@ -32,10 +33,11 @@ function pageWindow(page: number, count: number): number[] {
   return withGaps;
 }
 type StaffLite = { id: string; nickname: string; isActive: boolean };
-type CustomerLite = { id: string; nickname: string };
+type CustomerLite = { id: string; nickname: string; contact: string; visits: number };
+type SourceLite = { id: string; name: string; tier: string };
 
-export function ReservationsClient({ slug, rows, staff, customers, filters, times, openNew, focusId, staffPhotos, page, pageCount, totalCount }: {
-  slug: string; rows: ResRow[]; staff: StaffLite[]; customers: CustomerLite[];
+export function ReservationsClient({ slug, rows, staff, customers, sources, filters, times, openNew, focusId, staffPhotos, page, pageCount, totalCount }: {
+  slug: string; rows: ResRow[]; staff: StaffLite[]; customers: CustomerLite[]; sources: SourceLite[];
   filters: { date: string; staffId: string; q: string; status: string }; times: string[]; openNew: boolean; focusId?: string; staffPhotos: Record<string, string | null>;
   page: number; pageCount: number; totalCount: number;
 }) {
@@ -189,7 +191,7 @@ export function ReservationsClient({ slug, rows, staff, customers, filters, time
         <div className="mt-2 text-center text-[11px] text-mute">전체 {totalCount}건 · {page}/{pageCount} 페이지</div>
       )}
 
-      {showNew && <NewReservationModal slug={slug} staff={staff.filter((s) => s.isActive)} customers={customers} times={times} defaultDate={filters.date || ymd(new Date())} onClose={() => { setShowNew(false); router.replace("?view=list" + (filters.date ? `&date=${filters.date}` : "")); }} />}
+      {showNew && <NewReservationModal slug={slug} staff={staff.filter((s) => s.isActive)} customers={customers} sources={sources} times={times} defaultDate={filters.date || ymd(new Date())} onClose={() => { setShowNew(false); router.replace("?view=list" + (filters.date ? `&date=${filters.date}` : "")); }} />}
       {editing && <EditModal slug={slug} row={editing} staff={staff.filter((s) => s.isActive)} times={times} onClose={() => setEditing(null)} />}
     </>
   );
@@ -209,15 +211,38 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
   );
 }
 
-function NewReservationModal({ slug, staff, customers, times, defaultDate, onClose }: { slug: string; staff: StaffLite[]; customers: CustomerLite[]; times: string[]; defaultDate: string; onClose: () => void }) {
+/**
+ * 전화·텔레그램으로 받은 예약을 그 자리에서 적는 화면.
+ *
+ * 손님을 기다리게 하면 안 되므로 손이 적게 가야 한다. 이름 몇 글자만 치면
+ * 연락처와 방문 횟수가 같이 나와 같은 이름을 헷갈리지 않고 고를 수 있고,
+ * 없는 사람이면 방금 친 이름 그대로 신규로 넘어간다.
+ *
+ * 경로는 예약마다 따로 찍는다 — 단골이 귀찮아서 전화로 하는 일이 흔해서
+ * "재방문이면 앱" 으로 묶어 두면 숫자가 틀어진다.
+ */
+function NewReservationModal({ slug, staff, customers, sources, times, defaultDate, onClose }: { slug: string; staff: StaffLite[]; customers: CustomerLite[]; sources: SourceLite[]; times: string[]; defaultDate: string; onClose: () => void }) {
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
   const [mode, setMode] = useState<"existing" | "new">("existing");
-  const [form, setForm] = useState({ staffId: staff[0]?.id ?? "", date: defaultDate, time: times[0] ?? "18:00", hours: 1, partySize: 1, requestNote: "", customerId: customers[0]?.id ?? "", nickname: "" });
+  const [q, setQ] = useState("");
+  const [form, setForm] = useState({
+    staffId: staff[0]?.id ?? "", date: defaultDate, time: times[0] ?? "18:00", hours: 1, partySize: 1,
+    requestNote: "", customerId: "", nickname: "", channel: "PHONE" as Channel, sourceId: "",
+  });
+
+  const picked = customers.find((c) => c.id === form.customerId);
+  const needle = q.trim();
+  const hit = (needle ? customers.filter((c) => c.nickname.includes(needle) || c.contact.includes(needle)) : customers).slice(0, 8);
+
   const submit = () => {
     start(async () => {
-      const r = await adminCreateReservation(slug, { ...form, customerId: mode === "existing" ? form.customerId : undefined });
+      const r = await adminCreateReservation(slug, {
+        ...form,
+        customerId: mode === "existing" ? form.customerId : undefined,
+        sourceId: mode === "new" ? form.sourceId || null : null,
+      });
       if (!r.ok) return toast(r.error, "error");
       toast("예약을 등록했어요", "success");
       router.push(`?view=list&date=${form.date}`);
@@ -225,34 +250,95 @@ function NewReservationModal({ slug, staff, customers, times, defaultDate, onClo
       onClose();
     });
   };
+
+  const canSubmit = mode === "existing" ? !!form.customerId : !!form.nickname.trim();
+
   return (
-    <Modal title="전화 예약 등록" onClose={onClose}>
+    <Modal title="예약 받아 적기" onClose={onClose}>
       <div className="mt-5 flex flex-col gap-4">
+        {/* 어디로 들어온 예약인지 — 재방문이어도 전화로 하는 일이 흔하다 */}
+        <div>
+          <div className="text-[11px] font-semibold text-mute">어디로 받으셨어요?</div>
+          <div className="mt-1.5 flex gap-1.5">
+            {CHANNELS.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => setForm({ ...form, channel: c.key })}
+                className={cn(
+                  "flex-1 rounded-xl border py-2 text-[12px] font-bold transition-colors",
+                  form.channel === c.key ? "border-brand bg-brand text-white" : "border-line bg-white text-mute hover:border-brand",
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex rounded-2xl bg-[#F4EDEE] p-1">
+          {(["existing", "new"] as const).map((m) => (
+            <button key={m} onClick={() => setMode(m)} className={cn("flex-1 rounded-xl py-2 text-[12px] font-bold", mode === m ? "bg-white text-ink shadow-card" : "text-mute")}>{m === "existing" ? "기존 손님" : "신규 손님"}</button>
+          ))}
+        </div>
+
+        {mode === "existing" ? (
+          picked ? (
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-brand/40 bg-blush-lt/40 px-4 py-3">
+              <span className="text-[13px] font-bold text-ink">{picked.nickname}</span>
+              {picked.contact && <span className="text-[11px] text-mute">{picked.contact}</span>}
+              <span className="text-[11px] text-mute">방문 {picked.visits}회</span>
+              <button onClick={() => { setForm({ ...form, customerId: "" }); setQ(""); }} className="ml-auto text-[11px] font-bold text-mute underline-offset-2 hover:underline">바꾸기</button>
+            </div>
+          ) : (
+            <div>
+              <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="닉네임이나 연락처로 찾기" className="h-11" />
+              <div className="mt-1.5 flex flex-col gap-1">
+                {hit.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setForm({ ...form, customerId: c.id })}
+                    className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-left text-[12px] hover:border-brand"
+                  >
+                    <span className="font-bold text-ink">{c.nickname}</span>
+                    {c.contact && <span className="text-[11px] text-mute">{c.contact}</span>}
+                    <span className="ml-auto text-[11px] text-mute">방문 {c.visits}회</span>
+                  </button>
+                ))}
+                {hit.length === 0 && (
+                  <button
+                    onClick={() => { setMode("new"); setForm({ ...form, nickname: needle }); }}
+                    className="rounded-xl border border-dashed border-brand bg-blush-lt/30 px-3 py-2.5 text-[12px] font-bold text-brand"
+                  >
+                    &ldquo;{needle}&rdquo; 새 손님으로 등록하기
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        ) : (
+          <div className="flex flex-col gap-3">
+            <Field label="닉네임" hint="휴대폰 번호·실명은 받지 않아요">
+              <Input autoFocus value={form.nickname} onChange={(e) => setForm({ ...form, nickname: e.target.value })} placeholder="예: 길동" className="h-11" />
+            </Field>
+            <Field label="방문 경로" hint="어디를 보고 연락 주셨는지 — 나중에 광고 효과를 봐요">
+              <Select value={form.sourceId} onChange={(e) => setForm({ ...form, sourceId: e.target.value })} className="w-full">
+                <option value="">모름 / 안 물어봄</option>
+                {sources.map((s) => <option key={s.id} value={s.id}>{s.name}{s.tier ? ` (${s.tier})` : ""}</option>)}
+              </Select>
+            </Field>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <Field label="캐치걸"><Select value={form.staffId} onChange={(e) => setForm({ ...form, staffId: e.target.value })} className="w-full">{staff.map((s) => <option key={s.id} value={s.id}>{s.nickname}</option>)}</Select></Field>
           <Field label="이용 시간"><Select value={String(form.hours)} onChange={(e) => setForm({ ...form, hours: Number(e.target.value) })} className="w-full">{HOUR_CHOICES.map((h) => <option key={h} value={h}>{h}시간</option>)}</Select></Field>
           <Field label="날짜"><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="h-11" /></Field>
           <Field label="시간"><Select value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="w-full">{times.map((t) => <option key={t}>{t}</option>)}</Select></Field>
         </div>
-        <div className="flex rounded-2xl bg-[#F4EDEE] p-1">
-          {(["existing", "new"] as const).map((m) => (
-            <button key={m} onClick={() => setMode(m)} className={cn("flex-1 rounded-xl py-2 text-[12px] font-bold", mode === m ? "bg-white text-ink shadow-card" : "text-mute")}>{m === "existing" ? "기존 고객" : "신규 고객"}</button>
-          ))}
-        </div>
-        {mode === "existing" ? (
-          <Field label="고객">
-            <Select value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })} className="w-full">
-              {customers.map((c) => <option key={c.id} value={c.id}>{c.nickname}</option>)}
-            </Select>
-          </Field>
-        ) : (
-          <Field label="닉네임" hint="휴대폰 번호는 받지 않아요">
-            <Input value={form.nickname} onChange={(e) => setForm({ ...form, nickname: e.target.value })} placeholder="예: 길동" />
-          </Field>
-        )}
+
         <Field label="요청사항"><Textarea rows={2} value={form.requestNote} onChange={(e) => setForm({ ...form, requestNote: e.target.value })} /></Field>
-        <div className="text-[11px] text-mute">※ 관리자 등록은 근무시간/마감 검증을 건너뛰지만, 같은 슬롯의 동시 접객 한도는 지켜요.</div>
-        <Button size="lg" onClick={submit} loading={pending} disabled={mode === "new" && !form.nickname}>등록하기</Button>
+        <div className="text-[11px] text-mute">※ 매장 등록은 근무시간·마감 검증을 건너뛰지만, 같은 시간 동시 접객 한도는 지켜요.</div>
+        <Button size="lg" onClick={submit} loading={pending} disabled={!canSubmit}>등록하기</Button>
       </div>
     </Modal>
   );

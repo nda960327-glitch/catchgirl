@@ -72,6 +72,8 @@ export type CreateReservationInput = {
   requestNote?: string;
   purposeTag?: string;
   createdBy: "CUSTOMER" | "ADMIN";
+  /** 이 예약이 들어온 경로. 손님이 앱에서 넣으면 APP, 매장이 받아 적으면 전화·텔레그램 등 */
+  channel?: "APP" | "PHONE" | "TELEGRAM" | "WALK_IN";
   /** 손님이 고른 쿠폰 (없으면 자동 할인만 붙는다) */
   couponId?: string;
   /** 관리자 예약은 과거/마감 슬롯 검증을 건너뛴다 */
@@ -186,6 +188,7 @@ export async function createReservation(input: CreateReservationInput) {
             purposeTag: input.purposeTag ?? "",
             status: "CONFIRMED",
             createdBy: input.createdBy,
+            channel: input.channel ?? (input.createdBy === "CUSTOMER" ? "APP" : "PHONE"),
             hourlyPrice: staff.hourlyPrice,
             optionsPrice,
             discountAmount: discount.amount,

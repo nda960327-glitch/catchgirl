@@ -56,6 +56,10 @@ const adminBook = z.object({
   requestNote: z.string().trim().max(200).optional().default(""),
   nickname: z.string().trim().max(12).optional().default(""),
   customerId: z.string().optional(),
+  // 전화·텔레그램으로 받은 예약인지. 재방문 손님도 앱 대신 전화로 하는 일이 흔하다.
+  channel: z.enum(["APP", "PHONE", "TELEGRAM", "WALK_IN"]).default("PHONE"),
+  // 신규일 때만 쓴다 — 이 손님이 어느 사이트를 보고 왔는지
+  sourceId: z.string().nullable().optional(),
 });
 export async function adminCreateReservation(slug: string, input: z.input<typeof adminBook>): Promise<R<{ id: string }>> {
   try {
@@ -70,7 +74,7 @@ export async function adminCreateReservation(slug: string, input: z.input<typeof
       const c = await prisma.customer.upsert({
         where: { storeId_nickname: { storeId: store.id, nickname: p.data.nickname } },
         update: {},
-        create: { storeId: store.id, nickname: p.data.nickname },
+        create: { storeId: store.id, nickname: p.data.nickname, sourceId: p.data.sourceId || null },
       });
       customerId = c.id;
       // 등록되는 순간부터 연결코드를 갖고 있어야 매장이 바로 알려줄 수 있다
@@ -78,7 +82,7 @@ export async function adminCreateReservation(slug: string, input: z.input<typeof
     }
     const r = await createReservation({
       storeId: store.id, staffId: p.data.staffId, customerId, date: p.data.date, time: p.data.time, hours: p.data.hours,
-      partySize: p.data.partySize, requestNote: p.data.requestNote, purposeTag: "전화예약", createdBy: "ADMIN", skipAvailabilityCheck: true,
+      partySize: p.data.partySize, requestNote: p.data.requestNote, purposeTag: "", createdBy: "ADMIN", channel: p.data.channel, skipAvailabilityCheck: true,
     });
     revalidatePath(`/${slug}/admin`, "layout");
     return { ok: true, data: { id: r.id } };
@@ -526,6 +530,7 @@ const customerInfoSchema = z.object({
   adminContact: z.string().trim().max(120).default(""),
   adminMemo: z.string().max(500).default(""),
   isBlacklisted: z.boolean().default(false),
+  sourceId: z.string().nullable().default(null),
 });
 /** 관리자 — 고객 기본 정보 수정 (닉네임·연락처·고정 메모·블랙리스트) */
 export async function saveCustomerInfo(slug: string, customerId: string, input: z.input<typeof customerInfoSchema>): Promise<R> {
@@ -539,7 +544,7 @@ export async function saveCustomerInfo(slug: string, customerId: string, input: 
     const d = p.data;
     await prisma.customer.update({
       where: { id: customerId },
-      data: { nickname: d.nickname, adminContact: d.adminContact, adminMemo: d.adminMemo, isBlacklisted: d.isBlacklisted },
+      data: { nickname: d.nickname, adminContact: d.adminContact, adminMemo: d.adminMemo, isBlacklisted: d.isBlacklisted, sourceId: d.sourceId || null },
     });
     revalidatePath(`/${slug}/admin`, "layout");
     return { ok: true };
@@ -575,7 +580,7 @@ export async function issueInviteCode(slug: string, customerId: string): Promise
  * 계정은 코드 없이 만들 수 없으므로, 처음 오시는 분께도 매장이 코드를 먼저 발급해야 한다.
  * 손님이 코드를 넣으며 정한 닉네임이 이 빈 기록에 붙는다.
  */
-export async function inviteNewCustomer(slug: string, memo?: string): Promise<R<{ code: string }>> {
+export async function inviteNewCustomer(slug: string, memo?: string, sourceId?: string | null): Promise<R<{ code: string }>> {
   try {
     const store = await getStoreBySlug(slug);
     await requireAdmin(store.id);
@@ -588,6 +593,7 @@ export async function inviteNewCustomer(slug: string, memo?: string): Promise<R<
         nickname: `신규-${code}`,
         inviteCode: code,
         adminMemo: (memo ?? "").trim().slice(0, 500),
+        sourceId: sourceId || null,
       },
     });
     revalidatePath(`/${slug}/admin/customers`);
@@ -687,6 +693,54 @@ export async function adminCommentAction(slug: string, commentId: string, action
       await prisma.comment.update({ where: { id: commentId }, data: { isHidden: action === "hide" } });
     }
     revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/* ─── 방문 경로 ─── */
+
+const sourceSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().trim().min(1, "이름을 입력해 주세요").max(30),
+  tier: z.enum(["FREE", "MAJOR", ""]).default(""),
+  isActive: z.boolean().default(true),
+});
+
+/** 방문 경로 추가·수정 (사이트 이름, 무료/메이저 구분) */
+export async function saveReferralSource(slug: string, input: z.input<typeof sourceSchema>): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const p = sourceSchema.safeParse(input);
+    if (!p.success) return { ok: false, error: p.error.issues[0].message };
+    const d = p.data;
+    if (d.id) {
+      const ex = await prisma.referralSource.findUnique({ where: { id: d.id } });
+      if (!ex || ex.storeId !== store.id) return { ok: false, error: "경로를 찾을 수 없어요." };
+      await prisma.referralSource.update({ where: { id: d.id }, data: { name: d.name, tier: d.tier, isActive: d.isActive } });
+    } else {
+      const count = await prisma.referralSource.count({ where: { storeId: store.id } });
+      await prisma.referralSource.create({ data: { storeId: store.id, name: d.name, tier: d.tier, isActive: d.isActive, sortOrder: count } });
+    }
+    revalidatePath(`/${slug}/admin`, "layout");
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof Error && e.message.includes("Unique constraint")) return { ok: false, error: "같은 이름의 경로가 이미 있어요." };
+    return fail(e);
+  }
+}
+
+/** 경로 삭제 — 이미 이 경로로 기록된 손님은 미기록으로 남는다 */
+export async function deleteReferralSource(slug: string, id: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const ex = await prisma.referralSource.findUnique({ where: { id } });
+    if (!ex || ex.storeId !== store.id) return { ok: false, error: "경로를 찾을 수 없어요." };
+    await prisma.referralSource.delete({ where: { id } });
+    revalidatePath(`/${slug}/admin`, "layout");
     return { ok: true };
   } catch (e) {
     return fail(e);
