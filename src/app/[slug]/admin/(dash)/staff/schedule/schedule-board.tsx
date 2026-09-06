@@ -8,7 +8,7 @@ import { ko } from "date-fns/locale";
 import { Avatar, Button, Card, Chip, Field, Input, Select } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { cn, toLocalDate, SHIFTS, type Shift } from "@/lib/utils";
-import { adminAddTimeOff, adminDeleteTimeOff, assignShift, clearDayAssignments, copyDayAssignments, setStaffAvailability } from "../../../actions";
+import { adminAddTimeOff, adminDeleteTimeOff, clearDayAssignments, copyDayAssignments, setStaffAvailability } from "../../../actions";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -49,13 +49,9 @@ export function ScheduleBoard({
 
   const dayOf = (d: string) => assignments.filter((a) => a.date === d);
   const cur = dayOf(date);
-  const cellOf = (shift: Shift, roomId: string) => cur.find((a) => a.shift === shift && a.roomId === roomId);
-  const at = (shift: Shift, roomId: string) => cellOf(shift, roomId)?.staffId ?? "";
   const staffName = (id: string) => staff.find((s) => s.id === id)?.name ?? "—";
   const roomName = (id: string) => rooms.find((r) => r.id === id)?.name ?? "—";
 
-  // 이 조에 이미 다른 룸을 맡은 사람은 드롭다운에서 흐리게 (선택하면 방을 옮긴다)
-  const takenIn = (shift: Shift) => new Set(cur.filter((a) => a.shift === shift).map((a) => a.staffId));
   const offToday = timeOffs.filter((t) => t.date === date);
   const offOf = (staffId: string) => offToday.filter((t) => t.staffId === staffId);
   const weekday = toLocalDate(date, "00:00").getDay();
@@ -65,12 +61,6 @@ export function ScheduleBoard({
   // 가능하다고 알렸는데 아직 어느 룸에도 못 넣은 사람 — 배치할 때 놓치지 않게
   const availableUnassigned = staff.filter((s) => canWorkAnyShift(s) && !assignedIds.has(s.id));
 
-  const setCell = (shift: Shift, roomId: string, staffId: string, times?: { startTime: string; endTime: string }) =>
-    start(async () => {
-      const r = await assignShift(slug, { date, shift, roomId, staffId, ...times });
-      if (!r.ok) return toast(r.error, "error");
-      router.refresh();
-    });
 
   const doCopy = () =>
     start(async () => {
@@ -180,93 +170,6 @@ export function ScheduleBoard({
           })}
         </div>
       )}
-
-      {/* 룸 × 조 배치 */}
-      <div className="mt-3 grid gap-3 lg:grid-cols-2">
-        {SHIFTS.map(([shift, label]) => {
-          const taken = takenIn(shift);
-          const filled = cur.filter((a) => a.shift === shift).length;
-          return (
-            <Card key={shift} className="p-4">
-              <div className="flex items-center gap-2">
-                <span className={cn("h-2 w-2 rounded-full", shift === "DAY" ? "bg-gold" : "bg-ink")} />
-                <span className="text-[13px] font-bold text-ink">{label}조</span>
-                <Chip tone="mute">{filled}/{rooms.length}</Chip>
-              </div>
-              <div className="mt-3 flex flex-col gap-1.5">
-                {rooms.map((room) => {
-                  const cell = cellOf(shift, room.id);
-                  const sid = cell?.staffId ?? "";
-                  const offs = sid ? offOf(sid) : [];
-                  return (
-                    <div key={room.id} className={cn("flex flex-wrap items-center gap-2 rounded-xl border px-2.5 py-2", sid ? "border-line bg-white" : "border-dashed border-line bg-[#FAF6F7]")}>
-                      <span className="w-[58px] shrink-0 text-[12px] font-bold text-ink">{room.name}</span>
-                      {sid && <Avatar src={staff.find((s) => s.id === sid)?.photo ?? null} name={staffName(sid)} size={22} rounded={7} />}
-                      <Select
-                        value={sid}
-                        disabled={pending}
-                        onChange={(e) => setCell(shift, room.id, e.target.value)}
-                        className="h-9 min-w-0 flex-1 text-[12px]"
-                      >
-                        <option value="">— 비어 있음 —</option>
-                        {/* 이 요일 이 조가 된다고 알린 사람을 위로 올린다.
-                            같은 요일이어도 주간만 되는 사람이 있으니 조까지 봐야 한다. */}
-                        <optgroup label={`이 요일 ${label}조 가능`}>
-                          {staff.filter((s) => canWork(s, shift)).map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}{taken.has(s.id) && s.id !== sid ? " (다른 룸)" : ""}
-                            </option>
-                          ))}
-                        </optgroup>
-                        <optgroup label="다른 조만 가능">
-                          {staff.filter((s) => !canWork(s, shift) && canWorkAnyShift(s)).map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}{taken.has(s.id) && s.id !== sid ? " (다른 룸)" : ""}
-                            </option>
-                          ))}
-                        </optgroup>
-                        {/* 가능하다고 말한 적이 없는 사람. 넣을 수는 있지만 먼저 물어봐야 한다. */}
-                        <optgroup label="이 요일 가능 표시 없음">
-                          {staff.filter((s) => !canWorkAnyShift(s)).map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name}{taken.has(s.id) && s.id !== sid ? " (다른 룸)" : ""}
-                            </option>
-                          ))}
-                        </optgroup>
-                      </Select>
-                      {/* 조 안에서도 사람마다 시각이 다르다 — 실제 근무 시각을 여기서 정한다 */}
-                      {cell && (
-                        <span className="flex items-center gap-1">
-                          <Select
-                            value={cell.startTime}
-                            disabled={pending}
-                            onChange={(e) => setCell(shift, room.id, sid, { startTime: e.target.value, endTime: cell.endTime })}
-                            className="h-8 w-[76px] px-1.5 text-[11px]"
-                          >
-                            {TIMES.map((t) => <option key={t}>{t}</option>)}
-                          </Select>
-                          <span className="text-[11px] text-mute">~</span>
-                          <Select
-                            value={cell.endTime}
-                            disabled={pending}
-                            onChange={(e) => setCell(shift, room.id, sid, { startTime: cell.startTime, endTime: e.target.value })}
-                            className="h-8 w-[76px] px-1.5 text-[11px]"
-                          >
-                            {TIMES.map((t) => <option key={t}>{t}</option>)}
-                          </Select>
-                        </span>
-                      )}
-                      {offs.length > 0 && (
-                        <Chip tone="red" className="shrink-0">외출 {offs[0].startTime}~{offs[0].endTime}</Chip>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          );
-        })}
-      </div>
 
       {/* 시간대 커버리지 — 누가 몇 시부터 몇 시까지 어느 룸인지 한눈에 */}
       {cur.length > 0 && (

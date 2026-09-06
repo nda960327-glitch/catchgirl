@@ -5,6 +5,7 @@ import { businessDayOf, storeSlotTimes } from "@/lib/slots";
 import { parseJsonArray, ymd } from "@/lib/utils";
 import { Eyebrow } from "@/components/ui";
 import { ScheduleBoard } from "./schedule-board";
+import { WeekBoard } from "./week-board";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,7 @@ export default async function SchedulePage({
           <Eyebrow>Shift</Eyebrow>
           <h1 className="mt-1 font-serif text-[22px] font-bold text-ink">출근 · 룸 배치</h1>
           <div className="mt-0.5 text-[11px] text-mute">
-            주간 {store.openTime}~{store.shiftSplitTime} · 야간 {store.shiftSplitTime}~익일 {store.closeTime} · 2주치를 미리 짤 수 있어요
+            주간 {store.openTime}~{store.shiftSplitTime} · 야간 {store.shiftSplitTime}~익일 {store.closeTime} · 칸을 눌러 사람과 시간을 넣어요
           </div>
         </div>
         <div className="flex gap-2">
@@ -61,6 +62,24 @@ export default async function SchedulePage({
           <Link href={`/${slug}/admin/settings`} className="ml-1 font-bold text-brand">매장 설정에서 룸을 먼저 만들어 주세요 ›</Link>
         </div>
       ) : (
+        <>
+          <WeekBoard
+            slug={slug}
+            today={today}
+            weekStart={days[0]}
+            days={days.slice(0, 7)}
+            rooms={rooms.map((r) => ({ id: r.id, name: r.name }))}
+            staff={staff.map((s) => ({
+              id: s.id,
+              name: s.nickname,
+              available: s.schedules.map((x) => ({ weekday: x.weekday, shift: x.shift })),
+            }))}
+            assignments={assignments}
+            presets={{
+              DAY: { start: store.openTime, end: store.shiftSplitTime },
+              NIGHT: { start: store.shiftSplitTime, end: store.closeTime },
+            }}
+          />
         <ScheduleBoard
           slug={slug}
           today={today}
@@ -77,6 +96,7 @@ export default async function SchedulePage({
           timeOffs={timeOffs}
           track={storeSlotTimes(store).filter((_, i) => i % (60 / store.slotMinutes) === 0)}
         />
+        </>
       )}
     </div>
   );
