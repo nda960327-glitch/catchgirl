@@ -36,7 +36,7 @@ export default async function SchedulePage({
       orderBy: { sortOrder: "asc" },
       select: { id: true, nickname: true, photos: true, schedules: { select: { weekday: true, shift: true } } },
     }),
-    prisma.shiftAssignment.findMany({ where: { storeId: store.id, date: { in: days } }, select: { id: true, date: true, shift: true, roomId: true, staffId: true, startTime: true, endTime: true } }),
+    prisma.shiftAssignment.findMany({ where: { storeId: store.id, date: { in: days } }, select: { id: true, date: true, shift: true, roomId: true, staffId: true, startTime: true, endTime: true, isStandby: true } }),
     prisma.staffTimeOff.findMany({ where: { date: { in: days }, staff: { storeId: store.id } }, select: { id: true, staffId: true, date: true, startTime: true, endTime: true, reason: true, createdBy: true } }),
   ]);
 

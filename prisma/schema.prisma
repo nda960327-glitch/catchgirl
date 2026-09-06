@@ -316,6 +316,9 @@ model ShiftAssignment {
   // 예약 가능 시간과 룸 안내는 이 시각을 기준으로 한다.
   startTime String   @default("12:00")
   endTime   String   @default("20:00")
+  // 예비로 걸어 둔 자리. 실제 근무가 아니므로 예약을 받지 않는다 —
+  // 자리를 잡아 두되 손님에게는 열리지 않게 하는 표시다.
+  isStandby Boolean  @default(false)
   createdAt DateTime @default(now())
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)

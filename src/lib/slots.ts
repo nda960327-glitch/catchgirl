@@ -84,7 +84,7 @@ export async function getSlotsFor(store: Store, staff: Staff, date: string, now 
   const times = storeSlotTimes(store);
   const closed = isStoreClosed(store, date);
   const [assignments, timeOffs] = await Promise.all([
-    prisma.shiftAssignment.findMany({ where: { staffId: staff.id, date }, select: { startTime: true, endTime: true } }),
+    prisma.shiftAssignment.findMany({ where: { staffId: staff.id, date, isStandby: false }, select: { startTime: true, endTime: true } }),
     // 외출(자리 비움) 구간은 배치된 시간이어도 예약을 받지 않는다
     prisma.staffTimeOff.findMany({ where: { staffId: staff.id, date }, select: { startTime: true, endTime: true } }),
   ]);
@@ -158,7 +158,7 @@ export async function calendarDays(store: Store, staff: Staff) {
   const today = toLocalDate(businessDayOf(store), "00:00");
   const dates = Array.from({ length: store.maxAdvanceDays + 1 }, (_, i) => ymd(new Date(today.getTime() + i * 86_400_000)));
   const assigned = new Set(
-    (await prisma.shiftAssignment.findMany({ where: { staffId: staff.id, date: { in: dates } }, select: { date: true } })).map((a) => a.date),
+    (await prisma.shiftAssignment.findMany({ where: { staffId: staff.id, date: { in: dates }, isStandby: false }, select: { date: true } })).map((a) => a.date),
   );
   return dates.map((date) => {
     const d = toLocalDate(date, "00:00");

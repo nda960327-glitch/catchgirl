@@ -25,6 +25,8 @@ export async function resolveRooms(
     where: {
       staffId: { in: [...new Set(keyed.map((r) => r.staffId))] },
       date: { in: [...new Set(keyed.map((r) => r.date))] },
+      // 예비로 걸어 둔 자리는 실제 근무가 아니라 안내할 룸이 아니다
+      isStandby: false,
     },
     include: { room: { select: { name: true } } },
   });
@@ -129,7 +131,7 @@ export async function createReservation(input: CreateReservationInput) {
   const day = businessDayOf(store, start);
   const shift = shiftOfTime(store, start);
   const assignment = await prisma.shiftAssignment.findFirst({
-    where: { staffId: staff.id, date: day, shift },
+    where: { staffId: staff.id, date: day, shift, isStandby: false },
     include: { room: { select: { name: true } } },
   });
   const roomName = assignment?.room.name ?? null;

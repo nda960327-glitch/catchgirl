@@ -255,7 +255,7 @@ export async function deleteRoom(slug: string, roomId: string): Promise<R> {
  */
 export async function assignShift(
   slug: string,
-  input: { date: string; shift: "DAY" | "NIGHT"; roomId: string; staffId: string; startTime?: string; endTime?: string },
+  input: { date: string; shift: "DAY" | "NIGHT"; roomId: string; staffId: string; startTime?: string; endTime?: string; isStandby?: boolean },
 ): Promise<R> {
   try {
     const store = await getStoreBySlug(slug);
@@ -303,7 +303,7 @@ export async function assignShift(
       // 이 사람이 같은 조에 맡고 있던 다른 룸을 먼저 비운다 (방 이동)
       prisma.shiftAssignment.deleteMany({ where: { staffId, date, shift } }),
       prisma.shiftAssignment.deleteMany({ where: { roomId, date, shift } }),
-      prisma.shiftAssignment.create({ data: { storeId: store.id, date, shift, roomId, staffId, startTime, endTime } }),
+      prisma.shiftAssignment.create({ data: { storeId: store.id, date, shift, roomId, staffId, startTime, endTime, isStandby: !!input.isStandby } }),
     ]);
     revalidatePath(`/${slug}/admin`, "layout");
     return { ok: true };

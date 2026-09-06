@@ -12,7 +12,7 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 type Room = { id: string; name: string };
 type StaffLite = { id: string; name: string; available: { weekday: number; shift: string }[] };
-type Assignment = { id: string; date: string; shift: string; roomId: string; staffId: string; startTime: string; endTime: string };
+type Assignment = { id: string; date: string; shift: string; roomId: string; staffId: string; startTime: string; endTime: string; isStandby: boolean };
 
 /** "13:00" → "13", "13:30" → "13:30" — 칸이 좁아 정시는 시만 적는다 */
 const shortTime = (t: string) => (t.endsWith(":00") ? t.slice(0, 2) : t);
@@ -51,9 +51,9 @@ export function WeekBoard({
     assignments.find((a) => a.date === date && a.shift === shift && a.roomId === roomId);
   const nameOf = (id: string) => staff.find((s) => s.id === id)?.name ?? "—";
   // 이번 주에 몇 번 들어갔는지 — 한 사람에게 몰리는 걸 고르면서 바로 본다
-  const countIn = (staffId: string) => assignments.filter((a) => days.includes(a.date) && a.staffId === staffId).length;
+  const countIn = (staffId: string) => assignments.filter((a) => days.includes(a.date) && a.staffId === staffId && !a.isStandby).length;
 
-  const save = (date: string, shift: Shift, roomId: string, staffId: string, times?: { startTime: string; endTime: string }) =>
+  const save = (date: string, shift: Shift, roomId: string, staffId: string, times?: { startTime: string; endTime: string; isStandby?: boolean }) =>
     start(async () => {
       const r = await assignShift(slug, { date, shift, roomId, staffId, ...times });
       if (!r.ok) return toast(r.error, "error");
@@ -72,7 +72,8 @@ export function WeekBoard({
       router.refresh();
     });
 
-  const filled = assignments.filter((a) => days.includes(a.date)).length;
+  const filled = assignments.filter((a) => days.includes(a.date) && !a.isStandby).length;
+  const standby = assignments.filter((a) => days.includes(a.date) && a.isStandby).length;
 
   return (
     <>
@@ -84,6 +85,7 @@ export function WeekBoard({
           </span>
           <Button size="sm" variant="outline" onClick={() => router.push(`?date=${plusDays(weekStart, 7)}`)}>다음주 ›</Button>
           <Chip tone="mute">{filled}칸 채움</Chip>
+          {standby > 0 && <Chip tone="gold">예비 {standby}</Chip>}
           <Button size="sm" variant="secondary" className="ml-auto" onClick={copyLastWeek} loading={pending}>
             지난주 그대로 가져오기
           </Button>
@@ -140,15 +142,18 @@ export function WeekBoard({
                             className={cn(
                               "flex h-9 w-full items-center justify-center rounded-md px-1 text-[11px] font-bold transition-colors",
                               a
-                                ? shift === "DAY"
-                                  ? "bg-[#FFF6E6] text-[#7A5A10] hover:brightness-95"
-                                  : "bg-[#EEF1FB] text-[#33427A] hover:brightness-95"
+                                ? a.isStandby
+                                  ? "border border-dashed border-gold/70 bg-white text-[#8A6A20] hover:bg-[#FFFBF3]"
+                                  : shift === "DAY"
+                                    ? "bg-[#FFF6E6] text-[#7A5A10] hover:brightness-95"
+                                    : "bg-[#EEF1FB] text-[#33427A] hover:brightness-95"
                                 : "border border-dashed border-line text-mute/40 hover:border-brand hover:text-brand",
                             )}
                           >
                             {a ? (
                               <span className="truncate">
-                                {nameOf(a.staffId)} <span className="font-semibold opacity-70">{range(a.startTime, a.endTime)}</span>
+                                {nameOf(a.staffId)}{" "}
+                                <span className="font-semibold opacity-70">{a.isStandby ? "예비" : range(a.startTime, a.endTime)}</span>
                               </span>
                             ) : (
                               "+"
@@ -197,11 +202,12 @@ function CellEditor({
   countIn: (id: string) => number;
   pending: boolean;
   onClose: () => void;
-  onSave: (staffId: string, times?: { startTime: string; endTime: string }) => void;
+  onSave: (staffId: string, times?: { startTime: string; endTime: string; isStandby?: boolean }) => void;
 }) {
   const [staffId, setStaffId] = useState(current?.staffId ?? "");
   const [startTime, setStartTime] = useState(current?.startTime ?? preset.start);
   const [endTime, setEndTime] = useState(current?.endTime ?? preset.end);
+  const [standby, setStandby] = useState(current?.isStandby ?? false);
 
   const weekday = toLocalDate(cell.date, "00:00").getDay();
   const canWork = (s: StaffLite) => s.available.some((a) => a.weekday === weekday && a.shift === cell.shift);
@@ -258,11 +264,30 @@ function CellEditor({
           <div className="text-[10px] leading-[1.7] text-mute">
             {label}조 기본은 {range(preset.start, preset.end)} 예요. 사람마다 다르면 여기서 고치시면 돼요.
           </div>
+
+          {/* 예비는 자리를 잡아 두는 표시일 뿐 실제 근무가 아니다 — 예약을 받지 않는다 */}
+          <button
+            type="button"
+            aria-pressed={standby}
+            onClick={() => setStandby((v) => !v)}
+            className={cn(
+              "flex items-start gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-colors",
+              standby ? "border-gold bg-[#FFFBF3]" : "border-line bg-white hover:border-gold/60",
+            )}
+          >
+            <span className={cn("mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-bold", standby ? "border-gold bg-gold text-white" : "border-line bg-white text-transparent")}>✓</span>
+            <span className="min-w-0">
+              <span className="block text-[12px] font-bold text-ink">예비로 걸어두기</span>
+              <span className="mt-0.5 block text-[10px] leading-[1.7] text-mute">
+                자리는 잡아 두되 손님 예약은 열리지 않아요. 근무가 확정되면 체크를 풀어 주세요.
+              </span>
+            </span>
+          </button>
         </div>
 
         <div className="mt-5 flex gap-2">
-          <Button className="flex-1" loading={pending} onClick={() => onSave(staffId, { startTime, endTime })}>
-            {staffId ? "저장" : "이 칸 비우기"}
+          <Button className="flex-1" loading={pending} onClick={() => onSave(staffId, { startTime, endTime, isStandby: standby })}>
+            {staffId ? (standby ? "예비로 저장" : "저장") : "이 칸 비우기"}
           </Button>
           <Button variant="ghost" onClick={onClose}>취소</Button>
         </div>
