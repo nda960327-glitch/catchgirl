@@ -7,6 +7,7 @@ import { billingStatus, storeHealth } from "@/lib/platform-data";
 import { PLANS, planOf } from "@/lib/plans";
 import { cn, won, wonShort } from "@/lib/utils";
 import { Card, Chip } from "@/components/ui";
+import { PENDING_REASON } from "@/lib/terms";
 import { NewStoreForm } from "./new-store-form";
 import { BroadcastForm } from "./broadcast-form";
 import { logoutPlatform } from "./actions";
@@ -98,7 +99,7 @@ export default async function PlatformPage() {
                         <span className="font-serif text-[16px] font-bold text-ink">{s.name}</span>
                         <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[.1em] text-white ${plan === "MAX" ? "bg-gold" : "bg-ink"}`}>{PLANS[plan].name}</span>
                         {s.slug === DEMO_SLUG && <span className="rounded-md bg-blush-lt px-1.5 py-0.5 text-[9px] font-bold text-brand">예시 매장</span>}
-                        {s.isSuspended && <Chip tone="red">이용 중지</Chip>}
+                        {s.isSuspended && (s.suspendedReason === PENDING_REASON ? <Chip tone="gold">가입 신청 · 승인 대기</Chip> : <Chip tone="red">이용 중지</Chip>)}
                         {billing.unpaid.length > 0 && !s.isSuspended && <Chip tone="red">미납 {billing.unpaid.length}개월</Chip>}
                         {!s.bizVerifiedAt && <Chip tone="red">사업자 미확인</Chip>}
                       </div>

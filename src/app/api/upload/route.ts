@@ -3,20 +3,9 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { COOKIE, verifySession } from "@/lib/auth";
 import { isPlatform } from "@/lib/platform";
+import { MAX_FULL, MAX_THUMB, decodeDataUrl as decode } from "@/lib/image-server";
 
 export const dynamic = "force-dynamic";
-
-/** 브라우저가 줄여서 보낸 뒤의 상한. 이보다 크면 줄이기가 안 된 것이므로 받지 않는다. */
-const MAX_FULL = 2_500_000;
-const MAX_THUMB = 400_000;
-
-function decode(dataUrl: string, max: number) {
-  const m = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
-  if (!m) return null;
-  const buf = Buffer.from(m[2], "base64");
-  if (buf.length === 0 || buf.length > max) return null;
-  return { mime: `image/${m[1]}`, buf };
-}
 
 /**
  * POST /api/upload  { images: [{ full: dataURL, thumb: dataURL }] }

@@ -11,7 +11,7 @@ import { won, wonShort } from "@/lib/utils";
 import { Card, Chip } from "@/components/ui";
 import { StoreCardEditor } from "../store-card-editor";
 import { BizBox } from "./biz-box";
-import { bizStatus } from "@/lib/terms";
+import { PENDING_REASON, bizStatus } from "@/lib/terms";
 import { DeleteBox, PaymentsTable, SuspendBox, type PaymentRow } from "./store-forms";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +28,8 @@ const ACTION_LABEL: Record<string, string> = {
   UNPAID: "입금 표시 취소",
   BROADCAST: "전체 공지",
   STORE_DELETED: "매장 삭제",
+  SIGNUP: "가입 신청",
+  APPROVED: "가입 승인",
   BIZ_VERIFIED: "사업자 확인",
   BIZ_UPDATED: "사업자 정보 수정",
   BIZ_UNVERIFIED: "사업자 확인 취소",
@@ -60,6 +62,7 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
   const next = nextBillingDate(store.planStartedAt);
   const theme = THEMES[themeOf(store.theme)];
   const biz = bizStatus(store);
+  const pendingApproval = store.isSuspended && store.suspendedReason === PENDING_REASON;
 
   // 청구 예정 달(최근 것부터)에 입금 여부를 붙인다
   const paidBy = new Map(store.payments.map((p) => [p.month, p]));
@@ -81,9 +84,9 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="font-serif text-[24px] font-bold text-ink">{store.name}</h1>
                 <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[.1em] text-white ${plan === "MAX" ? "bg-gold" : "bg-ink"}`}>{PLANS[plan].name}</span>
-                {store.isSuspended && <Chip tone="red">이용 중지</Chip>}
-                {billing.unpaid.length > 0 && <Chip tone="red">미납 {billing.unpaid.length}개월</Chip>}
-                {!biz.verified && <Chip tone="red">사업자 미확인</Chip>}
+                {store.isSuspended && (pendingApproval ? <Chip tone="gold">가입 신청 · 승인 대기</Chip> : <Chip tone="red">이용 중지</Chip>)}
+                {billing.unpaid.length > 0 && !pendingApproval && <Chip tone="red">미납 {billing.unpaid.length}개월</Chip>}
+                {!biz.verified && !pendingApproval && <Chip tone="red">사업자 미확인</Chip>}
                 {(!biz.agreed || biz.outdated) && <Chip tone="gold">{biz.agreed ? "새 약관 동의 필요" : "약관 미동의"}</Chip>}
               </div>
               <div className="mt-1 text-[12px] text-mute">
@@ -146,6 +149,12 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
         {/* 사업자 확인 · 약관 */}
         <Card className="mt-4 p-5">
           <div className="text-[14px] font-bold text-ink">사업자 확인 · 약관</div>
+          {pendingApproval && (
+            <div className="mt-2 rounded-2xl border border-gold/40 bg-gold-lt/20 px-4 py-3 text-[12px] leading-[1.8] text-ink">
+              <b>업체가 직접 신청한 매장이에요.</b> 등록증 사본을 열어 보고 홈택스에서 사업자 상태와 업태·종목을 조회한 뒤 <b>확인 완료</b>를 누르면 그 순간 매장이 열려요.
+              {store.ownerContact && <> 연락처: <b>{store.ownerContact}</b></>}
+            </div>
+          )}
           <div className="mt-0.5 text-[11px] leading-[1.7] text-mute">
             등록증 사본과 국세청 조회로 확인한 기록이에요. 상호·번호·업종을 고치면 확인 표시가 풀리니 다시 조회하고 확인해 주세요.
           </div>
@@ -153,6 +162,7 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
             slug={store.slug}
             biz={{ bizName: store.bizName, bizNumber: store.bizNumber, bizType: store.bizType, bizOwner: store.bizOwner, bizDocUrl: store.bizDocUrl, bizVerifyMemo: store.bizVerifyMemo }}
             verifiedAt={store.bizVerifiedAt ? format(store.bizVerifiedAt, "yyyy.MM.dd HH:mm") : null}
+            pendingApproval={pendingApproval}
             terms={{ version: store.termsVersion, agreedAt: store.termsAgreedAt ? format(store.termsAgreedAt, "yyyy.MM.dd") : null, agreedBy: store.termsAgreedBy }}
           />
         </Card>

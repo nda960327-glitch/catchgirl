@@ -19,11 +19,13 @@ export type BizInfo = { bizName: string; bizNumber: string; bizType: string; biz
  * 여기서 다시 동의를 받아 적는다.
  */
 export function BizBox({
-  slug, biz, verifiedAt, terms,
+  slug, biz, verifiedAt, terms, pendingApproval = false,
 }: {
   slug: string;
   biz: BizInfo;
   verifiedAt: string | null;
+  /** 직접 신청해 잠겨 있는 매장 — 확인 완료가 곧 승인·열기 */
+  pendingApproval?: boolean;
   terms: { version: string; agreedAt: string | null; agreedBy: string };
 }) {
   const [edit, setEdit] = useState(false);
@@ -59,7 +61,7 @@ export function BizBox({
     start(async () => {
       const r = await verifyBiz(slug, memo);
       if (!r.ok) return toast(r.error, "error");
-      toast("사업자 확인을 표시했어요", "success");
+      toast(pendingApproval ? "승인했어요. 매장이 열렸어요." : "사업자 확인을 표시했어요", "success");
       setMemo("");
       router.refresh();
     });
@@ -138,7 +140,7 @@ export function BizBox({
         {!verifiedAt && !edit && (
           <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-well p-2.5">
             <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="조회 결과 (예: 계속사업자 · 일반음식점 신고)" maxLength={300} className="h-10 flex-1 text-[12px]" />
-            <Button size="sm" onClick={verify} loading={pending}>홈택스 조회 후 확인 완료</Button>
+            <Button size="sm" onClick={verify} loading={pending}>{pendingApproval ? "확인 완료 · 승인하고 매장 열기" : "홈택스 조회 후 확인 완료"}</Button>
           </div>
         )}
       </div>

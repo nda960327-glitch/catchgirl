@@ -11,6 +11,12 @@ export const TERMS_VERSION = "2026-09-08";
 
 export const TERMS_TITLE = "서비스 이용 약관";
 
+/** 업체가 직접 신청해 아직 승인 전인 매장의 잠금 사유 — 이 문장 그대로 비교한다 */
+export const PENDING_REASON = "사업자 확인 대기";
+
+/** 앱을 파는 쪽 연락처 — 신청·승인 대기 화면에서 보여준다 */
+export const OPERATOR_CONTACT = { telegram: "BGT_OP", phone: "010-2117-8961" } as const;
+
 export const TERMS: { title: string; body: string }[] = [
   {
     title: "1. 이 서비스가 하는 일",

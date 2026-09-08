@@ -8,11 +8,9 @@ import { prisma } from "@/lib/db";
 import { setSession } from "@/lib/auth";
 import { checkPlatformPassword, clearPlatformSession, isPlatform, setPlatformSession } from "@/lib/platform";
 import { logPlatform } from "@/lib/platform-data";
-import { DEFAULT_SOURCES } from "@/lib/sources";
-import { DEFAULT_GRADE_BENEFITS } from "@/lib/discounts";
-import { THEMES } from "@/lib/themes";
+import { SLUG_RE, emailProblem, provisionStore, slugProblem } from "@/lib/provision";
 import { PLANS, billedPrice, planOf } from "@/lib/plans";
-import { TERMS_VERSION, formatBizNumber, isValidBizNumber } from "@/lib/terms";
+import { PENDING_REASON, TERMS_VERSION, formatBizNumber, isValidBizNumber } from "@/lib/terms";
 
 export type R<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 const denied = (): R<never> => ({ ok: false, error: "권한이 없어요." });
@@ -40,7 +38,7 @@ const storeSchema = z.object({
     .trim()
     .min(2, "주소는 2자 이상이어야 해요")
     .max(30)
-    .regex(/^[a-z0-9-]+$/, "주소는 영문 소문자·숫자·하이픈만 쓸 수 있어요"),
+    .regex(SLUG_RE, "주소는 영문 소문자·숫자·하이픈만 쓸 수 있어요"),
   adminEmail: z.string().trim().email("이메일 형식을 확인해 주세요"),
   adminPassword: z.string().min(4, "비밀번호는 4자 이상으로 정해 주세요").max(50),
   openTime: z.string().regex(/^\d{2}:\d{2}$/),
@@ -77,80 +75,32 @@ export async function createStore(input: z.input<typeof storeSchema>): Promise<R
   if (!p.success) return { ok: false, error: p.error.issues[0].message };
   const d = p.data;
 
-  if (["platform", "api", "assets", "_next", "www", "app"].includes(d.slug)) return { ok: false, error: "쓸 수 없는 주소예요." };
-  if (await prisma.store.findUnique({ where: { slug: d.slug } })) return { ok: false, error: "이미 쓰고 있는 주소예요." };
-  if (await prisma.adminUser.findUnique({ where: { email: d.adminEmail } })) return { ok: false, error: "이미 쓰고 있는 관리자 이메일이에요." };
+  const slugErr = await slugProblem(d.slug);
+  if (slugErr) return { ok: false, error: slugErr };
+  const emailErr = await emailProblem(d.adminEmail);
+  if (emailErr) return { ok: false, error: emailErr };
 
   try {
-    const store = await prisma.store.create({
-      data: {
-        name: d.name,
-        slug: d.slug,
-        plan: d.plan,
-        theme: d.theme,
-        themeColor: THEMES[d.theme].brand,
-        openTime: d.openTime,
-        shiftSplitTime: d.shiftSplitTime,
-        closeTime: d.closeTime,
-        contactPhone: d.contactPhone,
-        contactTelegram: d.contactTelegram,
-        bizName: d.bizName,
-        bizNumber: formatBizNumber(d.bizNumber),
-        bizType: d.bizType,
-        bizOwner: d.bizOwner,
-        bizDocUrl: d.bizDocUrl,
-        bizVerifiedAt: new Date(),
-        bizVerifyMemo: d.bizVerifyMemo,
-        termsVersion: TERMS_VERSION,
-        termsAgreedAt: new Date(),
-        termsAgreedBy: d.termsAgreedBy,
-      },
-    });
-    await prisma.adminUser.create({
-      data: { storeId: store.id, email: d.adminEmail, passwordHash: await bcrypt.hash(d.adminPassword, 10), name: "매니저" },
-    });
-    // 첫날부터 배치를 짤 수 있게 룸을 만들어 둔다
-    await prisma.room.createMany({
-      data: Array.from({ length: d.roomCount }, (_, i) => ({ storeId: store.id, name: `${i + 1}번 룸`, sortOrder: i })),
-    });
-    // 옵션은 매장마다 이름이 다르지만, 두 칸 있는 형태는 공통이라 틀만 준다
-    await prisma.storeOption.createMany({
-      data: [
-        { storeId: store.id, name: "옵션1", price: 50_000, sortOrder: 0 },
-        { storeId: store.id, name: "옵션2", price: 50_000, sortOrder: 1 },
-      ],
-    });
-    await prisma.gradeBenefit.createMany({
-      data: DEFAULT_GRADE_BENEFITS.map((b) => ({ storeId: store.id, grade: b.grade, amount: b.amount, note: b.note })),
-    });
-    await prisma.referralSource.createMany({
-      data: DEFAULT_SOURCES.map((s, i) => ({ storeId: store.id, name: s.name, tier: s.tier, sortOrder: i })),
-    });
-    // 손님이 처음 들어왔을 때 빈 화면을 보지 않도록 안내 공지를 넣어 둔다.
-    // (앱 성격을 밝히는 고정 안내는 코드에 있어 따로 만들지 않는다)
-    await prisma.notice.createMany({
-      data: [
-        {
-          storeId: store.id,
-          title: "초대받은 분만 이용하실 수 있어요",
-          body:
-            "이곳은 기존에 방문해 주신 분들을 위해 조용히 열어둔 공간이에요.\n" +
-            "주소나 화면을 다른 분께 공유하시면 예약이 제한될 수 있어요.\n" +
-            "새로 함께 오고 싶은 분이 계시면 매장에 먼저 말씀해 주세요.",
-          isPinned: true,
-          sortOrder: 0,
-        },
-        {
-          storeId: store.id,
-          title: "시작하려면 연결코드가 필요해요",
-          body:
-            "계정은 매장에서 받은 연결코드로만 만들 수 있어요.\n" +
-            "카톡·전화로 예약하시던 분은 그동안의 방문 기록을 그대로 이어받으실 수 있어요.\n" +
-            "한 번 시작하신 뒤로는 닉네임과 PIN으로 바로 들어오실 수 있어요.",
-          isPinned: true,
-          sortOrder: 1,
-        },
-      ],
+    const store = await provisionStore({
+      name: d.name,
+      slug: d.slug,
+      plan: d.plan,
+      theme: d.theme,
+      openTime: d.openTime,
+      shiftSplitTime: d.shiftSplitTime,
+      closeTime: d.closeTime,
+      roomCount: d.roomCount,
+      contactPhone: d.contactPhone,
+      contactTelegram: d.contactTelegram,
+      adminEmail: d.adminEmail,
+      adminPassword: d.adminPassword,
+      ownerContact: "",
+      platformMemo: "",
+      biz: { bizName: d.bizName, bizNumber: formatBizNumber(d.bizNumber), bizType: d.bizType, bizOwner: d.bizOwner, bizDocUrl: d.bizDocUrl, bizVerifyMemo: d.bizVerifyMemo },
+      bizVerifiedAt: new Date(),
+      terms: { version: TERMS_VERSION, agreedBy: d.termsAgreedBy },
+      isSuspended: false,
+      suspendedReason: "",
     });
     await logPlatform("STORE_CREATED", `${d.name} (/${d.slug}) · ${PLANS[d.plan].name}`, store.id);
     await logPlatform("BIZ_VERIFIED", `${d.bizName} ${formatBizNumber(d.bizNumber)} · ${d.bizType}${d.bizVerifyMemo ? ` · ${d.bizVerifyMemo}` : ""}`, store.id);
@@ -276,8 +226,17 @@ export async function verifyBiz(slug: string, memo: string): Promise<R> {
   if (!store) return { ok: false, error: "매장을 찾을 수 없어요." };
   if (!store.bizNumber || !store.bizDocUrl) return { ok: false, error: "등록증 사본과 사업자등록번호가 먼저 있어야 해요." };
   const m = memo.trim().slice(0, 300);
-  await prisma.store.update({ where: { id: store.id }, data: { bizVerifiedAt: new Date(), bizVerifyMemo: m || store.bizVerifyMemo } });
+  // 직접 신청해 잠겨 있던 매장은 확인이 곧 승인이다 — 여기서 연다
+  const opening = store.isSuspended && store.suspendedReason === PENDING_REASON;
+  await prisma.store.update({
+    where: { id: store.id },
+    data: { bizVerifiedAt: new Date(), bizVerifyMemo: m || store.bizVerifyMemo, ...(opening ? { isSuspended: false, suspendedReason: "" } : {}) },
+  });
   await logPlatform("BIZ_VERIFIED", `${store.bizName} ${store.bizNumber} · ${store.bizType}${m ? ` · ${m}` : ""}`, store.id);
+  if (opening) {
+    await logPlatform("APPROVED", "가입 신청 승인 — 매장 열림", store.id);
+    revalidatePath(`/${slug}`, "layout");
+  }
   revalidatePath("/platform", "layout");
   return { ok: true };
 }
