@@ -265,6 +265,49 @@ export async function recordTermsAgreement(slug: string, agreedBy: string): Prom
   return { ok: true };
 }
 
+/* ─── CMS 자동이체 ─── */
+const cmsSchema = z.object({
+  memberNo: z.string().trim().max(40).default(""),
+  agreed: z.boolean().default(false),
+  note: z.string().trim().max(120).default(""),
+});
+export async function updateCms(slug: string, input: z.input<typeof cmsSchema>): Promise<R> {
+  if (!(await isPlatform())) return denied();
+  const p = cmsSchema.safeParse(input);
+  if (!p.success) return { ok: false, error: p.error.issues[0].message };
+  const store = await storeBySlug(slug);
+  if (!store) return { ok: false, error: "매장을 찾을 수 없어요." };
+  const d = p.data;
+  await prisma.store.update({
+    where: { id: store.id },
+    data: { cmsMemberNo: d.memberNo, cmsNote: d.note, cmsAgreedAt: d.agreed ? (store.cmsAgreedAt ?? new Date()) : null },
+  });
+  await logPlatform("CMS_UPDATED", `회원번호 ${d.memberNo || "없음"} · 동의 ${d.agreed ? "받음" : "없음"}`, store.id);
+  revalidatePath("/platform", "layout");
+  return { ok: true };
+}
+
+/** 출금 결과 반영 — 성공한 회원번호들을 그 달 입금으로 한 번에 표시 */
+export async function markPaidBulk(month: string, memberNos: string[]): Promise<R<{ marked: number; unknown: string[] }>> {
+  if (!(await isPlatform())) return denied();
+  if (!/^\d{4}-\d{2}$/.test(month)) return { ok: false, error: "달을 확인해 주세요." };
+  const nos = Array.from(new Set(memberNos.map((s) => s.trim()).filter(Boolean))).slice(0, 500);
+  if (nos.length === 0) return { ok: false, error: "회원번호가 없어요." };
+  const stores = await prisma.store.findMany({ where: { cmsMemberNo: { in: nos } } });
+  const found = new Set(stores.map((s) => s.cmsMemberNo));
+  for (const store of stores) {
+    const amount = amountForMonth(store, month);
+    await prisma.payment.upsert({
+      where: { storeId_month: { storeId: store.id, month } },
+      create: { storeId: store.id, month, amount, memo: "CMS 출금" },
+      update: { paidAt: new Date(), amount, memo: "CMS 출금" },
+    });
+    await logPlatform("PAID", `${month} · ${amount.toLocaleString("ko-KR")}원 · CMS`, store.id);
+  }
+  revalidatePath("/platform", "layout");
+  return { ok: true, data: { marked: stores.length, unknown: nos.filter((n) => !found.has(n)) } };
+}
+
 export async function suspendStore(slug: string, reason: string): Promise<R> {
   if (!(await isPlatform())) return denied();
   const store = await storeBySlug(slug);

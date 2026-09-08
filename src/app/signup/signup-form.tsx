@@ -72,7 +72,7 @@ export function SignupForm() {
         <h2 className="mt-1 font-serif text-[20px] font-bold text-ink">신청서를 받았어요</h2>
         <p className="mt-2 text-[12px] leading-[1.9] text-mute">
           운영사가 사업자등록증과 업종을 확인한 뒤 <b className="text-ink">{f.ownerContact || "적어 주신 연락처"}</b>로 연락드려요. 보통 영업일 하루 안이에요.
-          승인되면 아래 주소가 바로 열려요. 그 전에는 "확인 중" 안내만 보여요.
+          승인되면 아래 주소가 바로 열리고, 요금 자동이체(매월 5일) 출금 동의 링크를 같이 보내드려요. 그 전에는 "확인 중" 안내만 보여요.
         </p>
         <div className="mt-4 rounded-xl bg-well px-3 py-2.5 font-mono text-[11px] leading-[1.9] text-ink">
           관리자 주소  {origin}/{done.slug}/admin<br />

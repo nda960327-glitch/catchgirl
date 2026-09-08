@@ -11,6 +11,8 @@ import { won, wonShort } from "@/lib/utils";
 import { Card, Chip } from "@/components/ui";
 import { StoreCardEditor } from "../store-card-editor";
 import { BizBox } from "./biz-box";
+import { CmsBox } from "./cms-box";
+import { DEBIT_DAY } from "@/lib/plans";
 import { PENDING_REASON, bizStatus } from "@/lib/terms";
 import { DeleteBox, PaymentsTable, SuspendBox, type PaymentRow } from "./store-forms";
 
@@ -34,6 +36,7 @@ const ACTION_LABEL: Record<string, string> = {
   BIZ_UPDATED: "사업자 정보 수정",
   BIZ_UNVERIFIED: "사업자 확인 취소",
   TERMS_AGREED: "약관 동의",
+  CMS_UPDATED: "자동이체 정보",
 };
 
 /**
@@ -87,6 +90,7 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
                 {store.isSuspended && (pendingApproval ? <Chip tone="gold">가입 신청 · 승인 대기</Chip> : <Chip tone="red">이용 중지</Chip>)}
                 {billing.unpaid.length > 0 && !pendingApproval && <Chip tone="red">미납 {billing.unpaid.length}개월</Chip>}
                 {!biz.verified && !pendingApproval && <Chip tone="red">사업자 미확인</Chip>}
+                {!store.cmsMemberNo && !pendingApproval && !store.isSuspended && <Chip tone="red">자동이체 미등록</Chip>}
                 {(!biz.agreed || biz.outdated) && <Chip tone="gold">{biz.agreed ? "새 약관 동의 필요" : "약관 미동의"}</Chip>}
               </div>
               <div className="mt-1 text-[12px] text-mute">
@@ -96,7 +100,7 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
           </div>
           <div className="rounded-2xl bg-card px-4 py-3 text-[11px] leading-[1.9] shadow-card">
             <div className="text-mute">월 요금 <b className="text-ink">{won(billing.monthly)}</b></div>
-            <div className="text-mute">다음 청구일 <b className="text-ink">{format(next, "M월 d일", { locale: ko })}</b></div>
+            <div className="text-mute">다음 출금일 <b className="text-ink">{format(next, "M월 d일", { locale: ko })}</b> · 매월 {DEBIT_DAY}일</div>
             <div className="text-mute">관리자 <b className="text-ink">{store.admins[0]?.email ?? "없음"}</b></div>
           </div>
         </div>
@@ -167,6 +171,15 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
           />
         </Card>
 
+        {/* CMS 자동이체 */}
+        <Card className="mt-4 p-5">
+          <div className="text-[14px] font-bold text-ink">CMS 자동이체</div>
+          <div className="mt-0.5 text-[11px] leading-[1.7] text-mute">
+            요금은 매월 {DEBIT_DAY}일 매장 계좌에서 자동으로 빠져요. CMS 사 화면에서 이 매장을 고객으로 등록해 출금 동의를 받고, 회원번호를 여기에 적어 두면 <Link href="/platform/billing" className="font-bold text-brand underline-offset-2 hover:underline">출금 명단</Link>에 실려요.
+          </div>
+          <CmsBox slug={store.slug} memberNo={store.cmsMemberNo} agreedAt={store.cmsAgreedAt ? format(store.cmsAgreedAt, "yyyy.MM.dd") : null} note={store.cmsNote} />
+        </Card>
+
         {/* 입금 */}
         <Card className="mt-4 p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -175,7 +188,7 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
               {billing.unpaid.length > 0 ? <span className="font-bold text-bad">미납 {billing.unpaid.join(", ")}</span> : "밀린 달 없음"}
             </div>
           </div>
-          <div className="mt-0.5 text-[11px] text-mute">청구는 구독 시작일과 같은 날짜로 매달 돌아와요. 들어온 달을 눌러 두면 안 눌린 달이 미납으로 남아요.</div>
+          <div className="mt-0.5 text-[11px] text-mute">매월 {DEBIT_DAY}일 출금 기준이에요. CMS 결과는 출금 명단 화면에서 한 번에 반영하고, 계좌이체로 낸 달은 여기서 눌러요. 안 눌린 달이 미납으로 남아요.</div>
           <div className="mt-3">
             <PaymentsTable slug={store.slug} rows={paymentRows} />
           </div>

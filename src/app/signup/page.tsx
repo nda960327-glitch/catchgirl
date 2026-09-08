@@ -40,7 +40,7 @@ export default function SignupPage() {
             <div className="mt-1 text-[10px] text-mute">세팅은 관리자 화면에서 직접 30분 · 방문 세팅은 선택 {won(ONSITE_SETUP_FEE)}</div>
           </div>
         </div>
-        <div className="mt-2 text-[11px] text-mute">첫 달은 {won(FIRST_MONTH_PRICE)}이고 승인된 날에 청구돼요. 둘째 달부터 고른 요금제 금액이 매달 청구돼요. 신청만으로 요금이 나가지 않아요.</div>
+        <div className="mt-2 text-[11px] text-mute">결제는 CMS 자동이체예요. 승인 뒤 운영사가 보내는 링크로 출금 동의를 등록하면 매월 5일 매장 계좌에서 빠져요. 첫 출금은 {won(FIRST_MONTH_PRICE)}, 그다음 달부터 고른 요금제 금액이에요. 신청만으로 요금이 나가지 않아요.</div>
 
         <div className="mt-6">
           <SignupForm />

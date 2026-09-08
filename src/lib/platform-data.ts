@@ -2,7 +2,7 @@ import "server-only";
 import { headers } from "next/headers";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
-import { FIRST_MONTH_PRICE, billedPrice, planOf } from "@/lib/plans";
+import { DEBIT_DAY, FIRST_MONTH_PRICE, billedPrice, planOf } from "@/lib/plans";
 import { STORE_FEE_PER_HOUR } from "@/lib/utils";
 
 /**
@@ -14,20 +14,30 @@ import { STORE_FEE_PER_HOUR } from "@/lib/utils";
 
 export const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
-/** 그 달에 낼 금액 — 시작한 달은 만원, 그 뒤는 요금제 금액 */
-export function amountForMonth(store: { plan: string; planStartedAt: Date }, month: string) {
-  return month === monthKey(store.planStartedAt) ? FIRST_MONTH_PRICE : billedPrice(planOf(store.plan));
+/**
+ * 첫 출금 달. 출금일(5일) 이틀 전까지 승인됐으면 이번 달, 아니면 다음 달 — CMS 청구 파일은 며칠 전에 올려야 한다.
+ * 첫 출금은 만원이고, 그 뒤 달부터 요금제 금액이다.
+ */
+export function firstDebitMonth(planStartedAt: Date) {
+  const d = new Date(planStartedAt.getFullYear(), planStartedAt.getMonth(), 1);
+  if (planStartedAt.getDate() > DEBIT_DAY - 2) d.setMonth(d.getMonth() + 1);
+  return monthKey(d);
 }
 
-/** 구독 시작 달부터 이번 달까지. 이번 달은 청구일이 지났을 때만 센다 (선불이라 그 전엔 아직 안 낼 돈). */
+/** 그 달에 낼 금액 — 첫 출금 달은 만원, 그 뒤는 요금제 금액 */
+export function amountForMonth(store: { plan: string; planStartedAt: Date }, month: string) {
+  return month === firstDebitMonth(store.planStartedAt) ? FIRST_MONTH_PRICE : billedPrice(planOf(store.plan));
+}
+
+/** 첫 출금 달부터 이번 달까지. 이번 달은 출금일이 지났을 때만 센다 (선불이라 그 전엔 아직 안 낼 돈). */
 export function billingMonths(planStartedAt: Date, now = new Date()): string[] {
   const out: string[] = [];
-  const cur = new Date(planStartedAt.getFullYear(), planStartedAt.getMonth(), 1);
+  const first = firstDebitMonth(planStartedAt);
+  const cur = new Date(Number(first.slice(0, 4)), Number(first.slice(5, 7)) - 1, 1);
   const end = new Date(now.getFullYear(), now.getMonth(), 1);
   while (cur <= end) {
     const isThisMonth = cur.getTime() === end.getTime();
-    const dueDay = planStartedAt.getDate();
-    if (!isThisMonth || now.getDate() >= dueDay) out.push(monthKey(cur));
+    if (!isThisMonth || now.getDate() >= DEBIT_DAY) out.push(monthKey(cur));
     cur.setMonth(cur.getMonth() + 1);
   }
   return out;
@@ -39,9 +49,12 @@ export function monthsSubscribed(planStartedAt: Date, now = new Date()) {
   return Math.max(1, m);
 }
 
-/** 다음 청구일 — 시작일과 같은 날짜로 매달 돌아온다 */
+/** 다음 출금일 — 첫 출금 달의 5일, 그 뒤로는 매달 5일 */
 export function nextBillingDate(planStartedAt: Date, now = new Date()) {
-  const next = new Date(now.getFullYear(), now.getMonth(), planStartedAt.getDate());
+  const first = firstDebitMonth(planStartedAt);
+  const firstDate = new Date(Number(first.slice(0, 4)), Number(first.slice(5, 7)) - 1, DEBIT_DAY);
+  if (firstDate > now) return firstDate;
+  const next = new Date(now.getFullYear(), now.getMonth(), DEBIT_DAY);
   if (next <= now) next.setMonth(next.getMonth() + 1);
   return next;
 }

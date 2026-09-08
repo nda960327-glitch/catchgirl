@@ -20,7 +20,7 @@ const DEMO_SLUG = "secret-garden";
 const ACTION_LABEL: Record<string, string> = {
   STORE_CREATED: "매장 생성", PLAN_CHANGED: "요금제 변경", CONTRACT_UPDATED: "계약 정보", ADMIN_RESET: "관리자 계정",
   ENTERED_AS_ADMIN: "관리자로 들어감", SUSPENDED: "이용 중지", RESUMED: "이용 재개", PAID: "입금", UNPAID: "입금 취소",
-  BROADCAST: "전체 공지", STORE_DELETED: "매장 삭제",
+  BROADCAST: "전체 공지", STORE_DELETED: "매장 삭제", SIGNUP: "가입 신청", APPROVED: "가입 승인", BIZ_VERIFIED: "사업자 확인", CMS_UPDATED: "자동이체 정보",
 };
 
 /**
@@ -62,9 +62,12 @@ export default async function PlatformPage() {
             <div className="text-[9px] font-semibold uppercase tracking-[.2em] text-gold">Platform</div>
             <h1 className="mt-1 font-serif text-[24px] font-bold text-ink">매장 콘솔</h1>
           </div>
-          <form action={logoutPlatform}>
-            <button className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-mute">나가기</button>
-          </form>
+          <div className="flex items-center gap-2">
+            <Link href="/platform/billing" className="cta-grad rounded-xl px-3.5 py-2 text-[12px] font-bold text-white shadow-cta">이번 달 출금 명단</Link>
+            <form action={logoutPlatform}>
+              <button className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-mute">나가기</button>
+            </form>
+          </div>
         </div>
 
         {/* 전체 상황 */}
@@ -101,7 +104,8 @@ export default async function PlatformPage() {
                         {s.slug === DEMO_SLUG && <span className="rounded-md bg-blush-lt px-1.5 py-0.5 text-[9px] font-bold text-brand">예시 매장</span>}
                         {s.isSuspended && (s.suspendedReason === PENDING_REASON ? <Chip tone="gold">가입 신청 · 승인 대기</Chip> : <Chip tone="red">이용 중지</Chip>)}
                         {billing.unpaid.length > 0 && !s.isSuspended && <Chip tone="red">미납 {billing.unpaid.length}개월</Chip>}
-                        {!s.bizVerifiedAt && <Chip tone="red">사업자 미확인</Chip>}
+                        {!s.bizVerifiedAt && !s.isSuspended && <Chip tone="red">사업자 미확인</Chip>}
+                        {!s.cmsMemberNo && !s.isSuspended && <Chip tone="red">자동이체 미등록</Chip>}
                       </div>
                       <div className="mt-0.5 text-[11px] text-mute">
                         /{s.slug} · {s.admins[0]?.email ?? "관리자 없음"} · {format(s.createdAt, "yyyy.MM.dd")} 등록 · 구독 {billing.months}개월째

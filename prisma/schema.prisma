@@ -55,6 +55,10 @@ model Store {
   termsVersion        String    @default("")
   termsAgreedAt       DateTime?
   termsAgreedBy       String    @default("")
+  // CMS 자동이체 — 요금은 매월 정해진 날 매장 계좌에서 빠진다. CMS 사 관리자 화면의 회원번호와 동의 상태만 여기 둔다.
+  cmsMemberNo         String    @default("") // CMS 사 회원(고객)번호 — 청구 파일의 키
+  cmsAgreedAt         DateTime? // 출금 동의를 받은 날 (링크·QR·ARS)
+  cmsNote             String    @default("") // 은행·예금주 앞자리 같은 확인용 메모
   noshowPolicy        String   @default("노쇼 3회 누적 시 예약이 제한될 수 있어요.")
   createdAt           DateTime @default(now())
 

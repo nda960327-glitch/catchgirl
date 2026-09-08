@@ -5,7 +5,7 @@ import { getStoreBySlug } from "@/lib/store";
 import { cn, won } from "@/lib/utils";
 import { Card, Chip, Eyebrow } from "@/components/ui";
 import { PlanBadge } from "@/components/admin-nav";
-import { DISCOUNT_LABEL, DISCOUNT_RATE, FIRST_MONTH_PRICE, ONSITE_SETUP_FEE, PLANS, POLICY, billedPrice, planOf, usageOf, type Plan } from "@/lib/plans";
+import { DEBIT_DAY, DISCOUNT_LABEL, DISCOUNT_RATE, FIRST_MONTH_PRICE, ONSITE_SETUP_FEE, PLANS, POLICY, billedPrice, planOf, usageOf, type Plan } from "@/lib/plans";
 import { nextBillingDate } from "@/lib/platform-data";
 import { PlanSwitch } from "./plan-switch";
 import { TERMS, TERMS_TITLE, TERMS_VERSION, bizStatus } from "@/lib/terms";
@@ -66,8 +66,9 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
           </div>
           <div className="rounded-2xl bg-well px-4 py-3 text-[11px] leading-[1.9]">
             <div className="text-mute">시작일 <b className="text-ink">{format(start, "yyyy년 M월 d일", { locale: ko })}</b></div>
-            <div className="text-mute">다음 청구일 <b className="text-ink">{format(next, "M월 d일", { locale: ko })}</b></div>
-            <div className="text-mute">첫 달 <b className="text-ink">{won(FIRST_MONTH_PRICE)}</b> · 둘째 달부터 {won(billedPrice(plan))}</div>
+            <div className="text-mute">다음 출금일 <b className="text-ink">{format(next, "M월 d일", { locale: ko })}</b> · 매월 {DEBIT_DAY}일 자동이체</div>
+            <div className="text-mute">첫 출금 <b className="text-ink">{won(FIRST_MONTH_PRICE)}</b> · 그다음 달부터 {won(billedPrice(plan))}</div>
+            <div className="text-mute">자동이체 {store.cmsMemberNo ? <b className="text-ok">등록됨</b> : <b className="text-bad">미등록 · 운영사가 보낸 동의 링크로 계좌를 등록해 주세요</b>}</div>
           </div>
         </div>
 

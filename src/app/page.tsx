@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { FIRST_MONTH_PRICE, ONSITE_SETUP_FEE, PLANS, billedPrice, type Plan } from "@/lib/plans";
+import { DEBIT_DAY, FIRST_MONTH_PRICE, ONSITE_SETUP_FEE, PLANS, billedPrice, type Plan } from "@/lib/plans";
 import { OPERATOR_CONTACT, TERMS_VERSION } from "@/lib/terms";
 import { won } from "@/lib/utils";
 
@@ -83,6 +83,7 @@ const FAQ = [
   { q: "직원이 출근을 자주 펑크 내는데요.", a: "관리자가 요일별 출근 가능 여부를 직접 잡고, 주간표에 예비를 걸어 두면 예비인 사람은 예약이 안 잡혀요. 출근·펑크 기록이 사람마다 남아요." },
   { q: "할인을 주면 직원 몫이 줄어요?", a: "아니요. 쿠폰·등급 혜택·요일 프로모션은 전부 매장 몫에서 빠지고, 직원이 받는 돈은 그대로예요. 수금 시트에 할인이 반영된 금액이 바로 나와요." },
   { q: "세팅은 누가 해요?", a: "매장이 직접 해요. 룸·조 시간·옵션은 신청서에서 이미 들어가고, 승인되면 대시보드에 '문 열기 전에 채워 두세요' 목록이 떠요. 로고 올리기, 캐치걸 등록, 출근 요일, 손님 옮기기(닉네임 붙여 넣기)까지 30분이면 끝나요. 그래서 구축비가 없어요. 직접 와서 해 드리는 방문 세팅은 선택이고 1회 30만원이에요." },
+  { q: "결제는 어떻게 해요?", a: "CMS 자동이체예요. 승인되면 운영사가 출금 동의 링크를 보내고, 사장님이 링크에서 계좌를 등록하면 끝이에요. 매월 5일에 매장 계좌에서 자동으로 빠지고, 첫 출금은 만원이에요. 카드번호를 부르거나 매달 송금할 일이 없어요." },
   { q: "해지하면요?", a: "위약금 없이 언제든 해지할 수 있어요. 손님 화면이 먼저 닫히고 관리자 화면은 90일 더 열려 있어서 기록을 내려받을 수 있어요. 그 뒤엔 데이터를 지워요." },
 ];
 
@@ -465,7 +466,7 @@ export default function Home() {
               </ul>
             </div>
           </div>
-          <div className="mt-4 text-[11px] text-mute">첫 달 {won(FIRST_MONTH_PRICE)}은 승인된 날에, 둘째 달부터는 고른 요금제 금액이 매달 같은 날에 청구돼요. 위약금 없이 언제든 해지할 수 있어요. 신청만으로 요금이 나가지 않아요.</div>
+          <div className="mt-4 text-[11px] text-mute">결제는 CMS 자동이체예요. 승인 뒤 링크 하나로 출금 동의를 등록하면 매월 {DEBIT_DAY}일 매장 계좌에서 빠져요. 첫 출금은 {won(FIRST_MONTH_PRICE)}, 그다음 달부터 고른 요금제 금액이에요. 카드번호도 종이 서류도 필요 없고, 위약금 없이 언제든 해지할 수 있어요.</div>
         </div>
       </section>
 
