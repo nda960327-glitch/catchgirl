@@ -46,7 +46,7 @@ export const PLANS: Record<Plan, {
     name: "Pro",
     price: 130_000,
     termPrice: 100_000,
-    limits: { customers: 500, staff: 10, rooms: 5 },
+    limits: { customers: 1_000, staff: 10, rooms: 5 },
     dataExport: false,
     prioritySupport: false,
     tagline: "한 자리에서 자리를 지키는 매장을 위한 요금제",
