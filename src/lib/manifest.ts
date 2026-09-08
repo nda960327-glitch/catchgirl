@@ -57,7 +57,10 @@ export function manifestResponse(body: unknown) {
   return new Response(JSON.stringify(body, null, 2), {
     headers: {
       "Content-Type": "application/manifest+json; charset=utf-8",
-      "Cache-Control": "public, max-age=600",
+      // 캐시하지 않는다. 10분만 붙잡아 둬도 로고를 올린 직후 설치하면 CDN 이 들고 있던
+      // 옛 매니페스트(기본 고양이)가 내려가고, 그 아이콘이 홈 화면에 굳는다.
+      // 매장 이름과 주소 몇 줄이라 매번 만들어도 값싸다.
+      "Cache-Control": "no-cache",
     },
   });
 }

@@ -100,14 +100,6 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
           </div>
         </section>
 
-      {/* 배너 */}
-      <Link href={me ? `/${slug}/me` : `/${slug}/login`} className="mx-4 mt-[22px] flex items-center gap-3 rounded-[22px] bg-gradient-to-r from-blush-lt to-[#FFF8F4] px-[18px] py-[18px]">
-        <Sticker k="p8" size={64} />
-        <div>
-          <div className="text-[13px] font-bold text-ink">{me ? `${me.nickname}님, 다녀온 자리를 기억해 두었어요` : "다녀온 자리, 기억해 두었어요"}</div>
-          <div className="mt-1 text-[11px] text-mute">{me ? "후기를 남기면 다음 방문이 더 편해져요" : "닉네임과 PIN만으로 시작할 수 있어요"}</div>
-        </div>
-      </Link>
 
       <div className="mt-6 px-6 pb-6 text-center text-[10px] tracking-wider text-mute/80">
         {store.openTime}–{store.closeTime} · 방문 {store.cancelDeadlineHours}시간 전까지 취소 가능
