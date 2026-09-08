@@ -15,7 +15,7 @@ export const TERMS_TITLE = "서비스 이용 약관";
 export const PENDING_REASON = "사업자 확인 대기";
 
 /** 앱을 파는 쪽 연락처 — 신청·승인 대기 화면에서 보여준다 */
-export const OPERATOR_CONTACT = { telegram: "BGT_OP", phone: "010-2117-8961" } as const;
+export const OPERATOR_CONTACT = { telegram: "catch_girl_admin", phone: "010-2117-8961" } as const;
 
 export const TERMS: { title: string; body: string }[] = [
   {
