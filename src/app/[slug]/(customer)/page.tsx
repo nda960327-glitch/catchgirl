@@ -54,7 +54,8 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
         <div className="mt-2 text-[12px] text-mute">
           {format(today, "M월 d일 EEEE", { locale: ko })} · {store.tagline}
         </div>
-        <Sticker k="p1" size={104} className="absolute -bottom-2.5 -right-1.5 opacity-95" />
+        {/* 장식 — 어두운 테마에서는 비운다. 로고는 이미 위 매장명 옆에 있어 크게 한 번 더 두면 겹친다 */}
+        <Sticker k="p1" size={104} variant="decor" className="absolute -bottom-2.5 -right-1.5 opacity-95" />
       </div>
 
       {/* 예약하러 가기 — 캐치걸 목록은 예약 탭에서 본다 */}
