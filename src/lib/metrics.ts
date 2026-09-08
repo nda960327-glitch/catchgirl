@@ -45,6 +45,58 @@ export function computeCustomerStats(
   };
 }
 
+/**
+ * 매장 손님 전원의 통계를 한 번에.
+ *
+ * 목록 화면이 손님마다 예약을 통째로 끌어오면, 이력이 10년 쌓인 매장에서는
+ * 화면 하나에 수만 행을 읽는다. 여기서는 DB 가 세게 하고 손님당 숫자 몇 개만 받는다.
+ * 규칙은 computeCustomerStats 와 같다 — 방문 = 완료, 주 지정 = 취소 제외 최다.
+ */
+export async function customerStatsBulk(storeId: string, now = new Date()) {
+  const [byStatus, lastDone, byStaff, spend, staff] = await Promise.all([
+    prisma.reservation.groupBy({ by: ["customerId", "status"], where: { storeId }, _count: { _all: true } }),
+    prisma.reservation.groupBy({ by: ["customerId"], where: { storeId, status: "COMPLETED" }, _max: { startTime: true } }),
+    prisma.reservation.groupBy({ by: ["customerId", "staffId"], where: { storeId, status: { not: "CANCELLED" } }, _count: { _all: true } }),
+    prisma.reservation.groupBy({ by: ["customerId"], where: { storeId, status: { in: ["COMPLETED", "CONFIRMED"] } }, _sum: { totalPrice: true } }),
+    prisma.staff.findMany({ where: { storeId }, select: { id: true, nickname: true } }),
+  ]);
+  const staffName = new Map(staff.map((s) => [s.id, s.nickname]));
+  const threeMonthsAgo = new Date(now.getTime() - 90 * 86_400_000);
+
+  const out = new Map<string, CustomerStats & { spent: number }>();
+  const ensure = (cid: string) => {
+    let v = out.get(cid);
+    if (!v) {
+      v = { visitCount: 0, revisitCount: 0, cancelCount: 0, noshowCount: 0, lastVisitAt: null, grade: "신규", mainStaffId: null, mainStaffName: null, dormant: true, spent: 0 };
+      out.set(cid, v);
+    }
+    return v;
+  };
+  for (const r of byStatus) {
+    const v = ensure(r.customerId);
+    if (r.status === "COMPLETED") v.visitCount = r._count._all;
+    else if (r.status === "CANCELLED") v.cancelCount = r._count._all;
+    else if (r.status === "NOSHOW") v.noshowCount = r._count._all;
+  }
+  for (const r of lastDone) ensure(r.customerId).lastVisitAt = r._max.startTime;
+  const best = new Map<string, number>();
+  for (const r of byStaff) {
+    const v = ensure(r.customerId);
+    if (r._count._all > (best.get(r.customerId) ?? 0)) {
+      best.set(r.customerId, r._count._all);
+      v.mainStaffId = r.staffId;
+      v.mainStaffName = staffName.get(r.staffId) ?? null;
+    }
+  }
+  for (const r of spend) ensure(r.customerId).spent = r._sum.totalPrice ?? 0;
+  for (const v of out.values()) {
+    v.revisitCount = Math.max(0, v.visitCount - 1);
+    v.grade = gradeOf(v.visitCount);
+    v.dormant = !v.lastVisitAt || v.lastVisitAt < threeMonthsAgo;
+  }
+  return out;
+}
+
 export async function customerStats(customerId: string) {
   const rs = await prisma.reservation.findMany({
     where: { customerId },

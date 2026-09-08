@@ -2,7 +2,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { prisma } from "@/lib/db";
 import { getStoreBySlug } from "@/lib/store";
-import { computeCustomerStats } from "@/lib/metrics";
+import { customerStatsBulk } from "@/lib/metrics";
 import { cn, wonShort } from "@/lib/utils";
 import { Card, Chip, Eyebrow, GradeChip } from "@/components/ui";
 import { InviteButton } from "./invite-button";
@@ -13,20 +13,24 @@ export default async function CustomersPage({ params, searchParams }: { params: 
   const { slug } = await params;
   const sp = await searchParams;
   const store = await getStoreBySlug(slug);
-  const customers = await prisma.customer.findMany({
-    where: {
-      storeId: store.id,
-      // 닉네임뿐 아니라 매장이 적어 둔 연락처로도 찾을 수 있게
-      ...(sp.q ? { OR: [{ nickname: { contains: sp.q } }, { adminContact: { contains: sp.q } }] } : {}),
-    },
-    include: { reservations: { select: { status: true, startTime: true, staffId: true, totalPrice: true, staff: { select: { nickname: true } } } } },
+  // 손님마다 예약을 통째로 끌어오면 이력이 긴 매장에서 화면 하나에 수만 행을 읽는다.
+  // 숫자는 DB 가 세고, 여기서는 손님당 통계 한 줄만 받는다.
+  const [customers, stats] = await Promise.all([
+    prisma.customer.findMany({
+      where: {
+        storeId: store.id,
+        // 닉네임뿐 아니라 매장이 적어 둔 연락처로도 찾을 수 있게
+        ...(sp.q ? { OR: [{ nickname: { contains: sp.q } }, { adminContact: { contains: sp.q } }] } : {}),
+      },
+    }),
+    customerStatsBulk(store.id),
+  ]);
+  const NONE = { visitCount: 0, revisitCount: 0, cancelCount: 0, noshowCount: 0, lastVisitAt: null, grade: "신규" as const, mainStaffId: null, mainStaffName: null, dormant: true, spent: 0 };
+  // 누적 지출 = 취소·노쇼를 뺀 결제 금액 합계 (customerStatsBulk 가 같은 규칙으로 더한다)
+  let rows = customers.map((c) => {
+    const s = stats.get(c.id) ?? NONE;
+    return { c, s, spent: s.spent };
   });
-  // 누적 지출 = 취소·노쇼를 뺀 결제 금액 합계
-  let rows = customers.map((c) => ({
-    c,
-    s: computeCustomerStats(c.reservations),
-    spent: c.reservations.filter((r) => r.status === "COMPLETED" || r.status === "CONFIRMED").reduce((a, r) => a + r.totalPrice, 0),
-  }));
   const filter = sp.filter ?? "";
   if (filter === "dormant") rows = rows.filter((r) => r.s.dormant);
   if (filter === "noshow") rows = rows.filter((r) => r.s.noshowCount > 0);
