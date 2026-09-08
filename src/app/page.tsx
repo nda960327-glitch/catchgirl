@@ -37,6 +37,44 @@ const SOURCES = [
   ["SimplyBook.me — Online Booking Statistics 2026", "https://simplybook.me/en/blog/online-booking-statistics"],
 ];
 
+/* 전화·수첩으로 돌던 매장과 캐치걸을 쓰는 매장 — 관리자의 같은 하루 */
+const BEFORE_AFTER = [
+  ["예약 받기", "새벽까지 전화·카톡을 붙들고, 놓친 건 다음 날 확인", "손님이 앱에서 빈자리를 보고 직접 잡아요. 관리자는 알림만 확인"],
+  ["오늘 누가 나오나", "단톡방에 다시 물어보고, 답 없는 사람은 전화", "주간표에 관리자가 직접 잡아 둔 대로. 예비는 예약이 안 잡혀요"],
+  ["방 배치", "칠판·메모지, 겹치면 현장에서 조정", "타임라인에서 누가 몇 시에 어느 방인지 한눈에. 겹치면 앱이 막아요"],
+  ["수금", "계산기 두드리고 수첩에 적고, 틀리면 다시", "방마다 수금 시트. 시간·옵션·할인 반영된 금액이 자동으로"],
+  ["직원 정산", "마감 후 엑셀, 할인 준 날은 더 복잡", "받을 돈·매장 몫·직원 몫이 예약마다 나뉘어요. 할인은 매장 몫에서만"],
+  ["단골 구분", "얼굴과 기억에 의존", "방문 횟수로 신규·단골·VIP 자동. 마지막 방문일까지"],
+  ["노쇼·펑크", "그냥 당하고, 누가 자주 그러는지 감으로", "손님 노쇼율·직원 펑크율이 사람마다 기록. 블랙리스트 표시"],
+  ["손님 명단", "폰 연락처에 실명·번호가 쌓여 불안", "닉네임만. 유출될 명단 자체가 없어요"],
+];
+
+const DAY = [
+  ["12:00", "출근하자마자 오늘 타임라인", "누가 몇 시에 어느 방인지 이미 잡혀 있어요. 밤새 들어온 예약도 그 위에 있어요."],
+  ["15:30", "새 예약 알림", "손님이 앱에서 잡으면 관리자 화면에 알림이 와요. 전화 예약은 닉네임 몇 글자로 3초 입력."],
+  ["20:00", "교대 · 야간조 배치", "주간표대로 야간조가 방에 들어가요. 갑자기 빠진 사람은 예비가 대신."],
+  ["01:00", "방마다 수금", "수금 시트를 들고 돌아요. 할인·옵션이 반영된 금액이 방마다 적혀 있어요."],
+  ["04:00", "마감", "오늘 매출·순이익·직원별 몫이 이미 계산돼 있어요. 내일 예약도 벌써 잡혀 있고요."],
+];
+
+const SUPPORT = [
+  ["세팅을 대신 해 드려요", "카톡·전화 손님을 연결코드와 함께 옮기고, 캐치걸 프로필·사진, 룸과 주간·야간 시간, 옵션 가격까지 매장에 맞춰 넣어 드려요. 매장은 확인만 하면 돼요."],
+  ["큐알 세 장을 만들어 드려요", "손님용·직원용·관리자용 큐알과 주소를 콘솔이 만들어요. 카운터에 붙이고, 단골에게 연결코드와 함께 건네면 끝이에요."],
+  ["교육은 두 번, 첫 주는 붙어서", "관리자 한 번, 직원 한 번 사용법을 알려드려요. 문 여는 첫 주에는 텔레그램으로 바로바로 답하고, 필요하면 관리자로 대신 들어가 손봐 드려요."],
+  ["업데이트는 저절로", "앱스토어 심사가 없어서 고친 기능이 바로 반영돼요. 다른 매장에도 도움이 되는 요청은 요금제와 관계없이 만들어 드려요."],
+  ["기록은 매일 보관", "예약·매출·손님 기록은 매일 백업돼요. 해지해도 90일은 관리자 화면에서 내려받을 수 있어요."],
+  ["Max 는 우선 지원", "영업시간 중 먼저 처리하고, 급한 건 전화로 받아요. 예약이 안 되거나 화면이 안 열리는 문제는 요금제와 관계없이 가장 먼저예요."],
+];
+
+const CHECKLIST = [
+  "영업 중에 전화를 못 받아 예약을 놓친 적이 있다",
+  "오늘 누가 나오는지 단톡방에 다시 물어본 적이 있다",
+  "수금 계산이 틀려서 다시 센 적이 있다",
+  "직원이 펑크 내서 예약이 꼬인 적이 있다",
+  "이 손님이 단골인지 신규인지 헷갈린 적이 있다",
+  "폰에 손님 실명·번호가 쌓여 있어 찜찜한 적이 있다",
+];
+
 const FAQ = [
   { q: "전화나 텔레그램으로 예약하는 손님은요?", a: "관리자 화면에서 3초면 대신 넣어요. 닉네임 몇 글자만 치면 기존 손님이 바로 뜨고, 전화·텔레그램·앱 어느 경로로 왔는지도 남아요. 앱을 안 쓰는 손님도 방문 기록은 똑같이 쌓여요." },
   { q: "캐치테이블 같은 예약 앱이랑 뭐가 달라요?", a: "공개 앱이 아니에요. 매장이 준 연결코드가 있는 기존 손님만 들어오고, 주소가 퍼져도 남이 못 써요. 테이블이 아니라 '누가 자리를 맡을지' 를 고르는 예약이고, 출근·룸 배치·수금까지 매장 운영이 한 화면에 있어요." },
@@ -86,6 +124,7 @@ export default function Home() {
             <a href="#features" className="hover:text-ink">기능</a>
             <a href="#privacy" className="hover:text-ink">손님 정보</a>
             <a href="#legal" className="hover:text-ink">합법 운영</a>
+            <a href="#support" className="hover:text-ink">지원</a>
             <a href="#pricing" className="hover:text-ink">가격</a>
             <a href="#install" className="hover:text-ink">설치·샘플</a>
             <a href="#faq" className="hover:text-ink">자주 묻는 질문</a>
@@ -154,6 +193,66 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 전과 후 */}
+      <section id="before-after" className="mx-auto max-w-6xl px-5 py-16">
+        <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Before · After</div>
+        <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">관리자가 하던 일이 이렇게 바뀌어요</h2>
+        <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">예약 앱 하나 더 까는 게 아니에요. 전화·수첩·단톡방·계산기·엑셀로 나뉘어 있던 일이 한 화면으로 들어와요.</p>
+        <div className="mt-8 overflow-x-auto rounded-[22px] border border-line bg-card shadow-card">
+          <table className="w-full min-w-[640px] text-left text-[12px]">
+            <thead>
+              <tr className="border-b border-line bg-well text-[11px] font-bold text-mute">
+                <th className="px-4 py-3">하루의 일</th>
+                <th className="px-4 py-3">전화·수첩으로</th>
+                <th className="px-4 py-3 text-brand">캐치걸로</th>
+              </tr>
+            </thead>
+            <tbody>
+              {BEFORE_AFTER.map(([k, b, a]) => (
+                <tr key={k} className="border-b border-line/60 align-top last:border-0">
+                  <td className="px-4 py-3 font-bold text-ink">{k}</td>
+                  <td className="px-4 py-3 leading-[1.7] text-mute">{b}</td>
+                  <td className="px-4 py-3 leading-[1.7] text-ink">{a}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-14 grid gap-10 md:grid-cols-[1fr_1fr]">
+          <div>
+            <h3 className="font-serif text-[22px] font-bold">관리자의 하루, 앱이 있으면</h3>
+            <ol className="mt-5 flex flex-col gap-4 border-l-2 border-blush-lt pl-5">
+              {DAY.map(([t, h, d]) => (
+                <li key={t} className="relative">
+                  <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-brand bg-card" />
+                  <div className="font-mono text-[11px] font-bold text-brand">{t}</div>
+                  <div className="mt-0.5 text-[13px] font-bold">{h}</div>
+                  <p className="mt-0.5 text-[12px] leading-[1.8] text-mute">{d}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="rounded-[26px] bg-ink p-6 text-on-ink">
+            <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold-lt">Checklist</div>
+            <h3 className="mt-2 font-serif text-[20px] font-bold">이 중 두 개 이상이면, 지금 필요해요</h3>
+            <ul className="mt-4 flex flex-col gap-2.5 text-[13px] leading-[1.7]">
+              {CHECKLIST.map((c) => (
+                <li key={c} className="flex gap-2.5">
+                  <span className="mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-on-ink/40 text-[10px]">✓</span>
+                  <span className="opacity-90">{c}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-5 rounded-2xl bg-on-ink/10 p-4 text-[12px] leading-[1.8]">
+              <b>계산해 보면.</b> 하루 전화 예약 20통 × 8분이면 2시간 40분이에요. 앱은 알림 확인 몇 분이면 끝나요. 그 시간이 매일 자리로 돌아와요.
+              <div className="mt-1 text-[10px] opacity-60">전화 8분·앱 1분은 업계 통계 기준 예시 계산이에요.</div>
+            </div>
+            <Link href="/signup" className="mt-5 inline-block rounded-xl bg-gold-lt px-5 py-2.5 text-[12px] font-bold text-ink">가입 신청하기</Link>
+          </div>
+        </div>
+      </section>
+
       {/* 기능 */}
       <section id="features" className="mx-auto max-w-6xl px-5 py-16">
         <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Features</div>
@@ -218,6 +317,38 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 손님 폰 안의 자리 */}
+      <section className="mx-auto max-w-6xl px-5 pb-16">
+        <div className="rounded-[28px] bg-ink p-6 text-on-ink md:p-10">
+          <div className="grid items-center gap-8 md:grid-cols-[1.2fr_1fr]">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold-lt">Why install</div>
+              <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">손님 폰 홈 화면에 우리 매장 아이콘이 생겨요</h2>
+              <p className="mt-3 text-[13px] leading-[1.9] opacity-85">
+                전화번호를 안 받는 매장이 손님과 연결되는 유일한 통로예요. 브라우저 주소를 찾을 필요 없이 아이콘 한 번이면 오늘 누가 나왔는지, 지금 되는지가 보이고, 다음 예약은 두 번 탭이에요.
+                손님이 우리 매장을 '가끔 생각나는 곳'에서 '폰에 깔린 곳'으로 옮기는 거예요.
+              </p>
+              <ul className="mt-5 grid gap-2.5 text-[12px] leading-[1.7] sm:grid-cols-2">
+                {[
+                  ["즐겨찾기한 사람이 오늘 나왔는지", "홈에서 바로 보여요. 그날 자리로 이어져요."],
+                  ["등급 혜택이 자동으로", "5번째, 10번째 방문에 혜택이 붙고 손님이 직접 적용해요."],
+                  ["쿠폰이 앱으로 가요", "문자 없이도 쿠폰과 요일 프로모션이 손님 화면에 떠요."],
+                  ["후기와 추천이 남아요", "다음 손님이 고를 때 보는 게 쌓여요. 매장이 답글도 달아요."],
+                ].map(([t, d]) => (
+                  <li key={t} className="rounded-2xl bg-on-ink/10 p-3.5">
+                    <div className="font-bold">{t}</div>
+                    <div className="mt-0.5 opacity-75">{d}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex justify-center">
+              <Phone src="/landing/c-me.png" alt="손님의 내 화면 — 등급과 방문 기록" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 손님 정보 */}
       <section id="privacy" className="border-y border-line/60 bg-card/60">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 md:grid-cols-2">
@@ -269,6 +400,22 @@ export default function Home() {
           <div className="mt-5 text-[12px] text-mute">
             전문은 <Link href="/platform/terms" className="font-bold text-brand underline-offset-2 hover:underline">서비스 이용 약관 ({TERMS_VERSION} 판)</Link>에서 볼 수 있어요.
           </div>
+        </div>
+      </section>
+
+      {/* 지원 */}
+      <section id="support" className="mx-auto max-w-6xl px-5 py-16">
+        <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Support</div>
+        <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">앱만 주고 끝나지 않아요</h2>
+        <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">매장이 컴퓨터를 잘 몰라도 돼요. 세팅부터 첫 주까지 붙어서 하고, 그 뒤로도 같은 텔레그램으로 이어져요.</p>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {SUPPORT.map(([t, d], i) => (
+            <div key={t} className="rounded-[22px] border border-line bg-card p-5">
+              <div className="font-mono text-[11px] font-bold text-brand">0{i + 1}</div>
+              <div className="mt-1.5 text-[14px] font-bold">{t}</div>
+              <p className="mt-1.5 text-[12px] leading-[1.8] text-mute">{d}</p>
+            </div>
+          ))}
         </div>
       </section>
 
