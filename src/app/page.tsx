@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { DEBIT_DAY, ONSITE_SETUP_FEE, PLANS, TERM_MONTHS, termDiscountPercent, type Plan } from "@/lib/plans";
 import { PricingTable } from "@/components/pricing-table";
+import { RevisitCalculator } from "@/components/revisit-calculator";
 import { OPERATOR_CONTACT, TERMS_VERSION } from "@/lib/terms";
 import { won } from "@/lib/utils";
 
@@ -31,7 +32,25 @@ const STATS = [
   { n: "48%", t: "예약이 불편하면 절반 가까이 다른 곳으로 가요", d: "안 받는 전화, 늦는 답장이 손님을 잃는 이유예요. 앱은 항상 받고, 항상 답해요.", src: "SimplyBook.me, Online Booking Statistics 2026" },
 ];
 
+/* 재방문이 왜 매출인지 — 널리 인용되는 연구. 우리 앱 수치가 아니라 업계 연구라고 밝힌다 */
+const RETENTION_STATS = [
+  { n: "25~95%", t: "재방문율 5%p 오르면 이익은 25~95% 늘어요", d: "새 손님 한 명 데려오는 비용은 비싸고, 다시 오는 손님은 광고비가 들지 않아요.", src: "Bain & Company · Harvard Business Review" },
+  { n: "67%", t: "단골은 처음 온 손님보다 67% 더 써요", d: "익숙한 자리, 아는 사람, 쌓인 혜택. 오래 온 손님일수록 한 번에 더 오래, 더 많이 써요.", src: "Bain & Company" },
+  { n: "3.2배", t: "앱을 깐 손님은 3.2배 자주 다시 예약해요", d: "홈 화면 아이콘이 있는 매장과 브라우저로 찾아야 하는 매장의 차이예요.", src: "SchedulingKit, Mobile Booking Statistics 2026" },
+];
+
+const RETENTION_HOOKS = [
+  ["홈 화면에 우리 매장 아이콘", "설치한 순간부터 손님 폰에 자리가 생겨요. 다음 예약은 두 번 탭이고, 전화번호 없이도 손님과 연결된 유일한 통로예요."],
+  ["즐겨찾기한 사람이 오늘 나왔는지", "손님이 홈을 열면 지명하던 캐치걸의 오늘 출근·남은 시간이 먼저 보여요. '오늘 있네' 가 그대로 예약이 돼요."],
+  ["5번째부터 단골, 10번째부터 VIP", "방문 횟수로 등급이 자동으로 붙고 혜택이 예약할 때 바로 적용돼요. 손님은 '몇 번 더 오면 VIP' 를 마이 화면에서 봐요."],
+  ["쿠폰과 요일 프로모션", "비 오는 날 3만원, 착한 손님 쿠폰, 조용한 요일 혜택. 문자 없이 손님 앱에 떠요. 할인은 매장 몫에서만 빠지고 직원 몫은 그대로예요."],
+  ["후기·추천이 쌓여요", "손님이 남긴 후기와 추천에 매장이 답글을 달아요. 다음에 올 이유가 앱 안에 기록으로 남아요."],
+  ["재방문율이 매달 숫자로", "관리자 화면에 재방문율·재방문 손님 수·오래 안 온 손님이 그대로 떠요. 감이 아니라 숫자로 보고, 안 오는 단골에게 먼저 연락해요."],
+];
+
 const SOURCES = [
+  ["Harvard Business Review — The Value of Keeping the Right Customers (Bain)", "https://hbr.org/2014/10/the-value-of-keeping-the-right-customers"],
+  ["Bain & Company — Prescription for cutting costs (Reichheld)", "https://media.bain.com/Images/BB_Prescription_cutting_costs.pdf"],
   ["SchedulingKit — Online Booking Statistics 2026", "https://schedulingkit.com/statistics/online-booking-statistics"],
   ["SchedulingKit — Mobile Booking Statistics 2026", "https://schedulingkit.com/statistics/mobile-booking-statistics"],
   ["Zippia — Appointment Scheduling Statistics", "https://www.zippia.com/advice/appointment-scheduling-statistics/"],
@@ -78,6 +97,7 @@ const CHECKLIST = [
 
 const FAQ = [
   { q: "전화나 텔레그램으로 예약하는 손님은요?", a: "관리자 화면에서 3초면 대신 넣어요. 닉네임 몇 글자만 치면 기존 손님이 바로 뜨고, 전화·텔레그램·앱 어느 경로로 왔는지도 남아요. 앱을 안 쓰는 손님도 방문 기록은 똑같이 쌓여요." },
+  { q: "정말 재방문이 늘어요?", a: "장치는 여섯 개예요. 홈 화면 아이콘, 즐겨찾기한 사람의 오늘 출근 표시, 5회·10회 자동 등급 혜택, 쿠폰·요일 프로모션, 후기·추천, 그리고 재방문율을 매달 숫자로 보는 관리자 화면. 업계 연구로는 재방문율 5%p가 이익 25~95%로 이어지고, 우리 앱에서는 관리자 화면에서 매달 직접 확인할 수 있어요. 안 늘면 어디서 막히는지가 보여요." },
   { q: "캐치테이블 같은 예약 앱이랑 뭐가 달라요?", a: "공개 앱이 아니에요. 매장이 준 연결코드가 있는 기존 손님만 들어오고, 주소가 퍼져도 남이 못 써요. 테이블이 아니라 '누가 자리를 맡을지' 를 고르는 예약이고, 출근·룸 배치·수금까지 매장 운영이 한 화면에 있어요." },
   { q: "손님 정보는 어디까지 받나요?", a: "닉네임과 PIN뿐이에요. 실명·전화번호를 넣는 칸 자체가 없어요. 매장이 관리자 메모에 적어 두는 연락처는 관리자만 보고, 손님 화면엔 절대 안 나가요." },
   { q: "앱스토어에서 받나요?", a: "아니요. 매장 주소를 열고 '앱으로 설치' 를 누르면 홈 화면에 매장 로고 아이콘으로 깔려요. 손님·직원·관리자 앱이 따로 있고, 심사 없이 바로 업데이트돼요." },
@@ -125,6 +145,7 @@ export default function Home() {
           </Link>
           <nav className="ml-auto hidden items-center gap-5 text-[12px] font-semibold text-mute md:flex">
             <a href="#why" className="hover:text-ink">왜 앱인가</a>
+            <a href="#revisit" className="hover:text-ink">재방문</a>
             <a href="#features" className="hover:text-ink">기능</a>
             <a href="#privacy" className="hover:text-ink">손님 정보</a>
             <a href="#legal" className="hover:text-ink">합법 운영</a>
@@ -146,7 +167,7 @@ export default function Home() {
           </h1>
           <p className="mt-5 max-w-xl text-[14px] leading-[1.9] text-mute">
             기존 손님만 초대해 쓰는 우리 매장 전용 앱이에요. 손님이 자리를 맡을 전담 매니저(바텐더)를 고르고 시간을 잡으면, 매장에는 알림이 오고 방문 기록이 쌓여요.
-            머리 아픈 정산도, 밤늦은 전화도 앱이 대신해요. <b className="text-ink">손님의 실명과 전화번호는 처음부터 받지 않아요.</b>
+            머리 아픈 정산도, 밤늦은 전화도 앱이 대신해요. <b className="text-ink">예약이 편해지면 재방문이 늘고, 재방문이 곧 매출이에요.</b> 손님의 실명과 전화번호는 처음부터 받지 않아요.
           </p>
           <div className="mt-7 flex flex-wrap gap-2.5">
             <Link href="/signup" className="cta-grad rounded-2xl px-6 py-3.5 text-[14px] font-bold text-white shadow-cta">가입 신청하기</Link>
@@ -193,6 +214,54 @@ export default function Home() {
                 <p className="mt-1.5 text-[12px] leading-[1.8] text-mute">{d}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 재방문 */}
+      <section id="revisit" className="border-b border-line/60">
+        <div className="mx-auto max-w-6xl px-5 py-16">
+          <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Retention</div>
+          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">재방문이 곧 매출이에요</h2>
+          <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">
+            새 손님을 데려오는 데는 돈이 들고, 다시 오는 손님은 돈이 안 들어요. 매장 매출은 결국 '한 번 온 손님이 몇 번 더 오느냐' 로 정해져요.
+            캐치걸은 예약 앱이 아니라 <b className="text-ink">다시 오게 만드는 장치</b>를 손님 폰에 심는 앱이에요.
+          </p>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {RETENTION_STATS.map((s) => (
+              <div key={s.n} className="rounded-[22px] bg-card p-5 shadow-card">
+                <div className="font-serif text-[30px] font-bold text-brand">{s.n}</div>
+                <div className="mt-1 text-[13px] font-bold">{s.t}</div>
+                <p className="mt-2 text-[11px] leading-[1.8] text-mute">{s.d}</p>
+                <div className="mt-3 text-[9px] text-mute/80">{s.src}</div>
+              </div>
+            ))}
+          </div>
+
+          <h3 className="mt-12 font-serif text-[22px] font-bold">다시 오게 만드는 장치 여섯 개</h3>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {RETENTION_HOOKS.map(([t, d], i) => (
+              <div key={t} className="rounded-[22px] border border-line bg-card p-5">
+                <div className="font-mono text-[11px] font-bold text-brand">0{i + 1}</div>
+                <div className="mt-1.5 text-[14px] font-bold">{t}</div>
+                <p className="mt-1.5 text-[12px] leading-[1.8] text-mute">{d}</p>
+              </div>
+            ))}
+          </div>
+
+          <h3 className="mt-12 font-serif text-[22px] font-bold">재방문율이 오르면 매출은 이렇게 돼요</h3>
+          <p className="mt-2 max-w-2xl text-[13px] leading-[1.9] text-mute">슬라이더를 우리 매장 숫자로 맞춰 보세요. 새 손님은 그대로인데 재방문율만 올라도 방문 건수가 이만큼 늘어요.</p>
+          <div className="mt-5"><RevisitCalculator /></div>
+
+          <div className="mt-8 grid items-center gap-6 rounded-[26px] bg-card p-6 shadow-card md:grid-cols-[1fr_1.2fr]">
+            <div>
+              <div className="text-[14px] font-bold">숫자는 매달 관리자 화면에 떠요</div>
+              <p className="mt-2 text-[12px] leading-[1.8] text-mute">
+                재방문율, 재방문 손님 수, 캐치걸별 재방문율, 오래 안 온 손님. 앱을 깔고 나서 진짜 늘었는지 매장이 직접 확인해요. 늘지 않으면 이유가 보이고, 늘면 어디서 늘었는지 보여요.
+              </p>
+            </div>
+            <Desktop src="/landing/a-revenue.png" alt="매출·재방문 분석 화면" />
           </div>
         </div>
       </section>
@@ -523,7 +592,7 @@ export default function Home() {
 
       {/* 마무리 CTA */}
       <section className="mx-auto max-w-6xl px-5 py-16 text-center">
-        <h2 className="font-serif text-[26px] font-bold md:text-[34px]">오늘 밤부터 전화 대신 앱으로</h2>
+        <h2 className="font-serif text-[26px] font-bold md:text-[34px]">한 번 온 손님을 다시 오게, 오늘 밤부터</h2>
         <p className="mx-auto mt-3 max-w-xl text-[13px] leading-[1.9] text-mute">신청서를 내면 사업자 확인 뒤 보통 영업일 하루 안에 열어 드려요. 구축비 없이 첫 달 무료로 시작하고, 첫 주는 붙어서 봐 드려요.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2.5">
           <Link href="/signup" className="cta-grad rounded-2xl px-7 py-3.5 text-[14px] font-bold text-white shadow-cta">가입 신청하기</Link>
