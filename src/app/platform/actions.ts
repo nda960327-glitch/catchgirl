@@ -230,7 +230,8 @@ export async function verifyBiz(slug: string, memo: string): Promise<R> {
   const opening = store.isSuspended && store.suspendedReason === PENDING_REASON;
   await prisma.store.update({
     where: { id: store.id },
-    data: { bizVerifiedAt: new Date(), bizVerifyMemo: m || store.bizVerifyMemo, ...(opening ? { isSuspended: false, suspendedReason: "" } : {}) },
+    // 직접 신청한 매장은 여는 날이 곧 구독 시작일 — 무료 한 달이 여기서부터 돈다
+    data: { bizVerifiedAt: new Date(), bizVerifyMemo: m || store.bizVerifyMemo, ...(opening ? { isSuspended: false, suspendedReason: "", planStartedAt: new Date() } : {}) },
   });
   await logPlatform("BIZ_VERIFIED", `${store.bizName} ${store.bizNumber} · ${store.bizType}${m ? ` · ${m}` : ""}`, store.id);
   if (opening) {

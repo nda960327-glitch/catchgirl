@@ -670,6 +670,41 @@ export async function inviteNewCustomer(slug: string, memo?: string, sourceId?: 
   }
 }
 
+export type ImportedRow = { id: string; nickname: string; code: string; memo: string };
+
+/**
+ * 기존 손님 한 번에 옮기기 — 한 줄에 "닉네임[, 연락처][, 메모]".
+ * 연락처처럼 보이는 조각(숫자·@)은 관리자 연락처 칸에, 나머지는 메모에 넣는다. 둘 다 손님에겐 안 보인다.
+ * 같은 닉네임이 이미 있으면 건너뛴다 — 코드가 둘 생기면 어느 쪽이 그 손님인지 알 수 없다.
+ */
+export async function importCustomers(slug: string, text: string): Promise<R<{ rows: ImportedRow[]; skipped: string[] }>> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).slice(0, 300);
+    if (lines.length === 0) return { ok: false, error: "붙여 넣은 줄이 없어요." };
+    const existing = new Set((await prisma.customer.findMany({ where: { storeId: store.id }, select: { nickname: true } })).map((c) => c.nickname));
+    const rows: ImportedRow[] = [];
+    const skipped: string[] = [];
+    for (const line of lines) {
+      const parts = line.split(/[,\t]/).map((p) => p.trim()).filter(Boolean);
+      const nickname = (parts.shift() ?? "").slice(0, 12);
+      if (!nickname || existing.has(nickname)) { skipped.push(nickname || "(빈 줄)"); continue; }
+      const contact = parts.filter((p) => /^[@+\d][\d\-\s@a-zA-Z_.]*$/.test(p)).join(" · ").slice(0, 120);
+      const memo = parts.filter((p) => !/^[@+\d][\d\-\s@a-zA-Z_.]*$/.test(p)).join(" · ").slice(0, 500);
+      const code = await freshInviteCode(store.id);
+      if (!code) { skipped.push(nickname); continue; }
+      const c = await prisma.customer.create({ data: { storeId: store.id, nickname, inviteCode: code, adminContact: contact, adminMemo: memo }, select: { id: true } });
+      existing.add(nickname);
+      rows.push({ id: c.id, nickname, code, memo: [contact, memo].filter(Boolean).join(" · ") });
+    }
+    revalidatePath(`/${slug}/admin/customers`);
+    return { ok: true, data: { rows, skipped } };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 /**
  * PIN 을 잊은 손님을 위한 재설정.
  *

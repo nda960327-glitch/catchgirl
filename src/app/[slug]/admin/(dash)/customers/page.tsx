@@ -6,6 +6,7 @@ import { customerStatsBulk } from "@/lib/metrics";
 import { cn, wonShort } from "@/lib/utils";
 import { Card, Chip, Eyebrow, GradeChip } from "@/components/ui";
 import { InviteButton } from "./invite-button";
+import { ImportButton } from "./import-button";
 
 type SP = { sort?: string; filter?: string; q?: string; page?: string };
 
@@ -69,7 +70,8 @@ export default async function CustomersPage({ params, searchParams }: { params: 
           <h1 className="mt-1 font-serif text-[22px] font-bold text-ink">고객 관리</h1>
           <div className="mt-0.5 text-[11px] text-mute">새로 오신 분은 여기서 등록하시면 연결코드가 나와요. 손님이 그 코드로 앱을 시작해요.</div>
         </div>
-        <InviteButton slug={slug} />
+        <ImportButton slug={slug} />
+          <InviteButton slug={slug} />
       </div>
       <Card className="mt-5 flex flex-wrap items-center gap-2 p-3">
         <span className="px-1 text-[11px] font-semibold text-mute">정렬</span>

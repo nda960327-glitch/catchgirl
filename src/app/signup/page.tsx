@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DISCOUNT_LABEL, PLANS, SETUP_FEE, billedPrice } from "@/lib/plans";
+import { ONSITE_SETUP_FEE, PLANS, billedPrice } from "@/lib/plans";
 import { OPERATOR_CONTACT, TERMS_VERSION } from "@/lib/terms";
 import { won } from "@/lib/utils";
 import { SignupForm } from "./signup-form";
@@ -28,19 +28,19 @@ export default function SignupPage() {
             <div key={k} className="rounded-2xl bg-card p-4 shadow-card">
               <div className="flex items-baseline gap-1.5">
                 <span className="font-serif text-[16px] font-bold text-ink">{PLANS[k].name}</span>
-                <span className="text-[10px] text-mute line-through">{won(PLANS[k].price)}</span>
+                <span className="rounded-full bg-ok-bg px-2 py-0.5 text-[9px] font-bold text-ok">첫 달 무료</span>
               </div>
               <div className="mt-1 font-serif text-[18px] font-bold text-brand">{won(billedPrice(k))}<span className="text-[10px] font-normal text-mute">/월</span></div>
-              <div className="mt-1 text-[10px] text-mute">{DISCOUNT_LABEL} · {PLANS[k].tagline}</div>
+              <div className="mt-1 text-[10px] text-mute">{PLANS[k].tagline}</div>
             </div>
           ))}
           <div className="rounded-2xl bg-card p-4 shadow-card">
             <div className="font-serif text-[16px] font-bold text-ink">초기 구축</div>
-            <div className="mt-1 font-serif text-[18px] font-bold text-brand">{won(SETUP_FEE)}</div>
-            <div className="mt-1 text-[10px] text-mute">첫 1회 · 손님 이관, 프로필 등록, 사용 교육 포함</div>
+            <div className="mt-1 font-serif text-[18px] font-bold text-brand">0원</div>
+            <div className="mt-1 text-[10px] text-mute">세팅은 관리자 화면에서 직접 30분 · 방문 세팅은 선택 {won(ONSITE_SETUP_FEE)}</div>
           </div>
         </div>
-        <div className="mt-2 text-[11px] text-mute">결제는 승인 뒤 운영사가 연락드리면서 안내해요. 신청만으로 요금이 나가지 않아요.</div>
+        <div className="mt-2 text-[11px] text-mute">승인된 날부터 한 달은 무료예요. 그 뒤 고른 요금제로 매달 청구되고, 무료가 끝나기 1주 전에 알려드려요. 신청만으로 요금이 나가지 않아요.</div>
 
         <div className="mt-6">
           <SignupForm />

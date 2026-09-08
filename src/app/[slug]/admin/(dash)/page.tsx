@@ -10,6 +10,7 @@ import { Card, Chip, Eyebrow } from "@/components/ui";
 import { InstallApp } from "@/components/install-app";
 import { Charts } from "./charts";
 import { Timeline } from "./timeline";
+import { SetupChecklist } from "./setup-checklist";
 
 export default async function DashboardPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -91,6 +92,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
       </div>
 
       <InstallApp role="admin" className="mt-4" />
+      <SetupChecklist slug={slug} storeId={store.id} logoUrl={store.logoUrl} createdAt={store.createdAt} />
 
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {kpis.map((k) => (

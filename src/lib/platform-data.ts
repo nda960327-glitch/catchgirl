@@ -2,7 +2,7 @@ import "server-only";
 import { headers } from "next/headers";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
-import { billedPrice, planOf } from "@/lib/plans";
+import { FREE_MONTHS, billedPrice, planOf } from "@/lib/plans";
 import { STORE_FEE_PER_HOUR } from "@/lib/utils";
 
 /**
@@ -14,25 +14,39 @@ import { STORE_FEE_PER_HOUR } from "@/lib/utils";
 
 export const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
-/** 구독 시작 달부터 이번 달까지. 이번 달은 청구일이 지났을 때만 센다 (선불이라 그 전엔 아직 안 낼 돈). */
+/** 무료 기간이 끝나는 날 — 이날부터 청구가 돈다 */
+export function freeUntil(planStartedAt: Date) {
+  const d = new Date(planStartedAt);
+  d.setMonth(d.getMonth() + FREE_MONTHS);
+  return d;
+}
+
+/** 첫 청구 달부터 이번 달까지. 이번 달은 청구일이 지났을 때만 센다 (선불이라 그 전엔 아직 안 낼 돈). 무료 기간은 세지 않는다. */
 export function billingMonths(planStartedAt: Date, now = new Date()): string[] {
   const out: string[] = [];
-  const cur = new Date(planStartedAt.getFullYear(), planStartedAt.getMonth(), 1);
+  const first = freeUntil(planStartedAt);
+  const cur = new Date(first.getFullYear(), first.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth(), 1);
   while (cur <= end) {
     const isThisMonth = cur.getTime() === end.getTime();
-    const dueDay = planStartedAt.getDate();
+    const dueDay = first.getDate();
     if (!isThisMonth || now.getDate() >= dueDay) out.push(monthKey(cur));
     cur.setMonth(cur.getMonth() + 1);
   }
   return out;
 }
 
-export const monthsSubscribed = (planStartedAt: Date, now = new Date()) => Math.max(1, billingMonths(planStartedAt, now).length);
+/** 시작한 지 몇 달째인지 — 무료 달도 센다 (얼마나 오래 쓰는 매장인지 보는 숫자) */
+export function monthsSubscribed(planStartedAt: Date, now = new Date()) {
+  const m = (now.getFullYear() - planStartedAt.getFullYear()) * 12 + (now.getMonth() - planStartedAt.getMonth()) + (now.getDate() >= planStartedAt.getDate() ? 1 : 0);
+  return Math.max(1, m);
+}
 
-/** 다음 청구일 — 시작일과 같은 날짜로 매달 돌아온다 */
+/** 다음 청구일 — 무료 기간이 끝나는 날, 그 뒤로는 같은 날짜로 매달 */
 export function nextBillingDate(planStartedAt: Date, now = new Date()) {
-  const next = new Date(now.getFullYear(), now.getMonth(), planStartedAt.getDate());
+  const first = freeUntil(planStartedAt);
+  if (first > now) return first;
+  const next = new Date(now.getFullYear(), now.getMonth(), first.getDate());
   if (next <= now) next.setMonth(next.getMonth() + 1);
   return next;
 }

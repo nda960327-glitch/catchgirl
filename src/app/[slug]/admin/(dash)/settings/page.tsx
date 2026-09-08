@@ -9,15 +9,18 @@ import { NoticesManager } from "./notices-manager";
 import { RoomsManager } from "./rooms-manager";
 import { ProfileFieldsManager } from "./profile-fields-manager";
 import { parseFieldOptions } from "@/lib/profile";
+import { storeLinks } from "@/lib/platform-data";
+import { LinksCard } from "./links-card";
 
 export default async function SettingsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const store = await getStoreBySlug(slug);
-  const [options, notices, rooms, fields] = await Promise.all([
+  const [options, notices, rooms, fields, links] = await Promise.all([
     prisma.storeOption.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" } }),
     prisma.notice.findMany({ where: { storeId: store.id }, orderBy: [{ isPinned: "desc" }, { sortOrder: "asc" }] }),
     prisma.room.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { assignments: true } } } }),
     prisma.storeProfileField.findMany({ where: { storeId: store.id }, orderBy: { sortOrder: "asc" }, include: { _count: { select: { values: true } } } }),
+    storeLinks(slug),
   ]);
   return (
     <div className="animate-fade">
@@ -40,6 +43,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
         slug={slug}
         items={fields.map((x) => ({ id: x.id, label: x.label, kind: x.kind === "TEXT" ? "TEXT" : "CHOICE", options: parseFieldOptions(x.options), showInFilter: x.showInFilter, isActive: x.isActive, usedBy: x._count.values }))}
       />
+      <LinksCard links={links} />
     </div>
   );
 }
