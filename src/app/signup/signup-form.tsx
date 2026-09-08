@@ -17,7 +17,7 @@ const BLANK = {
   name: "", slug: "", adminEmail: "", adminPassword: "", adminPassword2: "",
   plan: "PRO" as "PRO" | "MAX", commitment: "TERM24" as Commitment, theme: "rose" as ThemeKey,
   openTime: "12:00", shiftSplitTime: "20:00", closeTime: "04:00", roomCount: 10,
-  contactPhone: "", contactTelegram: "", ownerContact: "",
+  contactPhone: "", contactTelegram: "", ownerContact: "", agentCode: "",
   bizName: "", bizNumber: "", bizType: "", bizOwner: "",
   termsAgreed: false, termsAgreedBy: "", website: "",
 };
@@ -162,6 +162,9 @@ export function SignupForm() {
           </div>
           <Field label="연락받을 전화 또는 텔레그램" hint="운영사가 확인 결과를 알려드릴 곳 · 손님에게는 안 보여요">
             <Input value={f.ownerContact} onChange={(e) => setF({ ...f, ownerContact: e.target.value })} placeholder="010-0000-0000 또는 @telegram" maxLength={120} className="h-11" />
+          </Field>
+          <Field label="담당직원 코드" hint="소개해 준 직원이 있으면 그 코드 · 없으면 비워 두세요">
+            <Input value={f.agentCode} onChange={(e) => setF({ ...f, agentCode: e.target.value.toUpperCase() })} placeholder="예: KIM01" maxLength={10} className="h-11 font-mono" />
           </Field>
         </div>
       </section>

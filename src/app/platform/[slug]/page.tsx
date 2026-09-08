@@ -12,6 +12,8 @@ import { Card, Chip } from "@/components/ui";
 import { StoreCardEditor } from "../store-card-editor";
 import { BizBox } from "./biz-box";
 import { CmsBox } from "./cms-box";
+import { CommissionBox } from "./commission-box";
+import { commissionOf } from "@/lib/commission";
 import { DEBIT_DAY } from "@/lib/plans";
 import { PENDING_REASON, bizStatus } from "@/lib/terms";
 import { DeleteBox, PaymentsTable, SuspendBox, type PaymentRow } from "./store-forms";
@@ -37,6 +39,8 @@ const ACTION_LABEL: Record<string, string> = {
   BIZ_UNVERIFIED: "사업자 확인 취소",
   TERMS_AGREED: "약관 동의",
   CMS_UPDATED: "자동이체 정보",
+  COMMISSION_PAID: "커미션 지급",
+  COMMISSION_UNPAID: "커미션 지급 취소",
 };
 
 /**
@@ -53,13 +57,19 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
     where: { slug },
     include: {
       admins: { orderBy: { id: "asc" }, take: 1, select: { email: true } },
+      agent: { select: { id: true, name: true, code: true } },
       payments: { orderBy: { month: "desc" } },
       platformLogs: { orderBy: { createdAt: "desc" }, take: 30 },
     },
   });
   if (!store) notFound();
 
-  const [links, health] = await Promise.all([storeLinks(slug), storeHealth(store.id)]);
+  const [links, health, agents] = await Promise.all([
+    storeLinks(slug),
+    storeHealth(store.id),
+    prisma.agent.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, code: true } }),
+  ]);
+  const commission = commissionOf(store, store.payments.map((p) => ({ month: p.month, paidAt: p.paidAt })));
   const plan = planOf(store.plan);
   const billing = billingStatus(store, store.payments.map((p) => p.month));
   const next = nextBillingDate(store.planStartedAt);
@@ -150,9 +160,23 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
             plan={plan}
             commitment={commitment}
             onsiteSetupDone={store.onsiteSetupDone}
+            agentId={store.agentId ?? ""}
+            agentDidOnsite={store.agentDidOnsite}
+            agents={agents}
             ownerContact={store.ownerContact}
             platformMemo={store.platformMemo}
             adminEmail={store.admins[0]?.email ?? ""}
+          />
+          <div className="mt-4 text-[12px] font-bold text-ink">담당직원 커미션</div>
+          <CommissionBox
+            slug={store.slug}
+            agentName={store.agent ? `${store.agent.name} (${store.agent.code})` : null}
+            amount={commission.amount}
+            base={commission.base}
+            onsite={commission.onsite}
+            status={commission.status}
+            reason={commission.reason}
+            paidAt={store.commissionPaidAt ? format(store.commissionPaidAt, "yyyy.MM.dd") : null}
           />
         </Card>
 

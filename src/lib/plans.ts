@@ -30,6 +30,9 @@ export const FREE_FIRST_MONTH = true;
 export const SETUP_FEE = 0;
 export const ONSITE_SETUP_FEE = 300_000;
 
+/** 담당직원 커미션 — 2년 약정 매장만. 방문 세팅까지 직접 하면 더 붙는다. 첫 출금 성공한 달에 확정. */
+export const COMMISSION = { PRO: 300_000, MAX: 800_000, ONSITE: 200_000 } as const;
+
 /** 무제한은 null 로 둔다 — 0 이나 -1 보다 화면에서 다루기 쉽다. */
 export type Limits = { customers: number | null; staff: number | null; rooms: number | null };
 

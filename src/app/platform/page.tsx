@@ -32,12 +32,13 @@ const ACTION_LABEL: Record<string, string> = {
 export default async function PlatformPage() {
   if (!(await isPlatform())) redirect("/platform/login");
 
-  const [stores, logs] = await Promise.all([
+  const [stores, logs, agents] = await Promise.all([
     prisma.store.findMany({
       orderBy: { createdAt: "desc" },
       include: { admins: { select: { email: true }, take: 1 }, payments: { select: { month: true } } },
     }),
     prisma.platformLog.findMany({ orderBy: { createdAt: "desc" }, take: 20, include: { store: { select: { name: true, slug: true } } } }),
+    prisma.agent.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, code: true } }),
   ]);
 
   const rows = await Promise.all(
@@ -63,6 +64,7 @@ export default async function PlatformPage() {
             <h1 className="mt-1 font-serif text-[24px] font-bold text-ink">매장 콘솔</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/platform/agents" className="rounded-xl border border-line bg-card px-3.5 py-2 text-[12px] font-bold text-ink">담당직원</Link>
             <Link href="/platform/billing" className="cta-grad rounded-xl px-3.5 py-2 text-[12px] font-bold text-white shadow-cta">이번 달 출금 명단</Link>
             <form action={logoutPlatform}>
               <button className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-mute">나가기</button>
@@ -167,7 +169,7 @@ export default async function PlatformPage() {
           </div>
 
           <div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start">
-            <NewStoreForm />
+            <NewStoreForm agents={agents} />
             <BroadcastForm />
           </div>
         </div>

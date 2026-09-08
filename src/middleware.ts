@@ -29,7 +29,7 @@ function storeFromHost(host: string): string | null {
   if (!h.endsWith(`.${root}`)) return null;
   const sub = h.slice(0, -(root.length + 1));
   // 한 단계 서브도메인만 매장이다. www 나 콘솔용 이름은 매장이 아니다.
-  if (!sub || sub.includes(".") || ["www", "app", "platform", "api", "signup", "demo"].includes(sub)) return null;
+  if (!sub || sub.includes(".") || ["www", "app", "platform", "api", "signup", "demo", "agent"].includes(sub)) return null;
   return sub;
 }
 
@@ -48,6 +48,8 @@ export async function middleware(req: NextRequest) {
   if (original === "/signup" || original.startsWith("/signup/")) return NextResponse.next();
   // 시연 안내도 매장이 아니다
   if (original === "/demo" || original.startsWith("/demo/")) return NextResponse.next();
+  // 담당직원 화면 — 자기 세션으로 잠근다 (페이지 안에서 확인)
+  if (original === "/agent" || original.startsWith("/agent/")) return NextResponse.next();
 
   // 서브도메인으로 들어왔으면 매장 경로를 앞에 붙인 걸로 본다
   const sub = storeFromHost(req.headers.get("host") ?? "");

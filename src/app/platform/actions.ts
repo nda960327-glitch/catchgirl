@@ -47,6 +47,7 @@ const storeSchema = z.object({
   roomCount: z.coerce.number().int().min(1).max(50),
   plan: z.enum(["PRO", "MAX"]).default("PRO"),
   commitment: z.enum(["TERM24", "MONTHLY"]).default("TERM24"),
+  agentId: z.string().max(40).default(""),
   theme: z.enum(["rose", "cream", "noir", "wine", "midnight"]).default("rose"),
   contactPhone: z.string().trim().max(30).default(""),
   contactTelegram: z.string().trim().max(40).default(""),
@@ -87,6 +88,7 @@ export async function createStore(input: z.input<typeof storeSchema>): Promise<R
       slug: d.slug,
       plan: d.plan,
       commitment: d.commitment,
+      agentId: d.agentId || null,
       theme: d.theme,
       openTime: d.openTime,
       shiftSplitTime: d.shiftSplitTime,
@@ -119,6 +121,8 @@ const contractSchema = z.object({
   plan: z.enum(["PRO", "MAX"]),
   commitment: z.enum(["TERM24", "MONTHLY"]).default("TERM24"),
   onsiteSetupDone: z.boolean().default(false),
+  agentId: z.string().max(40).default(""),
+  agentDidOnsite: z.boolean().default(false),
   ownerContact: z.string().trim().max(120).default(""),
   platformMemo: z.string().trim().max(1000).default(""),
 });
@@ -135,7 +139,7 @@ export async function updateStoreFromPlatform(slug: string, input: z.input<typeo
   const commitmentChanged = d.commitment !== commitmentOf(store.commitment);
   await prisma.store.update({
     where: { id: store.id },
-    data: { plan: d.plan, commitment: d.commitment, onsiteSetupDone: d.onsiteSetupDone, ...(planChanged ? { planStartedAt: new Date() } : {}), ownerContact: d.ownerContact, platformMemo: d.platformMemo },
+    data: { plan: d.plan, commitment: d.commitment, onsiteSetupDone: d.onsiteSetupDone, agentId: d.agentId || null, agentDidOnsite: d.agentDidOnsite, ...(planChanged ? { planStartedAt: new Date() } : {}), ownerContact: d.ownerContact, platformMemo: d.platformMemo },
   });
   if (planChanged) await logPlatform("PLAN_CHANGED", `${PLANS[planOf(store.plan)].name} → ${PLANS[d.plan].name}`, store.id);
   else if (commitmentChanged) await logPlatform("CONTRACT_UPDATED", `${COMMITMENT_LABEL[commitmentOf(store.commitment)]} → ${COMMITMENT_LABEL[d.commitment]}`, store.id);
@@ -267,6 +271,62 @@ export async function recordTermsAgreement(slug: string, agreedBy: string): Prom
   if (!by) return { ok: false, error: "동의한 사람을 적어 주세요." };
   await prisma.store.update({ where: { id: store.id }, data: { termsVersion: TERMS_VERSION, termsAgreedAt: new Date(), termsAgreedBy: by } });
   await logPlatform("TERMS_AGREED", `${TERMS_VERSION} 판 · ${by}`, store.id);
+  revalidatePath("/platform", "layout");
+  return { ok: true };
+}
+
+/* ─── 담당직원 ─── */
+const agentSchema = z.object({
+  name: z.string().trim().min(1, "이름을 적어 주세요").max(20),
+  code: z.string().trim().toUpperCase().regex(/^[A-Z0-9가-힣]{2,10}$/, "코드는 2~10자 영문·숫자로"),
+  contact: z.string().trim().max(60).default(""),
+  loginId: z.string().trim().min(3, "아이디는 3자 이상").max(30),
+  password: z.string().min(6, "비밀번호는 6자 이상").max(50),
+});
+export async function createAgent(input: z.input<typeof agentSchema>): Promise<R> {
+  if (!(await isPlatform())) return denied();
+  const p = agentSchema.safeParse(input);
+  if (!p.success) return { ok: false, error: p.error.issues[0].message };
+  const d = p.data;
+  if (await prisma.agent.findUnique({ where: { code: d.code } })) return { ok: false, error: "이미 쓰는 코드예요." };
+  if (await prisma.agent.findUnique({ where: { loginId: d.loginId } })) return { ok: false, error: "이미 쓰는 아이디예요." };
+  const a = await prisma.agent.create({ data: { name: d.name, code: d.code, contact: d.contact, loginId: d.loginId, passwordHash: await bcrypt.hash(d.password, 10) } });
+  await logPlatform("AGENT_CREATED", `${a.name} (${a.code})`);
+  revalidatePath("/platform", "layout");
+  return { ok: true };
+}
+export async function updateAgent(id: string, input: { name: string; contact: string; isActive: boolean }): Promise<R> {
+  if (!(await isPlatform())) return denied();
+  const name = input.name.trim().slice(0, 20);
+  if (!name) return { ok: false, error: "이름을 적어 주세요." };
+  const a = await prisma.agent.update({ where: { id }, data: { name, contact: input.contact.trim().slice(0, 60), isActive: !!input.isActive } });
+  await logPlatform("AGENT_UPDATED", `${a.name} (${a.code}) · ${a.isActive ? "활동" : "비활성"}`);
+  revalidatePath("/platform", "layout");
+  return { ok: true };
+}
+export async function setAgentPassword(id: string, password: string): Promise<R> {
+  if (!(await isPlatform())) return denied();
+  if (password.length < 6) return { ok: false, error: "비밀번호는 6자 이상이에요." };
+  await prisma.agent.update({ where: { id }, data: { passwordHash: await bcrypt.hash(password, 10) } });
+  return { ok: true };
+}
+/** 커미션 지급 표시 — 확정된 매장에만. 직원 화면에 '지급 완료' 로 뜬다. */
+export async function markCommissionPaid(slug: string): Promise<R> {
+  if (!(await isPlatform())) return denied();
+  const store = await storeBySlug(slug);
+  if (!store) return { ok: false, error: "매장을 찾을 수 없어요." };
+  if (!store.agentId) return { ok: false, error: "담당직원이 없는 매장이에요." };
+  await prisma.store.update({ where: { id: store.id }, data: { commissionPaidAt: new Date() } });
+  await logPlatform("COMMISSION_PAID", "담당직원 커미션 지급", store.id);
+  revalidatePath("/platform", "layout");
+  return { ok: true };
+}
+export async function unmarkCommissionPaid(slug: string): Promise<R> {
+  if (!(await isPlatform())) return denied();
+  const store = await storeBySlug(slug);
+  if (!store) return { ok: false, error: "매장을 찾을 수 없어요." };
+  await prisma.store.update({ where: { id: store.id }, data: { commissionPaidAt: null } });
+  await logPlatform("COMMISSION_UNPAID", "커미션 지급 표시 취소", store.id);
   revalidatePath("/platform", "layout");
   return { ok: true };
 }

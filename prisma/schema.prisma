@@ -62,6 +62,10 @@ model Store {
   // 약정 — 2년 약정이면 월 요금이 싸고 방문 세팅이 무료다. 중도 해지 때 돌려받을 할인액을 이걸로 센다.
   commitment          String    @default("TERM24") // TERM24 | MONTHLY
   onsiteSetupDone     Boolean   @default(false) // 방문 세팅을 실제로 해 줬는지 (약정 중도 해지 때 반환 대상)
+  // 담당직원(영업) — 누가 데려온 매장인지. 2년 약정이면 첫 출금이 성공한 달에 커미션이 확정된다.
+  agentId             String?
+  agentDidOnsite      Boolean   @default(false) // 방문 세팅을 담당직원이 직접 했는지 (+커미션)
+  commissionPaidAt    DateTime? // 운영사가 커미션을 지급한 날
   noshowPolicy        String   @default("노쇼 3회 누적 시 예약이 제한될 수 있어요.")
   createdAt           DateTime @default(now())
 
@@ -83,6 +87,24 @@ model Store {
   profileFields StoreProfileField[]
   payments      Payment[]
   platformLogs  PlatformLog[]
+  agent         Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+}
+
+/**
+ * 담당직원(영업). 가입 신청서에 코드를 적으면 그 매장이 이 사람 것이 된다.
+ * 자기 매장 목록과 커미션 정산만 보는 별도 로그인이다.
+ */
+model Agent {
+  id           String   @id @default(cuid())
+  name         String
+  code         String   @unique // 신청서에 적는 짧은 코드 (예: KIM01)
+  contact      String   @default("") // 전화·텔레그램
+  loginId      String   @unique
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  stores Store[]
 }
 
 /**

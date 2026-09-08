@@ -31,6 +31,8 @@ const signupSchema = z.object({
   contactPhone: z.string().trim().max(30).default(""),
   contactTelegram: z.string().trim().max(40).default(""),
   ownerContact: z.string().trim().min(1, "연락받을 전화나 텔레그램을 적어 주세요").max(120),
+  /** 담당직원 코드 — 있으면 그 사람 매장이 된다 */
+  agentCode: z.string().trim().max(10).default(""),
   bizName: z.string().trim().min(1, "등록증의 상호를 적어 주세요").max(60),
   bizNumber: z.string().trim().refine(isValidBizNumber, "사업자등록번호가 맞지 않아요 (10자리를 확인해 주세요)"),
   bizType: z.string().trim().min(1, "업태·종목을 적어 주세요").max(80),
@@ -57,6 +59,12 @@ export async function signupStore(input: z.input<typeof signupSchema>): Promise<
   if (slugErr) return { ok: false, error: slugErr };
   const emailErr = await emailProblem(d.adminEmail);
   if (emailErr) return { ok: false, error: emailErr };
+  let agentId: string | null = null;
+  if (d.agentCode) {
+    const agent = await prisma.agent.findUnique({ where: { code: d.agentCode.toUpperCase() } });
+    if (!agent || !agent.isActive) return { ok: false, error: "담당직원 코드를 확인해 주세요. 모르면 비워 두셔도 돼요." };
+    agentId = agent.id;
+  }
 
   try {
     const img = await prisma.image.create({ data: { mime: full.mime, data: full.buf, thumb: thumb.buf }, select: { id: true } });
@@ -65,6 +73,7 @@ export async function signupStore(input: z.input<typeof signupSchema>): Promise<
       slug: d.slug,
       plan: d.plan,
       commitment: d.commitment,
+      agentId,
       theme: d.theme,
       openTime: d.openTime,
       shiftSplitTime: d.shiftSplitTime,

@@ -15,7 +15,7 @@ import type { Commitment, Plan } from "./plans";
  */
 
 /** 매장 주소로 쓸 수 없는 이름 — 앱의 다른 경로와 부딪힌다 */
-export const RESERVED_SLUGS = ["platform", "api", "assets", "_next", "www", "app", "signup", "demo", "terms", "login", "admin", "staff"];
+export const RESERVED_SLUGS = ["platform", "api", "assets", "_next", "www", "app", "signup", "demo", "agent", "terms", "login", "admin", "staff"];
 
 export const SLUG_RE = /^[a-z0-9-]+$/;
 
@@ -36,6 +36,8 @@ export type ProvisionInput = {
   slug: string;
   plan: Plan;
   commitment: Commitment;
+  /** 데려온 담당직원 — 없으면 null */
+  agentId: string | null;
   theme: ThemeKey;
   openTime: string;
   shiftSplitTime: string;
@@ -63,6 +65,7 @@ export async function provisionStore(d: ProvisionInput) {
       slug: d.slug,
       plan: d.plan,
       commitment: d.commitment,
+      agentId: d.agentId,
       theme: d.theme,
       themeColor: THEMES[d.theme].brand,
       openTime: d.openTime,

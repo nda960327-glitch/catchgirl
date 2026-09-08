@@ -19,7 +19,7 @@ const slugify = (s: string) =>
 const BLANK = {
   name: "", slug: "", adminEmail: "", adminPassword: "",
   openTime: "12:00", shiftSplitTime: "20:00", closeTime: "04:00",
-  roomCount: 10, plan: "PRO" as "PRO" | "MAX", commitment: "TERM24" as Commitment, theme: "rose" as ThemeKey, contactPhone: "", contactTelegram: "",
+  roomCount: 10, plan: "PRO" as "PRO" | "MAX", commitment: "TERM24" as Commitment, agentId: "", theme: "rose" as ThemeKey, contactPhone: "", contactTelegram: "",
   bizName: "", bizNumber: "", bizType: "", bizOwner: "", bizDocUrl: "", bizVerified: false, bizVerifyMemo: "",
   termsAgreed: false, termsAgreedBy: "",
 };
@@ -30,7 +30,9 @@ const BLANK = {
  * 여기서 만들면 관리자 계정, 룸, 옵션 틀, 등급 혜택, 사이트 목록, 안내 공지까지
  * 한 번에 생겨서 그날 바로 관리자에게 넘길 수 있다.
  */
-export function NewStoreForm() {
+export type AgentLite = { id: string; name: string; code: string };
+
+export function NewStoreForm({ agents }: { agents: AgentLite[] }) {
   const [f, setF] = useState(BLANK);
   const [slugTouched, setSlugTouched] = useState(false);
   const [done, setDone] = useState<{ slug: string; email: string; password: string } | null>(null);
@@ -125,11 +127,19 @@ export function NewStoreForm() {
             </Select>
           </Field>
         </div>
-        <Field label="약정" hint={f.commitment === "TERM24" ? "약정가 · 방문 세팅 무료" : "정가 · 위약금 없음"}>
-          <Select value={f.commitment} onChange={(e) => setF({ ...f, commitment: e.target.value as Commitment })} className="w-full">
-            {(["TERM24", "MONTHLY"] as Commitment[]).map((c) => <option key={c} value={c}>{COMMITMENT_LABEL[c]}</option>)}
-          </Select>
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="약정" hint={f.commitment === "TERM24" ? "약정가 · 방문 세팅 무료" : "정가 · 위약금 없음"}>
+            <Select value={f.commitment} onChange={(e) => setF({ ...f, commitment: e.target.value as Commitment })} className="w-full">
+              {(["TERM24", "MONTHLY"] as Commitment[]).map((c) => <option key={c} value={c}>{COMMITMENT_LABEL[c]}</option>)}
+            </Select>
+          </Field>
+          <Field label="담당직원" hint="데려온 사람 · 커미션 대상">
+            <Select value={f.agentId} onChange={(e) => setF({ ...f, agentId: e.target.value })} className="w-full">
+              <option value="">없음</option>
+              {agents.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.code})</option>)}
+            </Select>
+          </Field>
+        </div>
 
         <Field label="화면 테마" hint={THEMES[f.theme].desc}>
           <Select value={f.theme} onChange={(e) => setF({ ...f, theme: e.target.value as ThemeKey })} className="w-full">

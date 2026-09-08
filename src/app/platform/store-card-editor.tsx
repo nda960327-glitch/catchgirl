@@ -19,18 +19,21 @@ import { enterStoreAsAdmin, setStoreAdminLogin, updateStoreFromPlatform } from "
  * 설정 화면을 여기 또 만들지 않고, 업체가 쓰는 화면 그대로 쓴다.
  */
 export function StoreCardEditor({
-  slug, plan, commitment, onsiteSetupDone, ownerContact, platformMemo, adminEmail,
+  slug, plan, commitment, onsiteSetupDone, agentId, agentDidOnsite, agents, ownerContact, platformMemo, adminEmail,
 }: {
   slug: string;
   plan: Plan;
   commitment: Commitment;
   onsiteSetupDone: boolean;
+  agentId: string;
+  agentDidOnsite: boolean;
+  agents: { id: string; name: string; code: string }[];
   ownerContact: string;
   platformMemo: string;
   adminEmail: string;
 }) {
   const [open, setOpen] = useState<false | "contract" | "account">(false);
-  const [f, setF] = useState({ plan, commitment, onsiteSetupDone, ownerContact, platformMemo });
+  const [f, setF] = useState({ plan, commitment, onsiteSetupDone, agentId, agentDidOnsite, ownerContact, platformMemo });
   const [acct, setAcct] = useState({ email: adminEmail, password: "" });
   const [pending, start] = useTransition();
   const router = useRouter();
@@ -90,6 +93,16 @@ export function StoreCardEditor({
               <input type="checkbox" checked={f.onsiteSetupDone} onChange={(e) => setF({ ...f, onsiteSetupDone: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
               방문 세팅 해 줬음 (약정 중도 해지 시 반환 대상)
             </label>
+            <Field label="담당직원" hint="데려온 사람 · 2년 약정이면 커미션">
+              <Select value={f.agentId} onChange={(e) => setF({ ...f, agentId: e.target.value })} className="w-full">
+                <option value="">없음</option>
+                {agents.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.code})</option>)}
+              </Select>
+            </Field>
+            <label className="flex items-center gap-2 self-end pb-3 text-[12px] font-semibold text-ink">
+              <input type="checkbox" checked={f.agentDidOnsite} onChange={(e) => setF({ ...f, agentDidOnsite: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" disabled={!f.agentId} />
+              방문 세팅을 담당직원이 직접 했음 (+커미션)
+            </label>
             <Field label="업체 담당자 연락처" hint="사장·실장 전화나 텔레그램">
               <Input value={f.ownerContact} maxLength={120} onChange={(e) => setF({ ...f, ownerContact: e.target.value })} placeholder="010-0000-0000 · @telegram" className="h-11" />
             </Field>
@@ -99,7 +112,7 @@ export function StoreCardEditor({
           </Field>
           <div className="flex gap-2">
             <Button size="sm" onClick={saveContract} loading={pending}>저장</Button>
-            <Button size="sm" variant="ghost" onClick={() => { setF({ plan, commitment, onsiteSetupDone, ownerContact, platformMemo }); setOpen(false); }}>취소</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setF({ plan, commitment, onsiteSetupDone, agentId, agentDidOnsite, ownerContact, platformMemo }); setOpen(false); }}>취소</Button>
           </div>
         </div>
       )}
