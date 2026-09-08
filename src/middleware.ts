@@ -58,10 +58,13 @@ export async function middleware(req: NextRequest) {
     url.pathname = pathname;
     return NextResponse.rewrite(url);
   };
+  // 서브도메인으로 들어온 사람에게는 매장 경로를 뗀 주소로 보낸다 —
+  // bgt.catchgirl.kr/bgt/login 보다 bgt.catchgirl.kr/login 이 자연스럽다. 둘 다 통하긴 한다.
+  const strip = (p: string) => (sub && (p === `/${sub}` || p.startsWith(`/${sub}/`)) ? p.slice(sub.length + 1) || "/" : p);
   const toLogin = (loginPath: string) => {
     const url = req.nextUrl.clone();
-    url.pathname = loginPath;
-    url.searchParams.set("next", pathname);
+    url.pathname = strip(loginPath);
+    url.searchParams.set("next", strip(pathname));
     return NextResponse.redirect(url);
   };
 
