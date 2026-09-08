@@ -114,7 +114,7 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
     try {
       const up = await uploadImages(Array.from(files).slice(0, 10 - f.photos.length));
       setF((x) => ({ ...x, photos: [...x.photos, ...up.map((u) => u.url)] }));
-    } catch { toast("업로드 실패", "error"); } finally { setUploading(false); if (fileRef.current) fileRef.current.value = ""; }
+    } catch (e) { toast(e instanceof Error ? e.message : "업로드에 실패했어요.", "error"); } finally { setUploading(false); if (fileRef.current) fileRef.current.value = ""; }
   };
 
   const submit = () => {

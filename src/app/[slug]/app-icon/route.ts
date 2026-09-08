@@ -27,10 +27,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   if (!store?.logoUrl) return fallback();
 
   try {
-    // 업로드된 파일이든 외부 주소든 같은 방법으로 읽는다
-    const res = await fetch(new URL(store.logoUrl, req.url), { cache: "force-cache" });
-    if (!res.ok) return fallback();
-    const src = Buffer.from(await res.arrayBuffer());
+    let src: Buffer;
+    const stored = /^\/api\/img\/([a-z0-9]+)/i.exec(store.logoUrl);
+    if (stored) {
+      // 업로드한 로고는 DB 에 있다 — 자기 자신에게 HTTP 로 되묻지 않고 바로 읽는다
+      const img = await prisma.image.findUnique({ where: { id: stored[1] }, select: { data: true } });
+      if (!img) return fallback();
+      src = Buffer.from(img.data);
+    } else {
+      // 정적 파일이나 외부 주소
+      const res = await fetch(new URL(store.logoUrl, req.url), { cache: "force-cache" });
+      if (!res.ok) return fallback();
+      src = Buffer.from(await res.arrayBuffer());
+    }
 
     const ring = Math.round(size * 0.07);
     const inner = size - ring * 2;

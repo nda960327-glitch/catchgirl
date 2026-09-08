@@ -45,7 +45,7 @@ export async function buildManifest(slug: string, role: AppRole) {
     theme_color: r.theme,
     // 로고가 있으면 매장 아이콘으로 — 여러 매장 앱이 홈 화면에서 같은 고양이로 보이지 않게
     icons: [192, 512].map((size) => ({
-      src: store?.logoUrl ? `${base.replace(r.path, "")}/app-icon?role=${role}&size=${size}` : `/assets/icon-${r.icon}-${size}.png`,
+      src: store?.logoUrl ? `${base.replace(r.path, "")}/app-icon?role=${role}&size=${size}&v=${encodeURIComponent(store.logoUrl.split("/").pop() ?? "")}` : `/assets/icon-${r.icon}-${size}.png`,
       sizes: `${size}x${size}`,
       type: "image/png",
       purpose: "any",

@@ -28,7 +28,7 @@ export function SettingsForm({ slug, init }: { slug: string; init: Init }) {
     try {
       const [u] = await uploadImages([files[0]]);
       setF((x) => (kind === "logo" ? { ...x, logoUrl: u.url } : { ...x, coverUrl: u.url }));
-    } catch { toast("업로드 실패", "error"); } finally { setUploading(null); }
+    } catch (e) { toast(e instanceof Error ? e.message : "업로드에 실패했어요.", "error"); } finally { setUploading(null); }
   };
 
   const submit = () =>

@@ -287,6 +287,23 @@ model DayPromotion {
   @@index([storeId, startDate, endDate])
 }
 
+/**
+ * 업로드한 이미지 — 로고·커버·캐치걸 사진·후기 사진.
+ *
+ * 파일로 저장하지 않는다. 운영 서버는 디스크에 쓸 수 없고, 쓸 수 있다 해도
+ * 배포마다 날아간다. 브라우저에서 이미 줄여서 보내므로 한 장이 수백 KB 라
+ * DB 에 두는 편이 외부 저장소를 붙이는 것보다 단순하고 설정할 것도 없다.
+ */
+model Image {
+  id        String   @id @default(cuid())
+  storeId   String?
+  mime      String // image/jpeg | image/png | image/webp
+  data      Bytes
+  thumb     Bytes
+  createdAt DateTime @default(now())
+
+  @@index([storeId])
+}
 /** 관리자가 방문마다 남기는 날짜별 메모 (adminMemo 는 고정 요약, 이쪽은 시간순 기록) */
 model CustomerNote {
   id         String   @id @default(cuid())
