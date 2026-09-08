@@ -51,7 +51,7 @@ export default async function PlatformPage() {
   const active = rows.filter((r) => !r.s.isSuspended);
   const monthly = active.reduce((a, r) => a + r.billing.monthly, 0);
   const unpaidStores = rows.filter((r) => r.billing.unpaid.length > 0);
-  const unpaidAmount = unpaidStores.reduce((a, r) => a + r.billing.unpaid.length * r.billing.monthly, 0);
+  const unpaidAmount = unpaidStores.reduce((a, r) => a + r.billing.unpaidAmount, 0);
   const reservations30d = rows.reduce((a, r) => a + r.health.reservations30d, 0);
 
   return (

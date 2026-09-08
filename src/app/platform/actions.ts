@@ -7,7 +7,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { setSession } from "@/lib/auth";
 import { checkPlatformPassword, clearPlatformSession, isPlatform, setPlatformSession } from "@/lib/platform";
-import { logPlatform } from "@/lib/platform-data";
+import { amountForMonth, logPlatform } from "@/lib/platform-data";
 import { SLUG_RE, emailProblem, provisionStore, slugProblem } from "@/lib/provision";
 import { PLANS, billedPrice, planOf } from "@/lib/plans";
 import { PENDING_REASON, TERMS_VERSION, formatBizNumber, isValidBizNumber } from "@/lib/terms";
@@ -306,7 +306,7 @@ export async function markPaid(slug: string, month: string, memo = ""): Promise<
   if (!/^\d{4}-\d{2}$/.test(month)) return { ok: false, error: "달을 확인해 주세요." };
   const store = await storeBySlug(slug);
   if (!store) return { ok: false, error: "매장을 찾을 수 없어요." };
-  const amount = billedPrice(planOf(store.plan));
+  const amount = amountForMonth(store, month);
   await prisma.payment.upsert({
     where: { storeId_month: { storeId: store.id, month } },
     create: { storeId: store.id, month, amount, memo: memo.trim().slice(0, 200) },

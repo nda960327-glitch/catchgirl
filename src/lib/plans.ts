@@ -11,8 +11,8 @@ export type Plan = "PRO" | "MAX";
 export const DISCOUNT_RATE = 0;
 export const DISCOUNT_LABEL = "";
 
-/** 첫 달은 무료 — 승인일부터 한 달 뒤에 첫 청구가 돈다 */
-export const FREE_MONTHS = 1;
+/** 첫 달은 만원 — 승인일에 만원, 둘째 달부터 정상 요금 */
+export const FIRST_MONTH_PRICE = 10_000;
 
 /** 초기 구축비는 없다. 세팅은 매장이 직접 하고, 와서 해 달라면 이 값을 한 번 받는다 (선택). */
 export const SETUP_FEE = 0;
@@ -52,8 +52,6 @@ export const planOf = (v: string): Plan => (v === "MAX" ? "MAX" : "PRO");
 /** 할인 적용 후 실제 청구 금액 */
 export const billedPrice = (plan: Plan) => Math.round(PLANS[plan].price * (1 - DISCOUNT_RATE));
 
-/** 연납은 두 달치를 빼 준다 */
-export const yearlyPrice = (plan: Plan) => billedPrice(plan) * 10;
 
 /** 한도 대비 사용량. limit 이 null 이면 무제한이라 넘칠 일이 없다. */
 export function usageOf(used: number, limit: number | null) {
@@ -71,10 +69,9 @@ export const POLICY: { title: string; body: string }[] = [
   {
     title: "청구와 결제",
     body:
-      "첫 달은 무료예요. 승인된 날부터 한 달 뒤에 첫 청구가 시작되고, 그 뒤로는 매달 같은 날에 선불로 청구돼요. 무료 기간이 끝나기 1주 전에 미리 알려드려요.\n" +
+      "첫 달은 10,000원이에요. 승인된 날에 첫 달 요금이 청구되고, 둘째 달부터는 고른 요금제 금액이 매달 같은 날에 선불로 청구돼요.\n" +
       "중간에 요금제를 올리시면 남은 기간만큼만 차액으로 계산해 드려요.\n" +
-      "요금제를 내리시는 경우에는 다음 청구일부터 적용돼요. 이미 낸 달의 요금은 돌려드리지 않는 대신, 그달 끝까지는 원래 요금제를 그대로 쓰실 수 있어요.\n" +
-      "연납을 선택하시면 열 달치 금액으로 열두 달을 쓰실 수 있어요.",
+      "요금제를 내리시는 경우에는 다음 청구일부터 적용돼요. 이미 낸 달의 요금은 돌려드리지 않는 대신, 그달 끝까지는 원래 요금제를 그대로 쓰실 수 있어요.",
   },
   {
     title: "한도를 넘었을 때",

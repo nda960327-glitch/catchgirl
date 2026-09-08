@@ -5,8 +5,8 @@ import { getStoreBySlug } from "@/lib/store";
 import { cn, won } from "@/lib/utils";
 import { Card, Chip, Eyebrow } from "@/components/ui";
 import { PlanBadge } from "@/components/admin-nav";
-import { DISCOUNT_LABEL, DISCOUNT_RATE, ONSITE_SETUP_FEE, PLANS, POLICY, billedPrice, planOf, usageOf, yearlyPrice, type Plan } from "@/lib/plans";
-import { freeUntil, nextBillingDate } from "@/lib/platform-data";
+import { DISCOUNT_LABEL, DISCOUNT_RATE, FIRST_MONTH_PRICE, ONSITE_SETUP_FEE, PLANS, POLICY, billedPrice, planOf, usageOf, type Plan } from "@/lib/plans";
+import { nextBillingDate } from "@/lib/platform-data";
 import { PlanSwitch } from "./plan-switch";
 import { TERMS, TERMS_TITLE, TERMS_VERSION, bizStatus } from "@/lib/terms";
 
@@ -34,11 +34,12 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
   ];
   const overRows = rows.filter((r) => r.over);
 
-  // 다음 청구일 — 첫 달은 무료라 무료가 끝나는 날, 그 뒤로는 같은 날짜로 매달
+  // 다음 청구일 — 시작일과 같은 날짜로 매달. 첫 달만 만원이다.
   const start = store.planStartedAt;
   const now = new Date();
-  const free = freeUntil(start);
-  const inFree = free > now;
+  const firstMonth = new Date(start);
+  firstMonth.setMonth(firstMonth.getMonth() + 1);
+  const inFirst = firstMonth > now;
   const next = nextBillingDate(start, now);
 
   return (
@@ -54,7 +55,7 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
               <PlanBadge plan={plan} />
               <span className="text-[13px] font-bold text-ink">구독 중</span>
               {DISCOUNT_RATE > 0 && <Chip tone="red">{DISCOUNT_LABEL}</Chip>}
-              {inFree && <Chip tone="green">첫 달 무료 · {format(free, "M월 d일", { locale: ko })}까지</Chip>}
+              {inFirst && <Chip tone="green">첫 달 {won(FIRST_MONTH_PRICE)} · {format(next, "M월 d일", { locale: ko })}부터 정상 요금</Chip>}
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="font-serif text-[30px] font-bold text-brand">{won(billedPrice(plan))}</span>
@@ -65,8 +66,8 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
           </div>
           <div className="rounded-2xl bg-well px-4 py-3 text-[11px] leading-[1.9]">
             <div className="text-mute">시작일 <b className="text-ink">{format(start, "yyyy년 M월 d일", { locale: ko })}</b></div>
-            <div className="text-mute">{inFree ? "첫 청구일" : "다음 청구일"} <b className="text-ink">{format(next, "M월 d일", { locale: ko })}</b>{inFree && <span className="text-mute"> (그때까지 무료)</span>}</div>
-            <div className="text-mute">연납 시 <b className="text-ink">{won(yearlyPrice(plan))}</b> (2개월 무료)</div>
+            <div className="text-mute">다음 청구일 <b className="text-ink">{format(next, "M월 d일", { locale: ko })}</b></div>
+            <div className="text-mute">첫 달 <b className="text-ink">{won(FIRST_MONTH_PRICE)}</b> · 둘째 달부터 {won(billedPrice(plan))}</div>
           </div>
         </div>
 

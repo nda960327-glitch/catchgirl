@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { prisma } from "@/lib/db";
 import { isPlatform } from "@/lib/platform";
-import { billingStatus, nextBillingDate, storeHealth, storeLinks } from "@/lib/platform-data";
+import { amountForMonth, billingStatus, nextBillingDate, storeHealth, storeLinks } from "@/lib/platform-data";
 import { PLANS, planOf } from "@/lib/plans";
 import { THEMES, themeOf } from "@/lib/themes";
 import { won, wonShort } from "@/lib/utils";
@@ -68,7 +68,7 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
   const paidBy = new Map(store.payments.map((p) => [p.month, p]));
   const paymentRows: PaymentRow[] = [...billing.due].reverse().map((m) => {
     const p = paidBy.get(m);
-    return { month: m, amount: p?.amount ?? billing.monthly, paid: !!p, paidAt: p ? format(p.paidAt, "M/d") : null, memo: p?.memo ?? "" };
+    return { month: m, amount: p?.amount ?? amountForMonth(store, m), paid: !!p, paidAt: p ? format(p.paidAt, "M/d") : null, memo: p?.memo ?? "" };
   });
 
   return (

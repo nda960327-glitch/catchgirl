@@ -2,7 +2,7 @@ import "server-only";
 import { headers } from "next/headers";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
-import { FREE_MONTHS, billedPrice, planOf } from "@/lib/plans";
+import { FIRST_MONTH_PRICE, billedPrice, planOf } from "@/lib/plans";
 import { STORE_FEE_PER_HOUR } from "@/lib/utils";
 
 /**
@@ -14,22 +14,19 @@ import { STORE_FEE_PER_HOUR } from "@/lib/utils";
 
 export const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
-/** 무료 기간이 끝나는 날 — 이날부터 청구가 돈다 */
-export function freeUntil(planStartedAt: Date) {
-  const d = new Date(planStartedAt);
-  d.setMonth(d.getMonth() + FREE_MONTHS);
-  return d;
+/** 그 달에 낼 금액 — 시작한 달은 만원, 그 뒤는 요금제 금액 */
+export function amountForMonth(store: { plan: string; planStartedAt: Date }, month: string) {
+  return month === monthKey(store.planStartedAt) ? FIRST_MONTH_PRICE : billedPrice(planOf(store.plan));
 }
 
-/** 첫 청구 달부터 이번 달까지. 이번 달은 청구일이 지났을 때만 센다 (선불이라 그 전엔 아직 안 낼 돈). 무료 기간은 세지 않는다. */
+/** 구독 시작 달부터 이번 달까지. 이번 달은 청구일이 지났을 때만 센다 (선불이라 그 전엔 아직 안 낼 돈). */
 export function billingMonths(planStartedAt: Date, now = new Date()): string[] {
   const out: string[] = [];
-  const first = freeUntil(planStartedAt);
-  const cur = new Date(first.getFullYear(), first.getMonth(), 1);
+  const cur = new Date(planStartedAt.getFullYear(), planStartedAt.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth(), 1);
   while (cur <= end) {
     const isThisMonth = cur.getTime() === end.getTime();
-    const dueDay = first.getDate();
+    const dueDay = planStartedAt.getDate();
     if (!isThisMonth || now.getDate() >= dueDay) out.push(monthKey(cur));
     cur.setMonth(cur.getMonth() + 1);
   }
@@ -42,11 +39,9 @@ export function monthsSubscribed(planStartedAt: Date, now = new Date()) {
   return Math.max(1, m);
 }
 
-/** 다음 청구일 — 무료 기간이 끝나는 날, 그 뒤로는 같은 날짜로 매달 */
+/** 다음 청구일 — 시작일과 같은 날짜로 매달 돌아온다 */
 export function nextBillingDate(planStartedAt: Date, now = new Date()) {
-  const first = freeUntil(planStartedAt);
-  if (first > now) return first;
-  const next = new Date(now.getFullYear(), now.getMonth(), first.getDate());
+  const next = new Date(now.getFullYear(), now.getMonth(), planStartedAt.getDate());
   if (next <= now) next.setMonth(next.getMonth() + 1);
   return next;
 }
@@ -119,5 +114,6 @@ export function billingStatus(store: { plan: string; planStartedAt: Date }, paid
   const due = billingMonths(store.planStartedAt, now);
   const paid = new Set(paidMonths);
   const unpaid = due.filter((m) => !paid.has(m));
-  return { due, unpaid, monthly: billedPrice(planOf(store.plan)), months: monthsSubscribed(store.planStartedAt, now) };
+  const unpaidAmount = unpaid.reduce((a, m) => a + amountForMonth(store, m), 0);
+  return { due, unpaid, unpaidAmount, monthly: billedPrice(planOf(store.plan)), months: monthsSubscribed(store.planStartedAt, now) };
 }

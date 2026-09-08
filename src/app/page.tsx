@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ONSITE_SETUP_FEE, PLANS, billedPrice, yearlyPrice, type Plan } from "@/lib/plans";
+import { FIRST_MONTH_PRICE, ONSITE_SETUP_FEE, PLANS, billedPrice, type Plan } from "@/lib/plans";
 import { OPERATOR_CONTACT, TERMS_VERSION } from "@/lib/terms";
 import { won } from "@/lib/utils";
 
@@ -424,8 +424,8 @@ export default function Home() {
       <section id="pricing" className="border-y border-line/60 bg-card/60">
         <div className="mx-auto max-w-6xl px-5 py-16">
           <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Pricing</div>
-          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">구축비 없이, 첫 달 무료로 시작해요</h2>
-          <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">요금은 두 가지뿐이고 숨은 비용이 없어요. 승인된 날부터 한 달은 무료고, 그 뒤 매달 청구돼요. 한도를 넘겨도 영업 중에 등록이 막히지 않아요.</p>
+          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">구축비 없이, 첫 달 만원으로 시작해요</h2>
+          <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">요금은 두 가지뿐이고 숨은 비용이 없어요. 첫 달은 {won(FIRST_MONTH_PRICE)}, 둘째 달부터 정상 요금이 매달 청구돼요. 한도를 넘겨도 영업 중에 등록이 막히지 않아요.</p>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {plans.map((k) => {
               const p = PLANS[k];
@@ -434,12 +434,12 @@ export default function Home() {
                 <div key={k} className={`rounded-[26px] p-6 shadow-card ${k === "MAX" ? "bg-ink text-on-ink" : "bg-card"}`}>
                   <div className="flex items-baseline gap-2">
                     <span className="font-serif text-[22px] font-bold">{p.name}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${k === "MAX" ? "bg-on-ink/15 text-gold-lt" : "bg-ok-bg text-ok"}`}>첫 달 무료</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${k === "MAX" ? "bg-on-ink/15 text-gold-lt" : "bg-ok-bg text-ok"}`}>첫 달 {won(FIRST_MONTH_PRICE)}</span>
                   </div>
                   <div className={`mt-2 font-serif text-[32px] font-bold ${k === "MAX" ? "text-gold-lt" : "text-brand"}`}>
                     {won(billedPrice(k))}<span className={`text-[12px] font-normal ${k === "MAX" ? "opacity-70" : "text-mute"}`}>/월</span>
                   </div>
-                  <div className={`mt-1 text-[11px] ${k === "MAX" ? "opacity-70" : "text-mute"}`}>연납 {won(yearlyPrice(k))} (두 달 무료)</div>
+                  <div className={`mt-1 text-[11px] ${k === "MAX" ? "opacity-70" : "text-mute"}`}>첫 달은 {won(FIRST_MONTH_PRICE)} · 둘째 달부터 이 금액</div>
                   <p className={`mt-3 text-[12px] leading-[1.7] ${k === "MAX" ? "opacity-80" : "text-mute"}`}>{p.tagline}</p>
                   <ul className={`mt-4 flex flex-col gap-1.5 text-[12px] ${k === "MAX" ? "opacity-90" : "text-ink"}`}>
                     <li>등록 손님 {lim(p.limits.customers, "명")}</li>
@@ -465,7 +465,7 @@ export default function Home() {
               </ul>
             </div>
           </div>
-          <div className="mt-4 text-[11px] text-mute">무료가 끝나기 1주 전에 알려드리고, 그 뒤 고른 요금제로 매달 청구돼요. 위약금 없이 언제든 해지할 수 있어요. 신청만으로 요금이 나가지 않아요.</div>
+          <div className="mt-4 text-[11px] text-mute">첫 달 {won(FIRST_MONTH_PRICE)}은 승인된 날에, 둘째 달부터는 고른 요금제 금액이 매달 같은 날에 청구돼요. 위약금 없이 언제든 해지할 수 있어요. 신청만으로 요금이 나가지 않아요.</div>
         </div>
       </section>
 
@@ -520,7 +520,7 @@ export default function Home() {
       {/* 마무리 CTA */}
       <section className="mx-auto max-w-6xl px-5 py-16 text-center">
         <h2 className="font-serif text-[26px] font-bold md:text-[34px]">오늘 밤부터 전화 대신 앱으로</h2>
-        <p className="mx-auto mt-3 max-w-xl text-[13px] leading-[1.9] text-mute">신청서를 내면 사업자 확인 뒤 보통 영업일 하루 안에 열어 드려요. 구축비 없이 첫 달 무료로 시작하고, 첫 주는 붙어서 봐 드려요.</p>
+        <p className="mx-auto mt-3 max-w-xl text-[13px] leading-[1.9] text-mute">신청서를 내면 사업자 확인 뒤 보통 영업일 하루 안에 열어 드려요. 구축비 없이 첫 달 만원으로 시작하고, 첫 주는 붙어서 봐 드려요.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2.5">
           <Link href="/signup" className="cta-grad rounded-2xl px-7 py-3.5 text-[14px] font-bold text-white shadow-cta">가입 신청하기</Link>
           <a href={`https://t.me/${OPERATOR_CONTACT.telegram}`} target="_blank" rel="noreferrer" className="rounded-2xl border border-line bg-card px-7 py-3.5 text-[14px] font-bold hover:border-brand">텔레그램으로 문의</a>
