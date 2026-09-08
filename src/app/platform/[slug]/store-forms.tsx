@@ -84,10 +84,19 @@ export function SuspendBox({ slug, isSuspended, reason }: { slug: string; isSusp
       </div>
     );
   }
+  // 자주 쓰는 사유는 한 번에 — 약관 조항을 같이 남겨 두면 나중에 근거를 찾기 쉽다
+  const PRESETS = ["약관 3항 위반 · 4항에 따라 즉시 정지", "미납 2개월 이상 (약관 6항)", "사업자 정보 불일치 (약관 2항)"];
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Input value={why} onChange={(e) => setWhy(e.target.value)} placeholder="사유 (예: 9월 미납)" maxLength={200} className="h-10 flex-1 text-[12px]" />
-      <Button size="sm" variant="outline" onClick={suspend} loading={pending}>이용 중지</Button>
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-1.5">
+        {PRESETS.map((p) => (
+          <button key={p} type="button" onClick={() => setWhy(p)} className="rounded-full border border-line bg-card px-2.5 py-1 text-[10px] font-bold text-mute hover:border-bad hover:text-bad">{p}</button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Input value={why} onChange={(e) => setWhy(e.target.value)} placeholder="사유 (예: 9월 미납)" maxLength={200} className="h-10 flex-1 text-[12px]" />
+        <Button size="sm" variant="outline" onClick={suspend} loading={pending}>이용 중지</Button>
+      </div>
     </div>
   );
 }

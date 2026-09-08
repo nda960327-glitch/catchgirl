@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { COOKIE, verifySession } from "@/lib/auth";
+import { isPlatform } from "@/lib/platform";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest) {
   const jar = await cookies();
   const sessions = await Promise.all(Object.values(COOKIE).map((c) => verifySession(jar.get(c)?.value)));
   const session = sessions.find(Boolean);
-  if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // 콘솔(파는 쪽)은 매장 세션이 없다 — 등록증 사본을 올릴 때 쓴다
+  if (!session && !(await isPlatform())) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   let body: { images?: { full: string; thumb: string }[] };
   try {
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
     }
     try {
       const row = await prisma.image.create({
-        data: { storeId: session.storeId, mime: full.mime, data: full.buf, thumb: thumb.buf },
+        data: { storeId: session?.storeId ?? null, mime: full.mime, data: full.buf, thumb: thumb.buf },
         select: { id: true },
       });
       files.push({ url: `/api/img/${row.id}`, thumbUrl: `/api/img/${row.id}?t=1` });

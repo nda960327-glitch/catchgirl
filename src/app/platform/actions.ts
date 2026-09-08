@@ -12,6 +12,7 @@ import { DEFAULT_SOURCES } from "@/lib/sources";
 import { DEFAULT_GRADE_BENEFITS } from "@/lib/discounts";
 import { THEMES } from "@/lib/themes";
 import { PLANS, billedPrice, planOf } from "@/lib/plans";
+import { TERMS_VERSION, formatBizNumber, isValidBizNumber } from "@/lib/terms";
 
 export type R<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 const denied = (): R<never> => ({ ok: false, error: "권한이 없어요." });
@@ -50,6 +51,17 @@ const storeSchema = z.object({
   theme: z.enum(["rose", "cream", "noir", "wine", "midnight"]).default("rose"),
   contactPhone: z.string().trim().max(30).default(""),
   contactTelegram: z.string().trim().max(40).default(""),
+  // 사업자 확인 — 등록증 없이는 열지 않는다
+  bizName: z.string().trim().min(1, "등록증의 상호를 적어 주세요").max(60),
+  bizNumber: z.string().trim().refine(isValidBizNumber, "사업자등록번호가 맞지 않아요 (10자리, 검증번호 확인)"),
+  bizType: z.string().trim().min(1, "업태·종목을 적어 주세요").max(80),
+  bizOwner: z.string().trim().min(1, "대표자를 적어 주세요").max(30),
+  bizDocUrl: z.string().trim().min(1, "사업자등록증 사본을 올려 주세요").max(300),
+  bizVerified: z.literal(true, { errorMap: () => ({ message: "국세청 조회로 사업자 상태와 업종을 확인한 뒤 체크해 주세요" }) }),
+  bizVerifyMemo: z.string().trim().max(300).default(""),
+  // 약관 — 대표자가 읽고 동의했음을 파는 쪽이 확인한다
+  termsAgreed: z.literal(true, { errorMap: () => ({ message: "약관 동의를 확인해 주세요" }) }),
+  termsAgreedBy: z.string().trim().min(1, "약관에 동의한 사람을 적어 주세요").max(60),
 });
 
 /**
@@ -82,6 +94,16 @@ export async function createStore(input: z.input<typeof storeSchema>): Promise<R
         closeTime: d.closeTime,
         contactPhone: d.contactPhone,
         contactTelegram: d.contactTelegram,
+        bizName: d.bizName,
+        bizNumber: formatBizNumber(d.bizNumber),
+        bizType: d.bizType,
+        bizOwner: d.bizOwner,
+        bizDocUrl: d.bizDocUrl,
+        bizVerifiedAt: new Date(),
+        bizVerifyMemo: d.bizVerifyMemo,
+        termsVersion: TERMS_VERSION,
+        termsAgreedAt: new Date(),
+        termsAgreedBy: d.termsAgreedBy,
       },
     });
     await prisma.adminUser.create({
@@ -131,6 +153,8 @@ export async function createStore(input: z.input<typeof storeSchema>): Promise<R
       ],
     });
     await logPlatform("STORE_CREATED", `${d.name} (/${d.slug}) · ${PLANS[d.plan].name}`, store.id);
+    await logPlatform("BIZ_VERIFIED", `${d.bizName} ${formatBizNumber(d.bizNumber)} · ${d.bizType}${d.bizVerifyMemo ? ` · ${d.bizVerifyMemo}` : ""}`, store.id);
+    await logPlatform("TERMS_AGREED", `${TERMS_VERSION} 판 · ${d.termsAgreedBy}`, store.id);
     revalidatePath("/platform");
     return { ok: true, data: { slug: store.slug } };
   } catch (e) {
@@ -213,6 +237,74 @@ export async function enterStoreAsAdmin(slug: string): Promise<R> {
 }
 
 /* ─── 이용 정지 · 재개 · 삭제 ─── */
+/* ─── 사업자 확인 · 약관 ─── */
+const bizSchema = z.object({
+  bizName: z.string().trim().min(1, "등록증의 상호를 적어 주세요").max(60),
+  bizNumber: z.string().trim().refine(isValidBizNumber, "사업자등록번호가 맞지 않아요 (10자리, 검증번호 확인)"),
+  bizType: z.string().trim().min(1, "업태·종목을 적어 주세요").max(80),
+  bizOwner: z.string().trim().min(1, "대표자를 적어 주세요").max(30),
+  bizDocUrl: z.string().trim().max(300).default(""),
+  bizVerifyMemo: z.string().trim().max(300).default(""),
+});
+
+/** 등록증 내용을 고친다. 상호·번호·업종이 바뀌면 확인은 다시 해야 하므로 확인 표시를 지운다. */
+export async function updateBizInfo(slug: string, input: z.input<typeof bizSchema>): Promise<R> {
+  if (!(await isPlatform())) return denied();
+  const p = bizSchema.safeParse(input);
+  if (!p.success) return { ok: false, error: p.error.issues[0].message };
+  const store = await storeBySlug(slug);
+  if (!store) return { ok: false, error: "매장을 찾을 수 없어요." };
+  const d = p.data;
+  const bizNumber = formatBizNumber(d.bizNumber);
+  const identityChanged = bizNumber !== store.bizNumber || d.bizName !== store.bizName || d.bizType !== store.bizType;
+  await prisma.store.update({
+    where: { id: store.id },
+    data: {
+      bizName: d.bizName, bizNumber, bizType: d.bizType, bizOwner: d.bizOwner, bizDocUrl: d.bizDocUrl, bizVerifyMemo: d.bizVerifyMemo,
+      ...(identityChanged ? { bizVerifiedAt: null } : {}),
+    },
+  });
+  await logPlatform("BIZ_UPDATED", `${d.bizName} ${bizNumber} · ${d.bizType}${identityChanged ? " · 다시 확인 필요" : ""}`, store.id);
+  revalidatePath("/platform", "layout");
+  return { ok: true };
+}
+
+/** 국세청 조회까지 마쳤다는 표시. 메모에 조회 결과(계속사업자, 허가 종류)를 남긴다. */
+export async function verifyBiz(slug: string, memo: string): Promise<R> {
+  if (!(await isPlatform())) return denied();
+  const store = await storeBySlug(slug);
+  if (!store) return { ok: false, error: "매장을 찾을 수 없어요." };
+  if (!store.bizNumber || !store.bizDocUrl) return { ok: false, error: "등록증 사본과 사업자등록번호가 먼저 있어야 해요." };
+  const m = memo.trim().slice(0, 300);
+  await prisma.store.update({ where: { id: store.id }, data: { bizVerifiedAt: new Date(), bizVerifyMemo: m || store.bizVerifyMemo } });
+  await logPlatform("BIZ_VERIFIED", `${store.bizName} ${store.bizNumber} · ${store.bizType}${m ? ` · ${m}` : ""}`, store.id);
+  revalidatePath("/platform", "layout");
+  return { ok: true };
+}
+
+export async function unverifyBiz(slug: string, reason: string): Promise<R> {
+  if (!(await isPlatform())) return denied();
+  const store = await storeBySlug(slug);
+  if (!store) return { ok: false, error: "매장을 찾을 수 없어요." };
+  await prisma.store.update({ where: { id: store.id }, data: { bizVerifiedAt: null } });
+  await logPlatform("BIZ_UNVERIFIED", reason.trim().slice(0, 200), store.id);
+  revalidatePath("/platform", "layout");
+  return { ok: true };
+}
+
+/** 약관이 새 판으로 바뀐 뒤 매장이 다시 동의했을 때 */
+export async function recordTermsAgreement(slug: string, agreedBy: string): Promise<R> {
+  if (!(await isPlatform())) return denied();
+  const store = await storeBySlug(slug);
+  if (!store) return { ok: false, error: "매장을 찾을 수 없어요." };
+  const by = agreedBy.trim().slice(0, 60);
+  if (!by) return { ok: false, error: "동의한 사람을 적어 주세요." };
+  await prisma.store.update({ where: { id: store.id }, data: { termsVersion: TERMS_VERSION, termsAgreedAt: new Date(), termsAgreedBy: by } });
+  await logPlatform("TERMS_AGREED", `${TERMS_VERSION} 판 · ${by}`, store.id);
+  revalidatePath("/platform", "layout");
+  return { ok: true };
+}
+
 export async function suspendStore(slug: string, reason: string): Promise<R> {
   if (!(await isPlatform())) return denied();
   const store = await storeBySlug(slug);

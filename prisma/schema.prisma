@@ -43,6 +43,18 @@ model Store {
   // 미납 등으로 잠그면 손님·직원·관리자 모두 안내 화면만 본다
   isSuspended         Boolean  @default(false)
   suspendedReason     String   @default("")
+  // 사업자 확인 — 팔 때 등록증을 받아 두고 업종이 앱 목적에 맞는지 본 뒤에 연다. 콘솔에서만 본다.
+  bizName             String    @default("") // 상호 (등록증 그대로)
+  bizNumber           String    @default("") // 사업자등록번호 000-00-00000
+  bizType             String    @default("") // 업태 · 종목 (등록증 그대로)
+  bizOwner            String    @default("") // 대표자
+  bizDocUrl           String    @default("") // 등록증 사본 (/api/img/…)
+  bizVerifiedAt       DateTime? // 운영사가 국세청 조회로 확인한 시각
+  bizVerifyMemo       String    @default("") // 확인 메모 (조회 결과, 허가 종류)
+  // 약관 동의 — 어느 판에 누가 언제 동의했는지
+  termsVersion        String    @default("")
+  termsAgreedAt       DateTime?
+  termsAgreedBy       String    @default("")
   noshowPolicy        String   @default("노쇼 3회 누적 시 예약이 제한될 수 있어요.")
   createdAt           DateTime @default(now())
 

@@ -7,6 +7,7 @@ import { Card, Chip, Eyebrow } from "@/components/ui";
 import { PlanBadge } from "@/components/admin-nav";
 import { DISCOUNT_LABEL, DISCOUNT_RATE, PLANS, POLICY, SETUP_FEE, billedPrice, planOf, usageOf, yearlyPrice, type Plan } from "@/lib/plans";
 import { PlanSwitch } from "./plan-switch";
+import { TERMS, TERMS_TITLE, TERMS_VERSION, bizStatus } from "@/lib/terms";
 
 export const dynamic = "force-dynamic";
 
@@ -167,6 +168,39 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
             </div>
           ))}
         </div>
+      </Card>
+
+      {/* 약관 — 어느 판에 언제 동의했는지와 전문. 금지 행위와 즉시 정지 조항은 늘 보이게 */}
+      <Card className="mt-4 p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div className="text-[14px] font-bold text-ink">{TERMS_TITLE}</div>
+          <div className="text-[11px] text-mute">
+            {(() => {
+              const b = bizStatus(store);
+              if (!b.agreed) return <span className="font-bold text-bad">동의 기록 없음</span>;
+              return (
+                <>
+                  {store.termsVersion} 판 · {format(store.termsAgreedAt!, "yyyy.MM.dd")} 동의{store.termsAgreedBy ? ` · ${store.termsAgreedBy}` : ""}
+                  {b.outdated && <span className="ml-1.5 font-bold text-gold">· 새 판({TERMS_VERSION})이 있어요</span>}
+                </>
+              );
+            })()}
+          </div>
+        </div>
+        <div className="mt-3 rounded-2xl border border-bad/30 bg-bad-bg px-4 py-3 text-[11px] leading-[1.8] text-ink">
+          <b>즉시 정지 안내.</b> 성매매 알선·권유·강요, 청소년 고용·출입, 성적 서비스의 광고·요청 처리 등 약관 3항의 행위가 확인되면 사전 통지 없이 바로 이용이 정지되고, 정지 기간의 요금과 초기 구축비는 돌려드리지 않아요.
+        </div>
+        <details className="mt-3">
+          <summary className="cursor-pointer text-[12px] font-bold text-brand">약관 전문 보기</summary>
+          <div className="mt-3 flex flex-col gap-4">
+            {TERMS.map((t) => (
+              <div key={t.title} className="border-l-2 border-line pl-3.5">
+                <div className="text-[12px] font-bold text-ink">{t.title}</div>
+                <p className="mt-1 whitespace-pre-line text-[11px] leading-[1.9] text-mute">{t.body}</p>
+              </div>
+            ))}
+          </div>
+        </details>
       </Card>
 
       <PlanSwitch slug={slug} plan={plan} />

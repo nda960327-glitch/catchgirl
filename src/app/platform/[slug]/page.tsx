@@ -10,6 +10,8 @@ import { THEMES, themeOf } from "@/lib/themes";
 import { won, wonShort } from "@/lib/utils";
 import { Card, Chip } from "@/components/ui";
 import { StoreCardEditor } from "../store-card-editor";
+import { BizBox } from "./biz-box";
+import { bizStatus } from "@/lib/terms";
 import { DeleteBox, PaymentsTable, SuspendBox, type PaymentRow } from "./store-forms";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +28,10 @@ const ACTION_LABEL: Record<string, string> = {
   UNPAID: "입금 표시 취소",
   BROADCAST: "전체 공지",
   STORE_DELETED: "매장 삭제",
+  BIZ_VERIFIED: "사업자 확인",
+  BIZ_UPDATED: "사업자 정보 수정",
+  BIZ_UNVERIFIED: "사업자 확인 취소",
+  TERMS_AGREED: "약관 동의",
 };
 
 /**
@@ -53,6 +59,7 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
   const billing = billingStatus(store, store.payments.map((p) => p.month));
   const next = nextBillingDate(store.planStartedAt);
   const theme = THEMES[themeOf(store.theme)];
+  const biz = bizStatus(store);
 
   // 청구 예정 달(최근 것부터)에 입금 여부를 붙인다
   const paidBy = new Map(store.payments.map((p) => [p.month, p]));
@@ -76,6 +83,8 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
                 <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[.1em] text-white ${plan === "MAX" ? "bg-gold" : "bg-ink"}`}>{PLANS[plan].name}</span>
                 {store.isSuspended && <Chip tone="red">이용 중지</Chip>}
                 {billing.unpaid.length > 0 && <Chip tone="red">미납 {billing.unpaid.length}개월</Chip>}
+                {!biz.verified && <Chip tone="red">사업자 미확인</Chip>}
+                {(!biz.agreed || biz.outdated) && <Chip tone="gold">{biz.agreed ? "새 약관 동의 필요" : "약관 미동의"}</Chip>}
               </div>
               <div className="mt-1 text-[12px] text-mute">
                 /{store.slug} · {format(store.createdAt, "yyyy.MM.dd")} 등록 · 구독 {billing.months}개월째 · 테마 {theme.name}
@@ -134,6 +143,20 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
           />
         </Card>
 
+        {/* 사업자 확인 · 약관 */}
+        <Card className="mt-4 p-5">
+          <div className="text-[14px] font-bold text-ink">사업자 확인 · 약관</div>
+          <div className="mt-0.5 text-[11px] leading-[1.7] text-mute">
+            등록증 사본과 국세청 조회로 확인한 기록이에요. 상호·번호·업종을 고치면 확인 표시가 풀리니 다시 조회하고 확인해 주세요.
+          </div>
+          <BizBox
+            slug={store.slug}
+            biz={{ bizName: store.bizName, bizNumber: store.bizNumber, bizType: store.bizType, bizOwner: store.bizOwner, bizDocUrl: store.bizDocUrl, bizVerifyMemo: store.bizVerifyMemo }}
+            verifiedAt={store.bizVerifiedAt ? format(store.bizVerifiedAt, "yyyy.MM.dd HH:mm") : null}
+            terms={{ version: store.termsVersion, agreedAt: store.termsAgreedAt ? format(store.termsAgreedAt, "yyyy.MM.dd") : null, agreedBy: store.termsAgreedBy }}
+          />
+        </Card>
+
         {/* 입금 */}
         <Card className="mt-4 p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -152,7 +175,7 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
         <Card className="mt-4 p-5">
           <div className="text-[14px] font-bold text-ink">이용 중지</div>
           <div className="mt-0.5 text-[11px] leading-[1.7] text-mute">
-            미납이 길어지면 여기서 닫아요. 손님·직원·관리자 화면이 모두 안내로 바뀌고, 손님에게는 사유가 보이지 않아요. 데이터는 그대로 남아 다시 열면 바로 돌아와요.
+            약관 3항의 금지 행위가 확인되거나 미납이 길어지면 여기서 닫아요. 약관 4항에 따라 사전 통지 없이 바로 닫을 수 있어요. 손님·직원·관리자 화면이 모두 안내로 바뀌고, 손님에게는 사유가 보이지 않아요. 데이터는 그대로 남아 다시 열면 바로 돌아와요.
           </div>
           <div className="mt-3">
             <SuspendBox slug={store.slug} isSuspended={store.isSuspended} reason={store.suspendedReason} />
