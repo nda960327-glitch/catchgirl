@@ -49,11 +49,21 @@ export async function POST(req: NextRequest) {
       rejected.push("too-large-or-invalid");
       continue;
     }
-    const row = await prisma.image.create({
-      data: { storeId: session.storeId, mime: full.mime, data: full.buf, thumb: thumb.buf },
-      select: { id: true },
-    });
-    files.push({ url: `/api/img/${row.id}`, thumbUrl: `/api/img/${row.id}?t=1` });
+    try {
+      const row = await prisma.image.create({
+        data: { storeId: session.storeId, mime: full.mime, data: full.buf, thumb: thumb.buf },
+        select: { id: true },
+      });
+      files.push({ url: `/api/img/${row.id}`, thumbUrl: `/api/img/${row.id}?t=1` });
+    } catch (e) {
+      // 운영 서버 로그를 바로 볼 수 없어 무엇이 막혔는지 응답으로 알린다 (관리자만 부르는 주소다)
+      const err = e as { name?: string; code?: string; message?: string };
+      console.error("[upload] image.create failed", err.name, err.code, err.message);
+      return NextResponse.json(
+        { error: "저장에 실패했어요.", kind: err.name ?? "Error", code: err.code ?? null, detail: (err.message ?? "").slice(0, 160) },
+        { status: 500 },
+      );
+    }
   }
 
   if (files.length === 0) {
