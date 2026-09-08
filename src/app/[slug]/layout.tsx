@@ -1,5 +1,5 @@
 import { getStoreBySlug } from "@/lib/store";
-import { themeStyle } from "@/lib/themes";
+import { THEMES, themeOf, themeStyle } from "@/lib/themes";
 import { isPlatform } from "@/lib/platform";
 import { Suspended } from "@/components/suspended";
 
@@ -21,10 +21,21 @@ export default async function StoreLayout({ children, params }: { children: Reac
   const css = `html:root{${Object.entries(vars)
     .map(([k, v]) => `${k === "colorScheme" ? "color-scheme" : k}:${v}`)
     .join(";")}}`;
+  // 어두운 테마에서는 고양이 캐릭터가 묻혀 보이지 않는다. 그 자리에 매장 로고를 두므로
+  // 로고 주소와 어두운지 여부를 여기서 내려 주고, Sticker 가 CSS 로 갈아탄다.
+  const dark = THEMES[themeOf(store.theme)].dark;
+  const logo = store.logoUrl ?? "";
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: css }} />
-      <div className="min-h-dvh bg-frame text-ink">{children}</div>
+      <div
+        className="min-h-dvh bg-frame text-ink"
+        data-dark={dark ? "" : undefined}
+        data-nologo={dark && !logo ? "" : undefined}
+        style={logo ? ({ "--store-logo": `url("${logo}")` } as React.CSSProperties) : undefined}
+      >
+        {children}
+      </div>
     </>
   );
 }

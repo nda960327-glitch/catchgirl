@@ -113,9 +113,25 @@ export function Chip({ children, className, tone = "brand" }: { children: ReactN
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cn("text-[10px] font-semibold uppercase tracking-[.2em] text-gold", className)}>{children}</div>;
 }
-export function Sticker({ k, size = 90, className }: { k: string; size?: number; className?: string }) {
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={`/assets/${k}.webp`} alt="" width={size} style={{ width: size, height: "auto", mixBlendMode: "multiply" }} className={className} />;
+/**
+ * 캐릭터 스티커.
+ *
+ * 어두운 테마에서는 고양이가 배경에 묻혀 안 보이므로 그 자리에 매장 로고를 둔다.
+ * 어느 쪽을 보일지는 CSS 가 정한다 — 이 컴포넌트는 서버·클라이언트 양쪽에서 쓰여
+ * 테마를 직접 물어볼 수 없다. 로고가 없는 어두운 매장은 아무것도 그리지 않는다.
+ *
+ * variant "brand" 는 로고로 갈아타는 자리(홈·로그인·완료), "decor" 는 그저 장식이라
+ * 어두운 테마에서는 비운다 — 빈 목록 안내에 매장 로고가 뜨면 이상하다.
+ */
+export function Sticker({ k, size = 90, className, variant = "brand" }: { k: string; size?: number; className?: string; variant?: "brand" | "decor" }) {
+  const tile = Math.round(size * 0.78);
+  return (
+    <span className={cn("sticker inline-block align-middle", className)} data-variant={variant} style={{ width: size }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/assets/${k}.webp`} alt="" width={size} className="sticker-cat block" style={{ width: size, height: "auto", mixBlendMode: "multiply" }} />
+      <span className="sticker-logo" aria-hidden style={{ width: tile, height: tile }} />
+    </span>
+  );
 }
 export function Stars({ value, size = 12, className }: { value: number; size?: number; className?: string }) {
   return (

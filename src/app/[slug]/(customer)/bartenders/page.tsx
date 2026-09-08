@@ -88,7 +88,7 @@ export default async function BartenderListPage({
       <div className="flex flex-col gap-3.5 px-4 pt-4">
         {staff.length === 0 ? (
           <div className="mt-4 flex flex-col items-center text-center">
-            <Sticker k="p6" size={80} />
+            <Sticker k="p6" size={80} variant="decor" />
             <div className="mt-1 text-[13px] font-semibold text-ink">지금 바로 되는 자리가 없어요</div>
             <div className="mt-0.5 text-[11px] text-mute">조건을 줄이거나 다른 날짜를 확인해 보세요</div>
             <Link href={href({ now: false })} className="mt-2 text-[11px] font-semibold text-brand">전체 캐치걸 보기 ›</Link>

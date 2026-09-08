@@ -223,7 +223,7 @@ export function BookingFlow({
             )}
             {slots && openCount === 0 && (
               <div className="mt-6 flex flex-col items-center text-center">
-                <Sticker k="p6" size={80} />
+                <Sticker k="p6" size={80} variant="decor" />
                 <div className="mt-1 text-[13px] font-semibold text-ink">이 날은 자리가 모두 찼어요</div>
                 <button onClick={() => setStep(1)} className="mt-1 text-[11px] font-semibold text-brand">다른 날짜 보기 ›</button>
               </div>
@@ -257,7 +257,7 @@ export function BookingFlow({
               </div>
             )}
             <div className="mt-[22px] flex items-center gap-3 rounded-[18px] bg-blush-lt p-4">
-              <Sticker k="p3" size={54} />
+              <Sticker k="p3" size={54} variant="decor" />
               <div className="text-[11px] leading-[1.75] text-brand">
                 방문 {store.cancelDeadlineHours}시간 전까지 취소할 수 있어요.
                 <br />예약은 결제 없이 바로 확정됩니다.
