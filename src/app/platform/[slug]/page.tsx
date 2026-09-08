@@ -5,7 +5,7 @@ import { ko } from "date-fns/locale";
 import { prisma } from "@/lib/db";
 import { isPlatform } from "@/lib/platform";
 import { amountForMonth, billingStatus, nextBillingDate, storeHealth, storeLinks } from "@/lib/platform-data";
-import { PLANS, planOf } from "@/lib/plans";
+import { COMMITMENT_LABEL, PLANS, TERM_MONTHS, commitmentOf, earlyTerminationFee, planOf } from "@/lib/plans";
 import { THEMES, themeOf } from "@/lib/themes";
 import { won, wonShort } from "@/lib/utils";
 import { Card, Chip } from "@/components/ui";
@@ -65,6 +65,8 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
   const next = nextBillingDate(store.planStartedAt);
   const theme = THEMES[themeOf(store.theme)];
   const biz = bizStatus(store);
+  const commitment = commitmentOf(store.commitment);
+  const etf = earlyTerminationFee(store, billing.due.length);
   const pendingApproval = store.isSuspended && store.suspendedReason === PENDING_REASON;
 
   // 청구 예정 달(최근 것부터)에 입금 여부를 붙인다
@@ -87,6 +89,7 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="font-serif text-[24px] font-bold text-ink">{store.name}</h1>
                 <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[.1em] text-white ${plan === "MAX" ? "bg-gold" : "bg-ink"}`}>{PLANS[plan].name}</span>
+                <Chip tone={commitment === "TERM24" ? "brand" : "mute"}>{COMMITMENT_LABEL[commitment]}{commitment === "TERM24" ? ` · ${Math.min(billing.months, TERM_MONTHS)}/${TERM_MONTHS}개월` : ""}</Chip>
                 {store.isSuspended && (pendingApproval ? <Chip tone="gold">가입 신청 · 승인 대기</Chip> : <Chip tone="red">이용 중지</Chip>)}
                 {billing.unpaid.length > 0 && !pendingApproval && <Chip tone="red">미납 {billing.unpaid.length}개월</Chip>}
                 {!biz.verified && !pendingApproval && <Chip tone="red">사업자 미확인</Chip>}
@@ -102,6 +105,7 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
             <div className="text-mute">월 요금 <b className="text-ink">{won(billing.monthly)}</b></div>
             <div className="text-mute">다음 출금일 <b className="text-ink">{format(next, "M월 d일", { locale: ko })}</b> · 매월 {DEBIT_DAY}일</div>
             <div className="text-mute">관리자 <b className="text-ink">{store.admins[0]?.email ?? "없음"}</b></div>
+            {commitment === "TERM24" && <div className="text-mute">지금 해지 시 반환 <b className="text-ink">{won(etf.total)}</b> <span className="text-[10px]">(할인 {won(etf.discountRefund)}{etf.setupRefund ? ` + 세팅 ${won(etf.setupRefund)}` : ""})</span></div>}
           </div>
         </div>
 
@@ -144,6 +148,8 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
           <StoreCardEditor
             slug={store.slug}
             plan={plan}
+            commitment={commitment}
+            onsiteSetupDone={store.onsiteSetupDone}
             ownerContact={store.ownerContact}
             platformMemo={store.platformMemo}
             adminEmail={store.admins[0]?.email ?? ""}

@@ -4,7 +4,7 @@ import { prisma } from "./db";
 import { DEFAULT_SOURCES } from "./sources";
 import { DEFAULT_GRADE_BENEFITS } from "./discounts";
 import { THEMES, type ThemeKey } from "./themes";
-import type { Plan } from "./plans";
+import type { Commitment, Plan } from "./plans";
 
 /**
  * 매장 한 벌 만들기 — 콘솔에서 파는 쪽이 만들 때와 업체가 /signup 에서 직접 신청할 때
@@ -35,6 +35,7 @@ export type ProvisionInput = {
   name: string;
   slug: string;
   plan: Plan;
+  commitment: Commitment;
   theme: ThemeKey;
   openTime: string;
   shiftSplitTime: string;
@@ -61,6 +62,7 @@ export async function provisionStore(d: ProvisionInput) {
       name: d.name,
       slug: d.slug,
       plan: d.plan,
+      commitment: d.commitment,
       theme: d.theme,
       themeColor: THEMES[d.theme].brand,
       openTime: d.openTime,

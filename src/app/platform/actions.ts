@@ -9,7 +9,7 @@ import { setSession } from "@/lib/auth";
 import { checkPlatformPassword, clearPlatformSession, isPlatform, setPlatformSession } from "@/lib/platform";
 import { amountForMonth, logPlatform } from "@/lib/platform-data";
 import { SLUG_RE, emailProblem, provisionStore, slugProblem } from "@/lib/provision";
-import { PLANS, billedPrice, planOf } from "@/lib/plans";
+import { COMMITMENT_LABEL, PLANS, commitmentOf, planOf } from "@/lib/plans";
 import { PENDING_REASON, TERMS_VERSION, formatBizNumber, isValidBizNumber } from "@/lib/terms";
 
 export type R<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
@@ -46,6 +46,7 @@ const storeSchema = z.object({
   closeTime: z.string().regex(/^\d{2}:\d{2}$/),
   roomCount: z.coerce.number().int().min(1).max(50),
   plan: z.enum(["PRO", "MAX"]).default("PRO"),
+  commitment: z.enum(["TERM24", "MONTHLY"]).default("TERM24"),
   theme: z.enum(["rose", "cream", "noir", "wine", "midnight"]).default("rose"),
   contactPhone: z.string().trim().max(30).default(""),
   contactTelegram: z.string().trim().max(40).default(""),
@@ -85,6 +86,7 @@ export async function createStore(input: z.input<typeof storeSchema>): Promise<R
       name: d.name,
       slug: d.slug,
       plan: d.plan,
+      commitment: d.commitment,
       theme: d.theme,
       openTime: d.openTime,
       shiftSplitTime: d.shiftSplitTime,
@@ -102,7 +104,7 @@ export async function createStore(input: z.input<typeof storeSchema>): Promise<R
       isSuspended: false,
       suspendedReason: "",
     });
-    await logPlatform("STORE_CREATED", `${d.name} (/${d.slug}) · ${PLANS[d.plan].name}`, store.id);
+    await logPlatform("STORE_CREATED", `${d.name} (/${d.slug}) · ${PLANS[d.plan].name} · ${COMMITMENT_LABEL[d.commitment]}`, store.id);
     await logPlatform("BIZ_VERIFIED", `${d.bizName} ${formatBizNumber(d.bizNumber)} · ${d.bizType}${d.bizVerifyMemo ? ` · ${d.bizVerifyMemo}` : ""}`, store.id);
     await logPlatform("TERMS_AGREED", `${TERMS_VERSION} 판 · ${d.termsAgreedBy}`, store.id);
     revalidatePath("/platform");
@@ -115,6 +117,8 @@ export async function createStore(input: z.input<typeof storeSchema>): Promise<R
 /* ─── 계약 정보 ─── */
 const contractSchema = z.object({
   plan: z.enum(["PRO", "MAX"]),
+  commitment: z.enum(["TERM24", "MONTHLY"]).default("TERM24"),
+  onsiteSetupDone: z.boolean().default(false),
   ownerContact: z.string().trim().max(120).default(""),
   platformMemo: z.string().trim().max(1000).default(""),
 });
@@ -128,11 +132,13 @@ export async function updateStoreFromPlatform(slug: string, input: z.input<typeo
   if (!store) return { ok: false, error: "매장을 찾을 수 없어요." };
   const d = p.data;
   const planChanged = d.plan !== store.plan;
+  const commitmentChanged = d.commitment !== commitmentOf(store.commitment);
   await prisma.store.update({
     where: { id: store.id },
-    data: { plan: d.plan, ...(planChanged ? { planStartedAt: new Date() } : {}), ownerContact: d.ownerContact, platformMemo: d.platformMemo },
+    data: { plan: d.plan, commitment: d.commitment, onsiteSetupDone: d.onsiteSetupDone, ...(planChanged ? { planStartedAt: new Date() } : {}), ownerContact: d.ownerContact, platformMemo: d.platformMemo },
   });
   if (planChanged) await logPlatform("PLAN_CHANGED", `${PLANS[planOf(store.plan)].name} → ${PLANS[d.plan].name}`, store.id);
+  else if (commitmentChanged) await logPlatform("CONTRACT_UPDATED", `${COMMITMENT_LABEL[commitmentOf(store.commitment)]} → ${COMMITMENT_LABEL[d.commitment]}`, store.id);
   else await logPlatform("CONTRACT_UPDATED", "연락처·메모", store.id);
   revalidatePath("/platform", "layout");
   return { ok: true };

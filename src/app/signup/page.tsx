@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { FIRST_MONTH_PRICE, ONSITE_SETUP_FEE, PLANS, billedPrice } from "@/lib/plans";
+import { PricingTable } from "@/components/pricing-table";
 import { OPERATOR_CONTACT, TERMS_VERSION } from "@/lib/terms";
-import { won } from "@/lib/utils";
 import { SignupForm } from "./signup-form";
 
 export const dynamic = "force-static";
@@ -23,24 +22,8 @@ export default function SignupPage() {
         </p>
 
         {/* 요금 — 신청 전에 알아야 할 것 */}
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          {(Object.keys(PLANS) as ("PRO" | "MAX")[]).map((k) => (
-            <div key={k} className="rounded-2xl bg-card p-4 shadow-card">
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-serif text-[16px] font-bold text-ink">{PLANS[k].name}</span>
-                <span className="rounded-full bg-ok-bg px-2 py-0.5 text-[9px] font-bold text-ok">첫 달 {won(FIRST_MONTH_PRICE)}</span>
-              </div>
-              <div className="mt-1 font-serif text-[18px] font-bold text-brand">{won(billedPrice(k))}<span className="text-[10px] font-normal text-mute">/월</span></div>
-              <div className="mt-1 text-[10px] text-mute">{PLANS[k].tagline}</div>
-            </div>
-          ))}
-          <div className="rounded-2xl bg-card p-4 shadow-card">
-            <div className="font-serif text-[16px] font-bold text-ink">초기 구축</div>
-            <div className="mt-1 font-serif text-[18px] font-bold text-brand">0원</div>
-            <div className="mt-1 text-[10px] text-mute">세팅은 관리자 화면에서 직접 30분 · 방문 세팅은 선택 {won(ONSITE_SETUP_FEE)}</div>
-          </div>
-        </div>
-        <div className="mt-2 text-[11px] text-mute">결제는 CMS 자동이체예요. 승인 뒤 운영사가 보내는 링크로 출금 동의를 등록하면 매월 5일 매장 계좌에서 빠져요. 첫 출금은 {won(FIRST_MONTH_PRICE)}, 그다음 달부터 고른 요금제 금액이에요. 신청만으로 요금이 나가지 않아요.</div>
+        <div className="mt-5"><PricingTable compact /></div>
+        <div className="mt-2 text-[11px] text-mute">초기 구축비는 없어요. 결제는 CMS 자동이체로, 승인 뒤 운영사가 보내는 링크로 출금 동의를 등록하면 매월 5일 매장 계좌에서 빠져요. 첫 달은 무료예요. 신청만으로 요금이 나가지 않아요.</div>
 
         <div className="mt-6">
           <SignupForm />

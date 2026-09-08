@@ -5,8 +5,8 @@ import { getStoreBySlug } from "@/lib/store";
 import { cn, won } from "@/lib/utils";
 import { Card, Chip, Eyebrow } from "@/components/ui";
 import { PlanBadge } from "@/components/admin-nav";
-import { DEBIT_DAY, DISCOUNT_LABEL, DISCOUNT_RATE, FIRST_MONTH_PRICE, ONSITE_SETUP_FEE, PLANS, POLICY, billedPrice, planOf, usageOf, type Plan } from "@/lib/plans";
-import { nextBillingDate } from "@/lib/platform-data";
+import { COMMITMENT_LABEL, DEBIT_DAY, DISCOUNT_LABEL, DISCOUNT_RATE, ONSITE_SETUP_FEE, PLANS, POLICY, TERM_MONTHS, billedPrice, commitmentOf, earlyTerminationFee, planOf, termDiscountPercent, usageOf, type Plan } from "@/lib/plans";
+import { billingMonths, firstDebitMonth, monthsSubscribed, nextBillingDate } from "@/lib/platform-data";
 import { PlanSwitch } from "./plan-switch";
 import { TERMS, TERMS_TITLE, TERMS_VERSION, bizStatus } from "@/lib/terms";
 
@@ -20,6 +20,7 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
   const store = await getStoreBySlug(slug);
   const plan = planOf(store.plan);
   const spec = PLANS[plan];
+  const commitment = commitmentOf(store.commitment);
 
   const [customerCount, staffCount, roomCount] = await Promise.all([
     prisma.customer.count({ where: { storeId: store.id } }),
@@ -34,13 +35,14 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
   ];
   const overRows = rows.filter((r) => r.over);
 
-  // 다음 청구일 — 시작일과 같은 날짜로 매달. 첫 달만 만원이다.
+  // 다음 출금일 — 매월 5일. 첫 달은 무료라 승인 뒤 한 달 지난 첫 5일이 첫 출금이다.
   const start = store.planStartedAt;
   const now = new Date();
-  const firstMonth = new Date(start);
-  firstMonth.setMonth(firstMonth.getMonth() + 1);
-  const inFirst = firstMonth > now;
   const next = nextBillingDate(start, now);
+  const inFirst = billingMonths(start, now).length === 0;
+  const firstDebit = firstDebitMonth(start);
+  const monthsIn = monthsSubscribed(start, now);
+  const etf = earlyTerminationFee(store, billingMonths(start, now).length);
 
   return (
     <div className="animate-fade">
@@ -55,11 +57,14 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
               <PlanBadge plan={plan} />
               <span className="text-[13px] font-bold text-ink">구독 중</span>
               {DISCOUNT_RATE > 0 && <Chip tone="red">{DISCOUNT_LABEL}</Chip>}
-              {inFirst && <Chip tone="green">첫 달 {won(FIRST_MONTH_PRICE)} · {format(next, "M월 d일", { locale: ko })}부터 정상 요금</Chip>}
+              <Chip tone={commitment === "TERM24" ? "brand" : "mute"}>{COMMITMENT_LABEL[commitment]}{commitment === "TERM24" ? ` · ${Math.min(monthsIn, TERM_MONTHS)}/${TERM_MONTHS}개월` : ""}</Chip>
+              {inFirst && <Chip tone="green">첫 달 무료 · {firstDebit.replace("-", "년 ")}월 {DEBIT_DAY}일 첫 출금</Chip>}
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="font-serif text-[30px] font-bold text-brand">{won(billedPrice(plan))}</span>
+              <span className="font-serif text-[30px] font-bold text-brand">{won(billedPrice(plan, commitment))}</span>
               <span className="text-[12px] text-mute">/ 월</span>
+              {commitment === "TERM24" && <span className="text-[12px] text-mute line-through">{won(spec.price)}</span>}
+              {commitment === "TERM24" && <span className="text-[11px] font-bold text-brand">{termDiscountPercent(plan)}% 할인</span>}
               {DISCOUNT_RATE > 0 && <span className="text-[12px] text-mute line-through">{won(spec.price)}</span>}
             </div>
             <div className="mt-1 text-[11px] text-mute">{spec.tagline}</div>
@@ -67,7 +72,9 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
           <div className="rounded-2xl bg-well px-4 py-3 text-[11px] leading-[1.9]">
             <div className="text-mute">시작일 <b className="text-ink">{format(start, "yyyy년 M월 d일", { locale: ko })}</b></div>
             <div className="text-mute">다음 출금일 <b className="text-ink">{format(next, "M월 d일", { locale: ko })}</b> · 매월 {DEBIT_DAY}일 자동이체</div>
-            <div className="text-mute">첫 출금 <b className="text-ink">{won(FIRST_MONTH_PRICE)}</b> · 그다음 달부터 {won(billedPrice(plan))}</div>
+            <div className="text-mute">첫 달 <b className="text-ink">무료</b> · 그 뒤 매달 {won(billedPrice(plan, commitment))}</div>
+            {commitment === "TERM24" && <div className="text-mute">지금 해지하면 <b className="text-ink">{won(etf.total)}</b> 반환 <span className="text-[10px]">(받은 할인 {won(etf.discountRefund)}{etf.setupRefund ? ` + 방문 세팅 ${won(etf.setupRefund)}` : ""})</span></div>}
+            {commitment === "MONTHLY" && <div className="text-mute">무약정 · 언제든 해지 · 위약금 없음</div>}
             <div className="text-mute">자동이체 {store.cmsMemberNo ? <b className="text-ok">등록됨</b> : <b className="text-bad">미등록 · 운영사가 보낸 동의 링크로 계좌를 등록해 주세요</b>}</div>
           </div>
         </div>
@@ -122,8 +129,8 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
                       <PlanBadge plan={p} />
                       {p === plan && <span className="text-[10px] font-bold text-brand">구독 중</span>}
                     </span>
-                    <div className="mt-1 font-bold text-ink">{won(billedPrice(p))}<span className="text-[10px] font-normal text-mute"> / 월</span></div>
-                    <div className="text-[10px] text-mute line-through">{won(PLANS[p].price)}</div>
+                    <div className="mt-1 font-bold text-ink">{won(PLANS[p].termPrice)}<span className="text-[10px] font-normal text-mute"> / 월 · {TERM_MONTHS / 12}년 약정</span></div>
+                    <div className="text-[10px] text-mute">무약정 {won(PLANS[p].price)}</div>
                   </th>
                 ))}
               </tr>
@@ -157,7 +164,7 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
             <span className="text-[11px] text-mute">세팅은 관리자 화면에서 직접 · 대시보드 할 일 목록을 따라가면 30분</span>
           </div>
           <p className="mt-1 text-[11px] leading-[1.8] text-mute">
-            직접 와서 해 드리는 <b className="text-ink">방문 세팅</b>은 선택이고 1회 {won(ONSITE_SETUP_FEE)}이에요. 사진 촬영, 손님 명단 정리, 직원 교육까지 하루에 끝내요. 텔레그램으로 요청하세요.
+            직접 와서 해 드리는 <b className="text-ink">방문 세팅</b>은 {commitment === "TERM24" ? "약정 매장이라 무료예요" : `무약정이라 1회 ${won(ONSITE_SETUP_FEE)}이에요`}. 사진 촬영, 손님 명단 정리, 직원 교육까지 하루에 끝내요. 텔레그램으로 요청하세요.
           </p>
         </div>
       </Card>

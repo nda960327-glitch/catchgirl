@@ -59,6 +59,9 @@ model Store {
   cmsMemberNo         String    @default("") // CMS 사 회원(고객)번호 — 청구 파일의 키
   cmsAgreedAt         DateTime? // 출금 동의를 받은 날 (링크·QR·ARS)
   cmsNote             String    @default("") // 은행·예금주 앞자리 같은 확인용 메모
+  // 약정 — 2년 약정이면 월 요금이 싸고 방문 세팅이 무료다. 중도 해지 때 돌려받을 할인액을 이걸로 센다.
+  commitment          String    @default("TERM24") // TERM24 | MONTHLY
+  onsiteSetupDone     Boolean   @default(false) // 방문 세팅을 실제로 해 줬는지 (약정 중도 해지 때 반환 대상)
   noshowPolicy        String   @default("노쇼 3회 누적 시 예약이 제한될 수 있어요.")
   createdAt           DateTime @default(now())
 

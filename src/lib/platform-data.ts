@@ -2,7 +2,7 @@ import "server-only";
 import { headers } from "next/headers";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
-import { DEBIT_DAY, FIRST_MONTH_PRICE, billedPrice, planOf } from "@/lib/plans";
+import { DEBIT_DAY, billedPrice, commitmentOf, planOf } from "@/lib/plans";
 import { STORE_FEE_PER_HOUR } from "@/lib/utils";
 
 /**
@@ -15,18 +15,21 @@ import { STORE_FEE_PER_HOUR } from "@/lib/utils";
 export const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
 /**
- * 첫 출금 달. 출금일(5일) 이틀 전까지 승인됐으면 이번 달, 아니면 다음 달 — CMS 청구 파일은 며칠 전에 올려야 한다.
- * 첫 출금은 만원이고, 그 뒤 달부터 요금제 금액이다.
+ * 첫 출금 달. 첫 달은 무료라 승인 뒤 한 달이 지난 첫 5일부터 돈다.
+ * 9/1 승인 → 10/5, 9/9 승인 → 11/5 (10/5 는 아직 한 달이 안 됐다).
  */
 export function firstDebitMonth(planStartedAt: Date) {
-  const d = new Date(planStartedAt.getFullYear(), planStartedAt.getMonth(), 1);
-  if (planStartedAt.getDate() > DEBIT_DAY - 2) d.setMonth(d.getMonth() + 1);
-  return monthKey(d);
+  const d = new Date(planStartedAt);
+  d.setMonth(d.getMonth() + 1);
+  const m = new Date(d.getFullYear(), d.getMonth(), 1);
+  if (d.getDate() > DEBIT_DAY) m.setMonth(m.getMonth() + 1);
+  return monthKey(m);
 }
 
-/** 그 달에 낼 금액 — 첫 출금 달은 만원, 그 뒤는 요금제 금액 */
-export function amountForMonth(store: { plan: string; planStartedAt: Date }, month: string) {
-  return month === firstDebitMonth(store.planStartedAt) ? FIRST_MONTH_PRICE : billedPrice(planOf(store.plan));
+/** 그 달에 낼 금액 — 약정이면 약정가, 아니면 정가 */
+export function amountForMonth(store: { plan: string; commitment: string; planStartedAt: Date }, month: string) {
+  void month;
+  return billedPrice(planOf(store.plan), commitmentOf(store.commitment));
 }
 
 /** 첫 출금 달부터 이번 달까지. 이번 달은 출금일이 지났을 때만 센다 (선불이라 그 전엔 아직 안 낼 돈). */
@@ -123,10 +126,10 @@ export async function storeHealth(storeId: string, now = new Date()) {
 }
 
 /** 미납 달 목록과 이번 달 청구액 */
-export function billingStatus(store: { plan: string; planStartedAt: Date }, paidMonths: string[], now = new Date()) {
+export function billingStatus(store: { plan: string; commitment: string; planStartedAt: Date }, paidMonths: string[], now = new Date()) {
   const due = billingMonths(store.planStartedAt, now);
   const paid = new Set(paidMonths);
   const unpaid = due.filter((m) => !paid.has(m));
   const unpaidAmount = unpaid.reduce((a, m) => a + amountForMonth(store, m), 0);
-  return { due, unpaid, unpaidAmount, monthly: billedPrice(planOf(store.plan)), months: monthsSubscribed(store.planStartedAt, now) };
+  return { due, unpaid, unpaidAmount, monthly: billedPrice(planOf(store.plan), commitmentOf(store.commitment)), months: monthsSubscribed(store.planStartedAt, now) };
 }

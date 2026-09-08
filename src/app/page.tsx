@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { DEBIT_DAY, FIRST_MONTH_PRICE, ONSITE_SETUP_FEE, PLANS, billedPrice, type Plan } from "@/lib/plans";
+import { DEBIT_DAY, ONSITE_SETUP_FEE, PLANS, TERM_MONTHS, termDiscountPercent, type Plan } from "@/lib/plans";
+import { PricingTable } from "@/components/pricing-table";
 import { OPERATOR_CONTACT, TERMS_VERSION } from "@/lib/terms";
 import { won } from "@/lib/utils";
 
@@ -84,7 +85,8 @@ const FAQ = [
   { q: "할인을 주면 직원 몫이 줄어요?", a: "아니요. 쿠폰·등급 혜택·요일 프로모션은 전부 매장 몫에서 빠지고, 직원이 받는 돈은 그대로예요. 수금 시트에 할인이 반영된 금액이 바로 나와요." },
   { q: "세팅은 누가 해요?", a: "매장이 직접 해요. 룸·조 시간·옵션은 신청서에서 이미 들어가고, 승인되면 대시보드에 '문 열기 전에 채워 두세요' 목록이 떠요. 로고 올리기, 캐치걸 등록, 출근 요일, 손님 옮기기(닉네임 붙여 넣기)까지 30분이면 끝나요. 그래서 구축비가 없어요. 직접 와서 해 드리는 방문 세팅은 선택이고 1회 30만원이에요." },
   { q: "결제는 어떻게 해요?", a: "CMS 자동이체예요. 승인되면 운영사가 출금 동의 링크를 보내고, 사장님이 링크에서 계좌를 등록하면 끝이에요. 매월 5일에 매장 계좌에서 자동으로 빠지고, 첫 출금은 만원이에요. 카드번호를 부르거나 매달 송금할 일이 없어요." },
-  { q: "해지하면요?", a: "위약금 없이 언제든 해지할 수 있어요. 손님 화면이 먼저 닫히고 관리자 화면은 90일 더 열려 있어서 기록을 내려받을 수 있어요. 그 뒤엔 데이터를 지워요." },
+  { q: "약정이 부담돼요.", a: "무약정도 있어요. Pro 13만원, Max 39만원을 매달 내고 언제든 위약금 없이 해지해요. 2년 약정은 23% 싸고 방문 세팅 30만원이 무료인 대신, 중간에 해지하면 그동안 받은 할인(Pro 월 3만원, Max 월 9만원 × 낸 달 수)과 무료로 받은 방문 세팅비만 돌려주시면 돼요. 남은 기간을 다 물리는 게 아니에요." },
+  { q: "해지하면요?", a: "무약정은 위약금 없이 언제든, 약정은 받은 할인만 돌려주고 해지해요. 손님 화면이 먼저 닫히고 관리자 화면은 90일 더 열려 있어서 기록을 내려받을 수 있어요. 그 뒤엔 데이터를 지워요." },
 ];
 
 function Phone({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
@@ -425,9 +427,10 @@ export default function Home() {
       <section id="pricing" className="border-y border-line/60 bg-card/60">
         <div className="mx-auto max-w-6xl px-5 py-16">
           <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Pricing</div>
-          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">구축비 없이, 첫 달 만원으로 시작해요</h2>
-          <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">요금은 두 가지뿐이고 숨은 비용이 없어요. 첫 달은 {won(FIRST_MONTH_PRICE)}, 둘째 달부터 정상 요금이 매달 청구돼요. 한도를 넘겨도 영업 중에 등록이 막히지 않아요.</p>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">구축비 없이, 첫 달 무료로 시작해요</h2>
+          <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">월 13만원인데 {TERM_MONTHS / 12}년 쓰신다고 하면 10만원에 해드리고, 방문 세팅 30만원도 빼드려요. 무약정도 진짜로 있어요. 한도를 넘겨도 영업 중에 등록이 막히지 않아요.</p>
+          <div className="mt-8"><PricingTable /></div>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
             {plans.map((k) => {
               const p = PLANS[k];
               const lim = (n: number | null, unit: string) => (n === null ? "무제한" : `${n.toLocaleString("ko-KR")}${unit}`);
@@ -435,12 +438,12 @@ export default function Home() {
                 <div key={k} className={`rounded-[26px] p-6 shadow-card ${k === "MAX" ? "bg-ink text-on-ink" : "bg-card"}`}>
                   <div className="flex items-baseline gap-2">
                     <span className="font-serif text-[22px] font-bold">{p.name}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${k === "MAX" ? "bg-on-ink/15 text-gold-lt" : "bg-ok-bg text-ok"}`}>첫 달 {won(FIRST_MONTH_PRICE)}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${k === "MAX" ? "bg-on-ink/15 text-gold-lt" : "bg-blush-lt text-brand"}`}>{TERM_MONTHS / 12}년 약정 {termDiscountPercent(k)}% 할인</span>
                   </div>
                   <div className={`mt-2 font-serif text-[32px] font-bold ${k === "MAX" ? "text-gold-lt" : "text-brand"}`}>
-                    {won(billedPrice(k))}<span className={`text-[12px] font-normal ${k === "MAX" ? "opacity-70" : "text-mute"}`}>/월</span>
+                    {won(p.termPrice)}<span className={`text-[12px] font-normal ${k === "MAX" ? "opacity-70" : "text-mute"}`}>/월</span>
                   </div>
-                  <div className={`mt-1 text-[11px] ${k === "MAX" ? "opacity-70" : "text-mute"}`}>첫 달은 {won(FIRST_MONTH_PRICE)} · 둘째 달부터 이 금액</div>
+                  <div className={`mt-1 text-[11px] ${k === "MAX" ? "opacity-70" : "text-mute"}`}>무약정 {won(p.price)}/월 · 첫 달 무료</div>
                   <p className={`mt-3 text-[12px] leading-[1.7] ${k === "MAX" ? "opacity-80" : "text-mute"}`}>{p.tagline}</p>
                   <ul className={`mt-4 flex flex-col gap-1.5 text-[12px] ${k === "MAX" ? "opacity-90" : "text-ink"}`}>
                     <li>등록 손님 {lim(p.limits.customers, "명")}</li>
@@ -462,11 +465,11 @@ export default function Home() {
                 <li>손님은 닉네임 붙여 넣기로 연결코드 일괄 발급</li>
                 <li>큐알 세 장 매장 설정에서 바로 인쇄</li>
                 <li>대시보드 할 일 목록이 빠진 걸 알려줘요</li>
-                <li className="text-mute">방문 세팅(사진 촬영·명단 정리·교육)은 선택 · {won(ONSITE_SETUP_FEE)}</li>
+                <li className="text-mute">방문 세팅(사진 촬영·명단 정리·교육)은 약정 무료 · 무약정 {won(ONSITE_SETUP_FEE)}</li>
               </ul>
             </div>
           </div>
-          <div className="mt-4 text-[11px] text-mute">결제는 CMS 자동이체예요. 승인 뒤 링크 하나로 출금 동의를 등록하면 매월 {DEBIT_DAY}일 매장 계좌에서 빠져요. 첫 출금은 {won(FIRST_MONTH_PRICE)}, 그다음 달부터 고른 요금제 금액이에요. 카드번호도 종이 서류도 필요 없고, 위약금 없이 언제든 해지할 수 있어요.</div>
+          <div className="mt-4 text-[11px] text-mute">결제는 CMS 자동이체예요. 승인 뒤 링크 하나로 출금 동의를 등록하면 매월 {DEBIT_DAY}일 매장 계좌에서 빠져요. 첫 달은 무료고, 승인 뒤 한 달이 지난 첫 출금일부터 고른 금액이에요. 카드번호도 종이 서류도 필요 없어요.</div>
         </div>
       </section>
 
@@ -521,7 +524,7 @@ export default function Home() {
       {/* 마무리 CTA */}
       <section className="mx-auto max-w-6xl px-5 py-16 text-center">
         <h2 className="font-serif text-[26px] font-bold md:text-[34px]">오늘 밤부터 전화 대신 앱으로</h2>
-        <p className="mx-auto mt-3 max-w-xl text-[13px] leading-[1.9] text-mute">신청서를 내면 사업자 확인 뒤 보통 영업일 하루 안에 열어 드려요. 구축비 없이 첫 달 만원으로 시작하고, 첫 주는 붙어서 봐 드려요.</p>
+        <p className="mx-auto mt-3 max-w-xl text-[13px] leading-[1.9] text-mute">신청서를 내면 사업자 확인 뒤 보통 영업일 하루 안에 열어 드려요. 구축비 없이 첫 달 무료로 시작하고, 첫 주는 붙어서 봐 드려요.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2.5">
           <Link href="/signup" className="cta-grad rounded-2xl px-7 py-3.5 text-[14px] font-bold text-white shadow-cta">가입 신청하기</Link>
           <a href={`https://t.me/${OPERATOR_CONTACT.telegram}`} target="_blank" rel="noreferrer" className="rounded-2xl border border-line bg-card px-7 py-3.5 text-[14px] font-bold hover:border-brand">텔레그램으로 문의</a>

@@ -3,21 +3,30 @@
  *
  * 한도는 DB 가 아니라 여기서 관리한다. 매장마다 다른 값을 주기 시작하면
  * 어느 매장이 무슨 조건인지 아무도 모르게 되고, 청구서와 화면이 어긋난다.
+ *
+ * 값을 두 개 둔다 — 무약정 월납 정가와 2년 약정가. 실제로 받는 돈은 약정가지만,
+ * 무약정이 진짜로 존재해야 "강요" 가 아니고, 약정한 매장은 "싸게 샀다" 가 된다.
+ * 중도 해지 때는 남은 기간을 다 물리지 않고 그동안 받은 할인만 돌려받는다 —
+ * 그래야 사장도 납득하고, 과도한 위약금으로 깎일 여지도 없다.
  */
 
 export type Plan = "PRO" | "MAX";
+export type Commitment = "TERM24" | "MONTHLY";
 
-/** 할인은 없다. 정가 그대로 적는 게 신뢰가 간다. 나중에 행사할 때 0 보다 크게. */
+/** 약정 기간 (개월) */
+export const TERM_MONTHS = 24;
+
+/** 할인 표시는 안 쓴다 (정가·약정가 두 값으로 말한다). 행사 때만 0 보다 크게. */
 export const DISCOUNT_RATE = 0;
 export const DISCOUNT_LABEL = "";
-
-/** 첫 달은 만원 — 첫 출금일에 만원, 그다음 달부터 정상 요금 */
-export const FIRST_MONTH_PRICE = 10_000;
 
 /** CMS 자동이체 출금일 — 매장마다 다르게 두면 관리가 안 된다. 하나로 통일. */
 export const DEBIT_DAY = 5;
 
-/** 초기 구축비는 없다. 세팅은 매장이 직접 하고, 와서 해 달라면 이 값을 한 번 받는다 (선택). */
+/** 첫 달은 무료 — 승인 뒤 한 달이 지난 첫 출금일부터 돈다 */
+export const FREE_FIRST_MONTH = true;
+
+/** 초기 구축비는 없다. 방문 세팅(사진 촬영·명단 정리·교육)은 무약정이면 1회, 약정이면 무료. */
 export const SETUP_FEE = 0;
 export const ONSITE_SETUP_FEE = 300_000;
 
@@ -26,7 +35,8 @@ export type Limits = { customers: number | null; staff: number | null; rooms: nu
 
 export const PLANS: Record<Plan, {
   name: string;
-  price: number;              // 정가 (월, 원)
+  price: number;              // 무약정 월납 정가 (원)
+  termPrice: number;          // 2년 약정가 (원)
   limits: Limits;
   dataExport: boolean;
   prioritySupport: boolean;
@@ -34,7 +44,8 @@ export const PLANS: Record<Plan, {
 }> = {
   PRO: {
     name: "Pro",
-    price: 100_000,
+    price: 130_000,
+    termPrice: 100_000,
     limits: { customers: 500, staff: 10, rooms: 5 },
     dataExport: false,
     prioritySupport: false,
@@ -42,7 +53,8 @@ export const PLANS: Record<Plan, {
   },
   MAX: {
     name: "Max",
-    price: 300_000,
+    price: 390_000,
+    termPrice: 300_000,
     limits: { customers: null, staff: null, rooms: null },
     dataExport: true,
     prioritySupport: true,
@@ -51,10 +63,32 @@ export const PLANS: Record<Plan, {
 };
 
 export const planOf = (v: string): Plan => (v === "MAX" ? "MAX" : "PRO");
+export const commitmentOf = (v: string): Commitment => (v === "MONTHLY" ? "MONTHLY" : "TERM24");
+export const COMMITMENT_LABEL: Record<Commitment, string> = { TERM24: `${TERM_MONTHS / 12}년 약정`, MONTHLY: "무약정 (월납)" };
 
-/** 할인 적용 후 실제 청구 금액 */
-export const billedPrice = (plan: Plan) => Math.round(PLANS[plan].price * (1 - DISCOUNT_RATE));
+/** 실제 청구 금액 — 약정이면 약정가, 아니면 정가 */
+export const billedPrice = (plan: Plan, commitment: Commitment = "TERM24") =>
+  commitment === "TERM24" ? PLANS[plan].termPrice : PLANS[plan].price;
 
+/** 약정으로 매달 깎이는 금액 (정가 − 약정가) — 중도 해지 때 이만큼씩 돌려받는다 */
+export const termDiscountPerMonth = (plan: Plan) => PLANS[plan].price - PLANS[plan].termPrice;
+
+/** 약정 할인율 표시용 — 23% */
+export const termDiscountPercent = (plan: Plan) => Math.round((termDiscountPerMonth(plan) / PLANS[plan].price) * 100);
+
+/** 방문 세팅 비용 — 약정이면 무료 */
+export const onsiteSetupFee = (commitment: Commitment) => (commitment === "TERM24" ? 0 : ONSITE_SETUP_FEE);
+
+/**
+ * 약정 중도 해지 때 돌려받는 금액.
+ * 남은 기간 전액이 아니라 그동안 받은 할인(월 할인액 × 청구된 달 수)과 무료로 해 준 방문 세팅비.
+ */
+export function earlyTerminationFee(store: { plan: string; commitment: string; onsiteSetupDone: boolean }, billedMonths: number) {
+  if (commitmentOf(store.commitment) !== "TERM24") return { discountRefund: 0, setupRefund: 0, total: 0 };
+  const discountRefund = termDiscountPerMonth(planOf(store.plan)) * Math.max(0, billedMonths);
+  const setupRefund = store.onsiteSetupDone ? ONSITE_SETUP_FEE : 0;
+  return { discountRefund, setupRefund, total: discountRefund + setupRefund };
+}
 
 /** 한도 대비 사용량. limit 이 null 이면 무제한이라 넘칠 일이 없다. */
 export function usageOf(used: number, limit: number | null) {
@@ -73,16 +107,22 @@ export const POLICY: { title: string; body: string }[] = [
     title: "청구와 결제",
     body:
       "요금은 CMS 자동이체로 매월 5일에 매장 계좌에서 출금돼요. 승인되면 운영사가 보내는 출금 동의 링크로 계좌를 등록해요. 종이 서류나 카드번호는 필요 없어요.\n" +
-      "승인 후 첫 출금일에는 10,000원만 빠지고, 그다음 달 5일부터 고른 요금제 금액이 매달 선불로 출금돼요. 잔액 부족으로 못 빠지면 며칠 뒤 다시 시도하고, 그래도 안 되면 관리자 화면에 안내가 떠요.\n" +
-      "중간에 요금제를 올리시면 남은 기간만큼만 차액으로 계산해 드려요.\n" +
-      "요금제를 내리시는 경우에는 다음 청구일부터 적용돼요. 이미 낸 달의 요금은 돌려드리지 않는 대신, 그달 끝까지는 원래 요금제를 그대로 쓰실 수 있어요.",
+      "첫 달은 무료예요. 승인 뒤 한 달이 지난 첫 5일부터 고른 요금제 금액이 매달 선불로 출금돼요. 잔액 부족으로 못 빠지면 며칠 뒤 다시 시도하고, 그래도 안 되면 관리자 화면에 안내가 떠요.\n" +
+      "중간에 요금제를 올리시면 남은 기간만큼만 차액으로 계산해 드려요. 내리시는 경우에는 다음 출금일부터 적용돼요.",
+  },
+  {
+    title: "약정과 무약정",
+    body:
+      "무약정은 Pro 130,000원, Max 390,000원을 매달 내고 언제든 해지할 수 있어요. 위약금이 없어요.\n" +
+      "2년 약정은 Pro 100,000원, Max 300,000원이고(23% 할인), 방문 세팅 300,000원도 무료예요. 24개월이 지나면 자동으로 무약정으로 이어지고, 약정을 다시 하면 같은 가격이에요.\n" +
+      "약정을 중간에 해지하면 남은 기간을 다 물리지 않아요. 그동안 매달 받은 할인액(Pro 30,000원, Max 90,000원 × 청구된 달 수)과, 무료로 해 드린 방문 세팅비 300,000원만 돌려주시면 돼요. 관리자 화면 '요금제' 에 지금 해지하면 얼마인지 늘 적혀 있어요.",
   },
   {
     title: "한도를 넘었을 때",
     body:
       "한도를 넘겨도 고객 등록이나 예약이 막히지 않아요. 영업 중에 손님을 앞에 두고 등록이 안 되는 일은 없어야 하니까요.\n" +
-      "대신 관리자 화면에 안내가 뜨고, 넘긴 상태가 이어지면 다음 청구일에 맞는 요금제로 올려 드려요. 올리기 전에 미리 알려드리고, 원하지 않으시면 그 전에 정리하실 수 있어요.\n" +
-      "캐치걸이 잠깐 늘었다 줄어드는 정도로는 요금제가 바뀌지 않아요. 청구일 기준으로 한 번만 봐요.",
+      "대신 관리자 화면에 안내가 뜨고, 넘긴 상태가 이어지면 다음 출금일에 맞는 요금제로 올려 드려요. 올리기 전에 미리 알려드리고, 원하지 않으시면 그 전에 정리하실 수 있어요.\n" +
+      "캐치걸이 잠깐 늘었다 줄어드는 정도로는 요금제가 바뀌지 않아요. 출금일 기준으로 한 번만 봐요.",
   },
   {
     title: "고객 수는 어떻게 세나요",
@@ -95,7 +135,7 @@ export const POLICY: { title: string; body: string }[] = [
   {
     title: "해지",
     body:
-      "언제든 해지하실 수 있고, 위약금은 없어요. 남은 기간까지는 그대로 쓰실 수 있어요.\n" +
+      "무약정은 언제든 해지할 수 있고 위약금이 없어요. 약정은 위 '약정과 무약정' 대로 받은 할인만 돌려주시면 돼요.\n" +
       "해지하시면 손님들의 예약 화면이 먼저 닫히고, 관리자 화면은 90일 동안 열어 둬요. 그동안 매출과 고객 기록을 내려받으실 수 있어요.\n" +
       "90일이 지나면 데이터를 지워요. 다시 시작하실 때 복구해 드릴 수 없으니, 필요하시면 그 전에 말씀해 주세요.",
   },
@@ -118,6 +158,6 @@ export const POLICY: { title: string; body: string }[] = [
     body:
       "초기 구축비는 없어요. 룸·조 시간·옵션은 가입 신청 때 이미 들어가고, 캐치걸 프로필과 기존 손님은 관리자 화면에서 직접 넣어요. 손님은 닉네임 목록을 붙여 넣으면 연결코드가 한꺼번에 나와서 30분이면 끝나요.\n" +
       "대시보드에 '문 열기 전에 채워 두세요' 목록이 떠서 뭘 안 했는지 바로 보여요. 막히면 텔레그램으로 물어보세요. 첫 주는 붙어서 봐 드려요.\n" +
-      "직접 와서 세팅해 드리는 방문 세팅은 선택이고 1회 300,000원이에요. 사진 촬영, 손님 명단 정리, 직원 교육까지 하루에 끝내요.",
+      "직접 와서 세팅해 드리는 방문 세팅은 사진 촬영, 손님 명단 정리, 직원 교육까지 하루에 끝내요. 2년 약정이면 무료, 무약정이면 1회 300,000원이에요.",
   },
 ];

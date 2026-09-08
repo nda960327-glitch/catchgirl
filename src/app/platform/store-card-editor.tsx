@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
-import { PLANS, billedPrice, type Plan } from "@/lib/plans";
+import { COMMITMENT_LABEL, PLANS, billedPrice, type Commitment, type Plan } from "@/lib/plans";
 import { won } from "@/lib/utils";
 import { enterStoreAsAdmin, setStoreAdminLogin, updateStoreFromPlatform } from "./actions";
 
@@ -19,16 +19,18 @@ import { enterStoreAsAdmin, setStoreAdminLogin, updateStoreFromPlatform } from "
  * 설정 화면을 여기 또 만들지 않고, 업체가 쓰는 화면 그대로 쓴다.
  */
 export function StoreCardEditor({
-  slug, plan, ownerContact, platformMemo, adminEmail,
+  slug, plan, commitment, onsiteSetupDone, ownerContact, platformMemo, adminEmail,
 }: {
   slug: string;
   plan: Plan;
+  commitment: Commitment;
+  onsiteSetupDone: boolean;
   ownerContact: string;
   platformMemo: string;
   adminEmail: string;
 }) {
   const [open, setOpen] = useState<false | "contract" | "account">(false);
-  const [f, setF] = useState({ plan, ownerContact, platformMemo });
+  const [f, setF] = useState({ plan, commitment, onsiteSetupDone, ownerContact, platformMemo });
   const [acct, setAcct] = useState({ email: adminEmail, password: "" });
   const [pending, start] = useTransition();
   const router = useRouter();
@@ -74,11 +76,20 @@ export function StoreCardEditor({
       {open === "contract" && (
         <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-brand/40 bg-blush-lt/30 p-3.5">
           <div className="grid gap-3 md:grid-cols-2">
-            <Field label="요금제" hint={`${won(billedPrice(f.plan))}/월 · 바꾸면 오늘부터 새로 세요`}>
+            <Field label="요금제" hint={`${won(billedPrice(f.plan, f.commitment))}/월 · 바꾸면 오늘부터 새로 세요`}>
               <Select value={f.plan} onChange={(e) => setF({ ...f, plan: e.target.value as Plan })} className="w-full">
                 {(Object.keys(PLANS) as Plan[]).map((p) => <option key={p} value={p}>{PLANS[p].name}</option>)}
               </Select>
             </Field>
+            <Field label="약정" hint="약정이면 약정가 · 중도 해지 시 받은 할인 반환">
+              <Select value={f.commitment} onChange={(e) => setF({ ...f, commitment: e.target.value as Commitment })} className="w-full">
+                {(["TERM24", "MONTHLY"] as Commitment[]).map((c) => <option key={c} value={c}>{COMMITMENT_LABEL[c]}</option>)}
+              </Select>
+            </Field>
+            <label className="flex items-center gap-2 self-end pb-3 text-[12px] font-semibold text-ink">
+              <input type="checkbox" checked={f.onsiteSetupDone} onChange={(e) => setF({ ...f, onsiteSetupDone: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
+              방문 세팅 해 줬음 (약정 중도 해지 시 반환 대상)
+            </label>
             <Field label="업체 담당자 연락처" hint="사장·실장 전화나 텔레그램">
               <Input value={f.ownerContact} maxLength={120} onChange={(e) => setF({ ...f, ownerContact: e.target.value })} placeholder="010-0000-0000 · @telegram" className="h-11" />
             </Field>
@@ -88,7 +99,7 @@ export function StoreCardEditor({
           </Field>
           <div className="flex gap-2">
             <Button size="sm" onClick={saveContract} loading={pending}>저장</Button>
-            <Button size="sm" variant="ghost" onClick={() => { setF({ plan, ownerContact, platformMemo }); setOpen(false); }}>취소</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setF({ plan, commitment, onsiteSetupDone, ownerContact, platformMemo }); setOpen(false); }}>취소</Button>
           </div>
         </div>
       )}

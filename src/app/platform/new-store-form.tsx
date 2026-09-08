@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Card, Field, Input, Select } from "@/components/ui";
 import { useToast } from "@/components/providers";
-import { PLANS, billedPrice } from "@/lib/plans";
+import { COMMITMENT_LABEL, PLANS, billedPrice, type Commitment } from "@/lib/plans";
 import { won } from "@/lib/utils";
 import { THEMES, type ThemeKey } from "@/lib/themes";
 import { TERMS_VERSION, formatBizNumber } from "@/lib/terms";
@@ -19,7 +19,7 @@ const slugify = (s: string) =>
 const BLANK = {
   name: "", slug: "", adminEmail: "", adminPassword: "",
   openTime: "12:00", shiftSplitTime: "20:00", closeTime: "04:00",
-  roomCount: 10, plan: "PRO" as "PRO" | "MAX", theme: "rose" as ThemeKey, contactPhone: "", contactTelegram: "",
+  roomCount: 10, plan: "PRO" as "PRO" | "MAX", commitment: "TERM24" as Commitment, theme: "rose" as ThemeKey, contactPhone: "", contactTelegram: "",
   bizName: "", bizNumber: "", bizType: "", bizOwner: "", bizDocUrl: "", bizVerified: false, bizVerifyMemo: "",
   termsAgreed: false, termsAgreedBy: "",
 };
@@ -119,12 +119,17 @@ export function NewStoreForm() {
           <Field label="룸 개수" hint="이름은 나중에 바꿀 수 있어요">
             <Input type="number" min={1} max={50} value={f.roomCount} onChange={(e) => setF({ ...f, roomCount: Number(e.target.value) })} className="h-11" />
           </Field>
-          <Field label="요금제" hint={`${won(billedPrice(f.plan))}/월`}>
+          <Field label="요금제" hint={`${won(billedPrice(f.plan, f.commitment))}/월`}>
             <Select value={f.plan} onChange={(e) => setF({ ...f, plan: e.target.value as "PRO" | "MAX" })} className="w-full">
               {(Object.keys(PLANS) as ("PRO" | "MAX")[]).map((p) => <option key={p} value={p}>{PLANS[p].name}</option>)}
             </Select>
           </Field>
         </div>
+        <Field label="약정" hint={f.commitment === "TERM24" ? "약정가 · 방문 세팅 무료" : "정가 · 위약금 없음"}>
+          <Select value={f.commitment} onChange={(e) => setF({ ...f, commitment: e.target.value as Commitment })} className="w-full">
+            {(["TERM24", "MONTHLY"] as Commitment[]).map((c) => <option key={c} value={c}>{COMMITMENT_LABEL[c]}</option>)}
+          </Select>
+        </Field>
 
         <Field label="화면 테마" hint={THEMES[f.theme].desc}>
           <Select value={f.theme} onChange={(e) => setF({ ...f, theme: e.target.value as ThemeKey })} className="w-full">

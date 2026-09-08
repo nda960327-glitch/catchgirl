@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button, Field, Input, Select } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { resizeImage } from "@/lib/image-client";
-import { PLANS, billedPrice } from "@/lib/plans";
+import { COMMITMENT_LABEL, PLANS, TERM_MONTHS, billedPrice, onsiteSetupFee, termDiscountPercent, type Commitment } from "@/lib/plans";
 import { THEMES, type ThemeKey } from "@/lib/themes";
 import { OPERATOR_CONTACT, TERMS, TERMS_VERSION, formatBizNumber } from "@/lib/terms";
 import { won } from "@/lib/utils";
@@ -15,7 +15,7 @@ const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").repla
 
 const BLANK = {
   name: "", slug: "", adminEmail: "", adminPassword: "", adminPassword2: "",
-  plan: "PRO" as "PRO" | "MAX", theme: "rose" as ThemeKey,
+  plan: "PRO" as "PRO" | "MAX", commitment: "TERM24" as Commitment, theme: "rose" as ThemeKey,
   openTime: "12:00", shiftSplitTime: "20:00", closeTime: "04:00", roomCount: 10,
   contactPhone: "", contactTelegram: "", ownerContact: "",
   bizName: "", bizNumber: "", bizType: "", bizOwner: "",
@@ -107,12 +107,27 @@ export function SignupForm() {
             <Field label="룸 개수" hint="이름은 나중에 바꿀 수 있어요">
               <Input type="number" min={1} max={50} value={f.roomCount} onChange={(e) => setF({ ...f, roomCount: Number(e.target.value) })} className="h-11" />
             </Field>
-            <Field label="요금제" hint={`${won(billedPrice(f.plan))}/월`}>
+            <Field label="요금제" hint={`${won(billedPrice(f.plan, f.commitment))}/월`}>
               <Select value={f.plan} onChange={(e) => setF({ ...f, plan: e.target.value as "PRO" | "MAX" })} className="w-full">
                 {(Object.keys(PLANS) as ("PRO" | "MAX")[]).map((p) => <option key={p} value={p}>{PLANS[p].name}</option>)}
               </Select>
             </Field>
           </div>
+          <Field label="약정" hint={f.commitment === "TERM24" ? `${TERM_MONTHS}개월 · 방문 세팅 무료 · 중도 해지 시 받은 할인만 반환` : "언제든 해지 · 위약금 없음"}>
+            <div className="grid grid-cols-2 gap-2">
+              {(["TERM24", "MONTHLY"] as Commitment[]).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setF({ ...f, commitment: c })}
+                  className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${f.commitment === c ? "border-brand bg-blush-lt/40" : "border-line bg-card hover:border-brand"}`}
+                >
+                  <div className="text-[12px] font-bold text-ink">{COMMITMENT_LABEL[c]}{c === "TERM24" && <span className="ml-1.5 rounded-full bg-brand px-1.5 py-0.5 text-[9px] text-white">{termDiscountPercent(f.plan)}% 할인</span>}</div>
+                  <div className="mt-0.5 text-[11px] text-mute">{won(billedPrice(f.plan, c))}/월 · 방문 세팅 {onsiteSetupFee(c) === 0 ? "무료" : won(onsiteSetupFee(c))}</div>
+                </button>
+              ))}
+            </div>
+          </Field>
           <Field label="화면 테마" hint={THEMES[f.theme].desc}>
             <Select value={f.theme} onChange={(e) => setF({ ...f, theme: e.target.value as ThemeKey })} className="w-full">
               {(Object.keys(THEMES) as ThemeKey[]).map((k) => <option key={k} value={k}>{THEMES[k].name}{THEMES[k].dark ? " (어두움)" : ""}</option>)}
