@@ -13,7 +13,10 @@ import { ProfileClient, type ReviewItem, type CommentItem } from "./profile-clie
 export default async function BartenderDetail({ params }: { params: Promise<{ slug: string; id: string }> }) {
   const { slug, id } = await params;
   const store = await getStoreBySlug(slug);
-  const staff = await prisma.staff.findUnique({ where: { id }, include: { schedules: true } });
+  const staff = await prisma.staff.findUnique({
+    where: { id },
+    include: { schedules: true, profileValues: { where: { field: { isActive: true } }, select: { fieldId: true, value: true, field: { select: { label: true, sortOrder: true } } } } },
+  });
   if (!staff || staff.storeId !== store.id) notFound();
   const me = await getCustomer(store.id);
 
@@ -60,7 +63,7 @@ export default async function BartenderDetail({ params }: { params: Promise<{ sl
       <TopBar title={staff.nickname} back={`/${slug}/bartenders`} />
       <ProfileClient
         slug={slug}
-        staff={{ id: staff.id, nickname: staff.nickname, bio: staff.bio, tags: parseJsonArray(staff.tags), photos: parseJsonArray(staff.photos), hourlyPrice: staff.hourlyPrice, facts: profileChips(staff) }}
+        staff={{ id: staff.id, nickname: staff.nickname, bio: staff.bio, tags: parseJsonArray(staff.tags), photos: parseJsonArray(staff.photos), hourlyPrice: staff.hourlyPrice, facts: profileChips(staff, staff.profileValues.sort((a, b) => a.field.sortOrder - b.field.sortOrder).map((v) => ({ fieldId: v.fieldId, label: v.field.label, value: v.value }))) }}
         stats={{ rating: stats.rating, reviewCount: stats.reviewCount, revisitRate: Math.round(stats.revisitRate * 100) }}
         reviews={reviewItems}
         comments={commentItems}

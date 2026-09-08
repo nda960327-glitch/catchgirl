@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn, STAFF_FILTERS, STAFF_SORTS } from "@/lib/utils";
+import { cn, STAFF_SORTS } from "@/lib/utils";
 
 /**
  * 조건 검색 — 중고차 고르듯 체크해서 좁힌다.
@@ -12,11 +12,13 @@ import { cn, STAFF_FILTERS, STAFF_SORTS } from "@/lib/utils";
  * 마지막 하나만 남는다. 주소에 남기는 건 뒤로 가기와 링크 공유 때문이다.
  */
 export function FilterBar({
-  slug, sort, now, active, counts,
+  slug, sort, now, filters, active, counts,
 }: {
   slug: string;
   sort: string;
   now: boolean;
+  /** 앱 공통 조건 + 매장이 만든 보기 항목 — 서버가 합쳐서 내려준다 */
+  filters: { key: string; label: string }[];
   active: string[];
   counts: Record<string, number>;
 }) {
@@ -52,7 +54,7 @@ export function FilterBar({
   return (
     <div className="px-4 pt-3">
       <div className="flex flex-wrap gap-1.5">
-        {STAFF_FILTERS.map((f) => {
+        {filters.map((f) => {
           const on = picked.includes(f.key);
           const n = counts[f.key] ?? 0;
           return (

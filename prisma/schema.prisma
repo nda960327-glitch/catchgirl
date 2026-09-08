@@ -61,6 +61,7 @@ model Store {
   gradeBenefits GradeBenefit[]
   promotions    DayPromotion[]
   sources       ReferralSource[]
+  profileFields StoreProfileField[]
   payments      Payment[]
   platformLogs  PlatformLog[]
 }
@@ -140,8 +141,6 @@ model Staff {
   // 흡연은 대화 거리가 가까워서, 문신은 싫어하는 손님이 있어서 미리 밝힌다.
   heightCm        Int?
   weightKg        Int?
-  bustSize        String   @default("") // A~G 컵 표기. 빈 값이면 표시하지 않는다
-  bustNatural     Boolean  @default(false)
   smoker          Boolean  @default(false)
   tattoo          Boolean  @default(false)
   tattooNote      String   @default("") // 위치·크기 (예: 손목 작게)
@@ -162,6 +161,7 @@ model Staff {
   assignments  ShiftAssignment[]
   timeOffs     StaffTimeOff[]
   options      StoreOption[] // 이 캐치걸이 제공하는 옵션 (본인이 켜고 끈다)
+  profileValues StaffProfileValue[]
 
   @@index([storeId, isActive])
 }
@@ -447,6 +447,41 @@ model Notice {
 }
 
 /** 매장이 관리하는 추가 옵션 (이름·가격을 관리자에서 편집) */
+/**
+ * 매장이 스스로 정하는 프로필 항목.
+ *
+ * 키·흡연처럼 공통인 것 말고, 매장마다 손님이 궁금해하는 게 다르다 — 어떤 곳은
+ * 외국어, 어떤 곳은 성형 여부. 앱이 항목을 정해 주지 않고 매장이 이름과 보기를 만든다.
+ * CHOICE 는 보기 중 하나를 고르고(검색 조건으로도 쓴다), TEXT 는 자유롭게 적는다.
+ */
+model StoreProfileField {
+  id           String  @id @default(cuid())
+  storeId      String
+  label        String
+  kind         String  @default("CHOICE") // CHOICE | TEXT
+  options      String  @default("[]") // JSON string[] — CHOICE 의 보기
+  showInFilter Boolean @default(true) // 손님 목록에서 조건으로 걸 수 있게 할지 (CHOICE 만)
+  sortOrder    Int     @default(0)
+  isActive     Boolean @default(true)
+
+  store  Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  values StaffProfileValue[]
+
+  @@index([storeId, isActive])
+}
+
+/** 캐치걸별 항목 값. 빈 값은 화면에 안 나간다. */
+model StaffProfileValue {
+  id      String @id @default(cuid())
+  staffId String
+  fieldId String
+  value   String @default("")
+
+  staff Staff             @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  field StoreProfileField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, fieldId])
+}
 model StoreOption {
   id        String  @id @default(cuid())
   storeId   String

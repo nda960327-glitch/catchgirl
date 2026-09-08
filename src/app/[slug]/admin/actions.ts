@@ -133,12 +133,12 @@ const staffSchema = z.object({
   // 프로필 — 손님이 고를 때 보는 값. 모르는 항목은 비워 두고 화면에도 안 띄운다.
   heightCm: z.coerce.number().int().min(120).max(220).nullable().optional().default(null),
   weightKg: z.coerce.number().int().min(30).max(200).nullable().optional().default(null),
-  bustSize: z.string().trim().max(2).optional().default(""),
-  bustNatural: z.boolean().optional().default(false),
   smoker: z.boolean().optional().default(false),
   tattoo: z.boolean().optional().default(false),
   tattooNote: z.string().trim().max(60).optional().default(""),
   optionIds: z.array(z.string()).max(20).optional().default([]),
+  // 매장이 직접 만든 프로필 항목의 값 (fieldId → 값). 빈 값은 저장하지 않는다.
+  profileValues: z.array(z.object({ fieldId: z.string(), value: z.string().trim().max(60) })).max(30).optional().default([]),
   loginId: z.string().trim().max(30).optional().default(""),
   password: z.string().max(50).optional().default(""),
   schedules: z.array(z.object({ weekday: z.number().int().min(0).max(6), startTime: z.string(), endTime: z.string() })).default([]),
@@ -154,7 +154,7 @@ export async function saveStaff(slug: string, input: z.input<typeof staffSchema>
     const base = {
       nickname: d.nickname, bio: d.bio, tags: JSON.stringify(d.tags), photos: JSON.stringify(d.photos),
       isActive: d.isActive, capacityPerSlot: d.capacityPerSlot, hourlyPrice: d.hourlyPrice, adminMemo: d.adminMemo, loginId: d.loginId || null,
-      heightCm: d.heightCm, weightKg: d.weightKg, bustSize: d.bustSize, bustNatural: d.bustNatural,
+      heightCm: d.heightCm, weightKg: d.weightKg,
       smoker: d.smoker, tattoo: d.tattoo, tattooNote: d.tattoo ? d.tattooNote : "",
       ...(d.password ? { passwordHash: await bcrypt.hash(d.password, 10) } : {}),
     };
@@ -170,7 +170,12 @@ export async function saveStaff(slug: string, input: z.input<typeof staffSchema>
       const created = await prisma.staff.create({ data: { ...base, storeId: store.id, sortOrder: count, options: { connect: optionIds } } });
       id = created.id;
     }
+    // 다른 매장 항목 id 가 섞여 들어와도 이 매장 것만 남긴다
+    const fieldIds = new Set((await prisma.storeProfileField.findMany({ where: { storeId: store.id }, select: { id: true } })).map((x) => x.id));
+    const values = d.profileValues.filter((v) => fieldIds.has(v.fieldId) && v.value.length > 0);
     await prisma.$transaction([
+      prisma.staffProfileValue.deleteMany({ where: { staffId: id } }),
+      prisma.staffProfileValue.createMany({ data: values.map((v) => ({ staffId: id!, fieldId: v.fieldId, value: v.value })) }),
       prisma.staffSchedule.deleteMany({ where: { staffId: id } }),
       prisma.staffSchedule.createMany({ data: d.schedules.map((s) => ({ ...s, staffId: id! })) }),
       prisma.staffOff.deleteMany({ where: { staffId: id } }),
@@ -527,6 +532,58 @@ export async function deleteStoreOption(slug: string, optionId: string): Promise
     const o = await prisma.storeOption.findUnique({ where: { id: optionId } });
     if (!o || o.storeId !== store.id) return { ok: false, error: "옵션을 찾을 수 없어요." };
     await prisma.storeOption.delete({ where: { id: optionId } });
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/* ─── 매장 프로필 항목 ───
+ * 앱이 정한 공통 항목(키·몸무게·흡연·문신) 밖에 매장이 더 보여주고 싶은 것을 스스로 만든다.
+ * 보기(CHOICE)면 손님 화면의 조건 검색 칩으로도 쓸 수 있다. */
+const profileFieldSchema = z.object({
+  id: z.string().optional(),
+  label: z.string().trim().min(1, "항목 이름을 입력해 주세요").max(12, "항목 이름은 12자까지예요"),
+  kind: z.enum(["CHOICE", "TEXT"]).default("CHOICE"),
+  options: z.array(z.string().trim().min(1).max(12)).max(12).default([]),
+  showInFilter: z.boolean().default(true),
+  isActive: z.boolean().default(true),
+});
+export async function saveProfileField(slug: string, input: z.input<typeof profileFieldSchema>): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const p = profileFieldSchema.safeParse(input);
+    if (!p.success) return { ok: false, error: p.error.issues[0].message };
+    const d = p.data;
+    const options = d.kind === "CHOICE" ? Array.from(new Set(d.options)) : [];
+    if (d.kind === "CHOICE" && options.length < 2) return { ok: false, error: "보기는 2개 이상 적어 주세요." };
+    const data = { label: d.label, kind: d.kind, options: JSON.stringify(options), showInFilter: d.kind === "CHOICE" && d.showInFilter, isActive: d.isActive };
+    if (d.id) {
+      const ex = await prisma.storeProfileField.findUnique({ where: { id: d.id } });
+      if (!ex || ex.storeId !== store.id) return { ok: false, error: "항목을 찾을 수 없어요." };
+      await prisma.storeProfileField.update({ where: { id: d.id }, data });
+      // 보기에서 빠진 값을 갖고 있던 캐치걸은 그 값을 비운다 — 없는 보기가 화면에 남지 않게
+      if (d.kind === "CHOICE") await prisma.staffProfileValue.deleteMany({ where: { fieldId: d.id, value: { notIn: options } } });
+    } else {
+      const count = await prisma.storeProfileField.count({ where: { storeId: store.id } });
+      await prisma.storeProfileField.create({ data: { ...data, storeId: store.id, sortOrder: count } });
+    }
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+/** 항목 삭제 — 캐치걸들이 적어 둔 값도 함께 지워진다 (Cascade) */
+export async function deleteProfileField(slug: string, fieldId: string): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const f = await prisma.storeProfileField.findUnique({ where: { id: fieldId } });
+    if (!f || f.storeId !== store.id) return { ok: false, error: "항목을 찾을 수 없어요." };
+    await prisma.storeProfileField.delete({ where: { id: fieldId } });
     revalidatePath(`/${slug}`, "layout");
     return { ok: true };
   } catch (e) {

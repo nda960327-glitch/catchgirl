@@ -9,26 +9,15 @@ export type SourceTier = "FREE" | "MAJOR" | "";
 
 export const TIER_LABEL: Record<SourceTier, string> = { FREE: "무료", MAJOR: "메이저", "": "" };
 
+/**
+ * 새 매장의 시작 목록. 어디에 광고를 내는지는 매장마다 달라서 사이트 이름을 미리
+ * 넣어 두지 않는다 — 매장이 방문 경로 화면에서 자기 목록을 만든다.
+ */
 export const DEFAULT_SOURCES: { name: string; tier: SourceTier }[] = [
-  { name: "텔레그램", tier: "" },
-  { name: "달리머넷", tier: "" },
-  { name: "달콤월드", tier: "" },
-  { name: "대한민국달리기", tier: "FREE" },
-  { name: "당근OP", tier: "FREE" },
-  { name: "서울달리기", tier: "FREE" },
-  { name: "섹밤", tier: "MAJOR" },
-  { name: "안마야", tier: "FREE" },
-  { name: "OP가이드", tier: "MAJOR" },
-  { name: "OP가자", tier: "" },
-  { name: "OP나라", tier: "" },
-  { name: "OP박사", tier: "FREE" },
-  { name: "OP뷰", tier: "" },
-  { name: "OP스타", tier: "MAJOR" },
-  { name: "OPOP", tier: "" },
-  { name: "OP투어", tier: "FREE" },
-  { name: "외로운밤", tier: "" },
-  { name: "유흥가이드", tier: "" },
   { name: "지인 소개", tier: "" },
+  { name: "텔레그램 문의", tier: "" },
+  { name: "전화 문의", tier: "" },
+  { name: "지나가다", tier: "" },
 ];
 
 /** 이름만으로는 "재방문" 과 구분이 안 되므로 표에서 쓰는 고정 행 이름을 한 곳에 둔다 */

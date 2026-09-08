@@ -3,6 +3,7 @@ import type { Store } from "@prisma/client";
 import { prisma } from "./db";
 import { businessDayOf, getSlotsFor } from "./slots";
 import { parseJsonArray } from "./utils";
+import type { CustomFact } from "./profile";
 
 /** "지금 예약 가능"으로 볼 시간 여유 — 이 안에 시작하는 빈자리가 있으면 지금 가능으로 본다 */
 const AVAILABLE_NOW_WINDOW_MIN = 30;
@@ -28,13 +29,13 @@ export type StaffSummary = {
   /** 손님이 고를 때 보는 값들 — 비어 있으면 화면에 안 내보낸다 */
   heightCm: number | null;
   weightKg: number | null;
-  bustSize: string;
-  bustNatural: boolean;
   smoker: boolean;
   tattoo: boolean;
   tattooNote: string;
   /** 이 캐치걸이 제공하는 옵션 이름 (예: 옵션1) */
   optionNames: string[];
+  /** 매장이 만든 항목의 값 — 빈 값은 애초에 저장하지 않는다 */
+  custom: CustomFact[];
 };
 
 export function sortStaffSummaries(list: StaffSummary[], sort: string): StaffSummary[] {
@@ -76,6 +77,7 @@ export async function listStaffSummaries(store: Store, includeInactive = false):
       reviews: { where: { isHidden: false }, select: { rating: true } },
       votes: { select: { value: true } },
       options: { where: { isActive: true }, select: { name: true }, orderBy: { sortOrder: "asc" } },
+      profileValues: { where: { field: { isActive: true } }, select: { fieldId: true, value: true, field: { select: { label: true, sortOrder: true } } } },
     },
   });
   const now = new Date();
@@ -105,12 +107,13 @@ export async function listStaffSummaries(store: Store, includeInactive = false):
         isActive: s.isActive,
         heightCm: s.heightCm,
         weightKg: s.weightKg,
-        bustSize: s.bustSize,
-        bustNatural: s.bustNatural,
         smoker: s.smoker,
         tattoo: s.tattoo,
         tattooNote: s.tattooNote,
         optionNames: s.options.map((o) => o.name),
+        custom: s.profileValues
+          .sort((a, b) => a.field.sortOrder - b.field.sortOrder)
+          .map((v) => ({ fieldId: v.fieldId, label: v.field.label, value: v.value })),
       };
     }),
   );

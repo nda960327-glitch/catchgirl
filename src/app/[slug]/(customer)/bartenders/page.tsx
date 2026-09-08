@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { getStoreBySlug } from "@/lib/store";
 import { listStaffSummaries, sortStaffSummaries, type StaffSummary } from "@/lib/queries";
+import { prisma } from "@/lib/db";
 import { cn, STAFF_FILTERS } from "@/lib/utils";
+import { customFilterKey, parseCustomFilterKey, parseFieldOptions } from "@/lib/profile";
 import { TopBar, Sticker } from "@/components/ui";
 import { StaffCard } from "@/components/staff-card";
 import { FilterBar } from "./filter-bar";
@@ -19,21 +21,32 @@ export default async function BartenderListPage({
   const { slug } = await params;
   const { sort = "", now, f } = await searchParams;
   const store = await getStoreBySlug(slug);
-  const all = sortStaffSummaries(await listStaffSummaries(store), sort);
+  const [all, fields] = await Promise.all([
+    listStaffSummaries(store).then((l) => sortStaffSummaries(l, sort)),
+    prisma.storeProfileField.findMany({ where: { storeId: store.id, isActive: true, showInFilter: true, kind: "CHOICE" }, orderBy: { sortOrder: "asc" } }),
+  ]);
   const onlyNow = now === "1";
   const nowCount = all.filter((s) => s.availableNow).length;
 
   // 조건 검색 — 값이 비어 있는 캐치걸은 그 조건에서 빠진다.
   // 안 적어 둔 걸 "아니오" 로 치면 없는 사실을 만들어 내게 된다.
-  const active = (f ?? "").split(",").filter((k) => STAFF_FILTERS.some((x) => x.key === k));
+  // 매장이 만든 보기 항목은 "<fieldId>:<보기>" 키로 칩이 하나씩 붙는다 (예: 외국어 영어 / 외국어 일본어)
+  const filters: { key: string; label: string }[] = [
+    ...STAFF_FILTERS,
+    ...fields.flatMap((fd) => parseFieldOptions(fd.options).map((o) => ({ key: customFilterKey(fd.id, o), label: `${fd.label} ${o}` }))),
+  ];
+  const active = (f ?? "").split(",").filter((k) => filters.some((x) => x.key === k));
   const match: Record<string, (s: StaffSummary) => boolean> = {
-    natural: (s) => !!s.bustSize && s.bustNatural,
     nosmoke: (s) => !s.smoker,
     notattoo: (s) => !s.tattoo,
     opt1: (s) => s.optionNames.some((n) => n.includes("1")),
     opt2: (s) => s.optionNames.some((n) => n.includes("2")),
   };
-  const counts = Object.fromEntries(STAFF_FILTERS.map((x) => [x.key, all.filter(match[x.key]).length]));
+  for (const x of filters) {
+    const c = parseCustomFilterKey(x.key);
+    if (c) match[x.key] = (s) => s.custom.some((v) => v.fieldId === c.fieldId && v.value === c.option);
+  }
+  const counts = Object.fromEntries(filters.map((x) => [x.key, all.filter(match[x.key]).length]));
 
   const staff = all
     .filter((s) => (onlyNow ? s.availableNow : true))
@@ -83,7 +96,7 @@ export default async function BartenderListPage({
         </Link>
       </div>
 
-      <FilterBar slug={slug} sort={sort} now={onlyNow} active={active} counts={counts} />
+      <FilterBar slug={slug} sort={sort} now={onlyNow} filters={filters} active={active} counts={counts} />
 
       <div className="flex flex-col gap-3.5 px-4 pt-4">
         {staff.length === 0 ? (

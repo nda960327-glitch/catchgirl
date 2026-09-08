@@ -7,13 +7,15 @@ import { Avatar, Button, Card, Chip, Field, Input, Select, Textarea } from "@/co
 import { useToast } from "@/components/providers";
 import { uploadImages } from "@/lib/image-client";
 import { cn } from "@/lib/utils";
-import { BUST_SIZES } from "@/lib/profile";
+import type { ProfileFieldDef } from "@/lib/profile";
 import { deleteStaff, saveStaff, staffDeletionImpact } from "../../actions";
 
 export type StaffFull = {
   id: string; nickname: string; bio: string; tags: string[]; photos: string[]; isActive: boolean; capacityPerSlot: number; hourlyPrice: number; adminMemo: string; loginId: string;
-  heightCm: number | null; weightKg: number | null; bustSize: string; bustNatural: boolean; smoker: boolean; tattoo: boolean; tattooNote: string;
+  heightCm: number | null; weightKg: number | null; smoker: boolean; tattoo: boolean; tattooNote: string;
   optionIds: string[];
+  /** 매장이 만든 항목의 값 — fieldId → 값 */
+  profileValues: Record<string, string>;
   stats: {
     rating: number | null; reviewCount: number; reservationCount: number; completedCount: number; noshowRate: number; revisitRate: number;
     upCount: number; downCount: number; customerCount: number; repeatCustomers: number; newCustomers30d: number;
@@ -23,11 +25,11 @@ export type StoreOptionLite = { id: string; name: string; price: number };
 
 const EMPTY: StaffFull = {
   id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, hourlyPrice: 300000, adminMemo: "", loginId: "",
-  heightCm: null, weightKg: null, bustSize: "", bustNatural: false, smoker: false, tattoo: false, tattooNote: "", optionIds: [],
+  heightCm: null, weightKg: null, smoker: false, tattoo: false, tattooNote: "", optionIds: [], profileValues: {},
   stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0, upCount: 0, downCount: 0, customerCount: 0, repeatCustomers: 0, newCustomers30d: 0 },
 };
 
-export function StaffManager({ slug, items, storeOptions, initialEdit }: { slug: string; items: StaffFull[]; storeOptions: StoreOptionLite[]; initialEdit?: string }) {
+export function StaffManager({ slug, items, storeOptions, profileFields, initialEdit }: { slug: string; items: StaffFull[]; storeOptions: StoreOptionLite[]; profileFields: ProfileFieldDef[]; initialEdit?: string }) {
   const [editing, setEditing] = useState<StaffFull | null>(initialEdit === "new" ? EMPTY : items.find((i) => i.id === initialEdit) ?? null);
   return (
     <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_440px]">
@@ -51,17 +53,15 @@ export function StaffManager({ slug, items, storeOptions, initialEdit }: { slug:
                 <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
                   {s.heightCm && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{s.heightCm}cm</span>}
                   {s.weightKg && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{s.weightKg}kg</span>}
-                  {s.bustSize && (
-                    <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">
-                      {s.bustSize}컵{s.bustNatural && <span className="text-brand"> 자연</span>}
-                    </span>
-                  )}
                   <span className={cn("rounded-md px-1.5 py-0.5 font-semibold", s.smoker ? "bg-bad-bg text-bad" : "bg-ok-bg text-ok")}>
                     {s.smoker ? "흡연" : "비흡연"}
                   </span>
                   <span className={cn("rounded-md px-1.5 py-0.5 font-semibold", s.tattoo ? "bg-well-2 text-mute" : "bg-ok-bg text-ok")}>
                     {s.tattoo ? `문신 ${s.tattooNote || "있음"}` : "문신 없음"}
                   </span>
+                  {profileFields.filter((pf) => s.profileValues[pf.id]).map((pf) => (
+                    <span key={pf.id} className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{pf.label} {s.profileValues[pf.id]}</span>
+                  ))}
                   {storeOptions.filter((o) => s.optionIds.includes(o.id)).map((o) => (
                     <span key={o.id} className="rounded-md bg-blush-lt px-1.5 py-0.5 font-semibold text-brand">{o.name}</span>
                   ))}
@@ -92,7 +92,7 @@ export function StaffManager({ slug, items, storeOptions, initialEdit }: { slug:
         ))}
       </div>
       <div className="xl:sticky xl:top-6 xl:self-start">
-        {editing ? <StaffEditor key={editing.id || "new"} slug={slug} init={editing} storeOptions={storeOptions} onClose={() => setEditing(null)} /> : (
+        {editing ? <StaffEditor key={editing.id || "new"} slug={slug} init={editing} storeOptions={storeOptions} profileFields={profileFields} onClose={() => setEditing(null)} /> : (
           <Card className="flex h-48 items-center justify-center p-6 text-center text-[12px] text-mute">캐치걸를 선택하면 여기서 수정할 수 있어요</Card>
         )}
       </div>
@@ -100,7 +100,7 @@ export function StaffManager({ slug, items, storeOptions, initialEdit }: { slug:
   );
 }
 
-function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init: StaffFull; storeOptions: StoreOptionLite[]; onClose: () => void }) {
+function StaffEditor({ slug, init, storeOptions, profileFields, onClose }: { slug: string; init: StaffFull; storeOptions: StoreOptionLite[]; profileFields: ProfileFieldDef[]; onClose: () => void }) {
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
@@ -122,8 +122,9 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
       const r = await saveStaff(slug, {
         id: f.id || undefined, nickname: f.nickname, bio: f.bio, tags: f.tags, photos: f.photos, isActive: f.isActive,
         capacityPerSlot: f.capacityPerSlot, hourlyPrice: f.hourlyPrice, adminMemo: f.adminMemo, optionIds: f.optionIds,
-        heightCm: f.heightCm, weightKg: f.weightKg, bustSize: f.bustSize, bustNatural: f.bustNatural,
+        heightCm: f.heightCm, weightKg: f.weightKg,
         smoker: f.smoker, tattoo: f.tattoo, tattooNote: f.tattooNote,
+        profileValues: Object.entries(f.profileValues).map(([fieldId, value]) => ({ fieldId, value })),
         loginId: f.loginId, password: f.password,
       });
       if (!r.ok) return toast(r.error, "error");
@@ -171,23 +172,13 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
         <div className="rounded-2xl border border-line bg-card p-3.5">
           <div className="text-[12px] font-bold text-ink">프로필</div>
           <div className="mt-0.5 text-[10px] leading-[1.7] text-mute">손님이 고를 때 보는 값이에요. 비워 두면 그 항목은 화면에 안 나와요.</div>
-          <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="mt-3 grid grid-cols-2 gap-3">
             <Field label="키" hint="cm">
               <Input type="number" min={120} max={220} value={f.heightCm ?? ""} onChange={(e) => setF({ ...f, heightCm: e.target.value ? Number(e.target.value) : null })} className="h-11" />
             </Field>
             <Field label="몸무게" hint="kg">
               <Input type="number" min={30} max={200} value={f.weightKg ?? ""} onChange={(e) => setF({ ...f, weightKg: e.target.value ? Number(e.target.value) : null })} className="h-11" />
             </Field>
-            <Field label="가슴">
-              <Select value={f.bustSize} onChange={(e) => setF({ ...f, bustSize: e.target.value })} className="w-full">
-                <option value="">미기재</option>
-                {BUST_SIZES.map((b) => <option key={b} value={b}>{b}컵</option>)}
-              </Select>
-            </Field>
-            <label className="flex items-end gap-1.5 pb-2.5 text-[12px] font-semibold text-mute">
-              <input type="checkbox" checked={f.bustNatural} disabled={!f.bustSize} onChange={(e) => setF({ ...f, bustNatural: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
-              자연
-            </label>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-4">
             <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
@@ -202,6 +193,37 @@ function StaffEditor({ slug, init, storeOptions, onClose }: { slug: string; init
               <Input value={f.tattooNote} onChange={(e) => setF({ ...f, tattooNote: e.target.value })} placeholder="위치·크기 (예: 손목 작게)" maxLength={60} className="h-10 w-[220px] text-[12px]" />
             )}
           </div>
+
+          {/* 매장이 만든 항목 — 매장 설정 › 프로필 항목에서 만든다 */}
+          {profileFields.length > 0 && (
+            <div className="mt-3 flex flex-col gap-3 border-t border-line pt-3">
+              {profileFields.map((pf) => {
+                const v = f.profileValues[pf.id] ?? "";
+                const setV = (value: string) => setF({ ...f, profileValues: { ...f.profileValues, [pf.id]: value } });
+                return (
+                  <div key={pf.id}>
+                    <div className="mb-1.5 text-[11px] font-semibold text-mute">{pf.label}</div>
+                    {pf.kind === "CHOICE" ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {pf.options.map((o) => (
+                          <button
+                            key={o}
+                            type="button"
+                            onClick={() => setV(v === o ? "" : o)}
+                            className={cn("rounded-full border px-3 py-1.5 text-[11px] font-bold transition-colors", v === o ? "border-brand bg-brand text-white" : "border-line bg-card text-mute hover:border-brand")}
+                          >
+                            {o}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <Input value={v} onChange={(e) => setV(e.target.value)} maxLength={60} className="h-10 text-[12px]" placeholder="비워 두면 화면에 안 나와요" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* 제공 옵션 — 캐치걸 본인도 '내 설정'에서 바꿀 수 있다 */}

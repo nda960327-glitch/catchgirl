@@ -56,7 +56,6 @@ export const STAFF_SORTS = [
  * 값이 비어 있는 캐치걸은 그 조건에서 빠진다 (모르는 걸 "아니오" 로 치지 않는다).
  */
 export const STAFF_FILTERS = [
-  { key: "natural", label: "자연" },
   { key: "nosmoke", label: "비흡연" },
   { key: "notattoo", label: "문신 없음" },
   { key: "opt1", label: "옵션1 가능" },
