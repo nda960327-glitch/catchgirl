@@ -50,6 +50,8 @@ export async function middleware(req: NextRequest) {
   if (original === "/demo" || original.startsWith("/demo/")) return NextResponse.next();
   // 담당직원 화면 — 자기 세션으로 잠근다 (페이지 안에서 확인)
   if (original === "/agent" || original.startsWith("/agent/")) return NextResponse.next();
+  // 검색·미리보기용 파일은 매장이 아니다
+  if (/^/(opengraph-image|twitter-image|icon|apple-icon|robots.txt|sitemap.xml)(/|$|?)/.test(original)) return NextResponse.next();
 
   // 서브도메인으로 들어왔으면 매장 경로를 앞에 붙인 걸로 본다
   const sub = storeFromHost(req.headers.get("host") ?? "");

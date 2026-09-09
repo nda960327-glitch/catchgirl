@@ -20,10 +20,22 @@ import { won } from "@/lib/utils";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "캐치걸 — 전화로 받던 예약, 손님이 앱에서 직접",
+  title: { absolute: "캐치걸 | 바 전용 전담 바텐더 지명 예약 앱" },
   description:
-    "기존 손님만 초대해 쓰는 매장 전용 전담 매니저(바텐더) 예약 앱. 손님 실명·전화번호를 받지 않고, 사업자 확인을 거친 매장만 씁니다. 예약·출근·룸 배치·수금·재방문 관리까지 한 번에.",
-  openGraph: { title: "캐치걸 — 매장 전용 전담 매니저 예약 앱", description: "전화 대신 앱으로. 손님 DB 없이 닉네임으로. 사업자 확인 후 승인.", type: "website" },
+    "캐치걸(catchgirl)은 착석바·토킹바·클래식바·모던바·칵테일바를 위한 전담 바텐더 지명 예약 앱이에요. 우리 매장 로고로 깔리는 손님·직원·관리자 앱 세 개, 초기 투자 0원, 월 10만원. 손님 실명·전화번호는 받지 않고, 영업 허가를 확인한 합법 바만 열어요.",
+  alternates: { canonical: "https://www.catchgirl.kr/" },
+  openGraph: { title: "캐치걸 | 바 전용 전담 바텐더 지명 예약 앱", description: "6,000만원짜리 앱 세 개를 초기 투자 0원, 월 10만원에. 손님 DB 없이 닉네임으로. 합법 바만 확인 후 승인.", type: "website", url: "https://www.catchgirl.kr/", siteName: "캐치걸", locale: "ko_KR" },
+  twitter: { card: "summary_large_image", title: "캐치걸 | 바 전용 전담 바텐더 지명 예약 앱", description: "우리 매장 로고로 깔리는 예약 앱. 초기 투자 0원, 월 10만원, 첫 달 무료." },
+};
+
+/** 검색엔진용 구조화 데이터 — 조직과 소프트웨어 */
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    { "@type": "Organization", name: "캐치걸", alternateName: "catchgirl", url: "https://www.catchgirl.kr", logo: "https://www.catchgirl.kr/assets/icon-customer-512.png", contactPoint: { "@type": "ContactPoint", contactType: "sales", telephone: "+82-10-8256-2255", availableLanguage: "ko" } },
+    { "@type": "SoftwareApplication", name: "캐치걸", applicationCategory: "BusinessApplication", operatingSystem: "Web, iOS, Android (PWA)", url: "https://www.catchgirl.kr", description: "바 전용 전담 바텐더 지명 예약·운영 앱. 손님·직원·관리자 앱 세 개, 초기 투자 0원, 월 100,000원.", offers: [{ "@type": "Offer", name: "Pro", price: "100000", priceCurrency: "KRW", billingIncrement: "P1M" }, { "@type": "Offer", name: "Max", price: "200000", priceCurrency: "KRW", billingIncrement: "P1M" }] },
+    { "@type": "WebSite", name: "캐치걸", url: "https://www.catchgirl.kr" },
+  ],
 };
 
 const DEMO = { url: "https://secret-garden.catchgirl.kr", nickname: "서준", pin: "1234", code: "A3K9" };
@@ -162,6 +174,7 @@ export default async function Home() {
   return (
     <div className="min-h-dvh bg-frame text-ink [word-break:keep-all]">
       <style>{`html{scroll-behavior:smooth}`}</style>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }} />
       {/* 상단 */}
       <header className="sticky top-0 z-20 border-b border-line/60 bg-frame/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-5 py-3">

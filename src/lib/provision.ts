@@ -15,7 +15,7 @@ import type { Commitment, Plan } from "./plans";
  */
 
 /** 매장 주소로 쓸 수 없는 이름 — 앱의 다른 경로와 부딪힌다 */
-export const RESERVED_SLUGS = ["platform", "api", "assets", "_next", "www", "app", "signup", "demo", "agent", "terms", "login", "admin", "staff"];
+export const RESERVED_SLUGS = ["platform", "api", "assets", "_next", "www", "app", "signup", "demo", "agent", "terms", "login", "admin", "staff", "opengraph-image", "twitter-image", "icon", "apple-icon"];
 
 export const SLUG_RE = /^[a-z0-9-]+$/;
 

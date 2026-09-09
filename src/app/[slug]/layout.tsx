@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getStoreBySlug } from "@/lib/store";
 import { THEMES, themeOf, themeStyle } from "@/lib/themes";
 import { isPlatform } from "@/lib/platform";
@@ -5,6 +6,17 @@ import { Suspended } from "@/components/suspended";
 import { StoreLabelProvider } from "@/components/store-label";
 
 export const dynamic = "force-dynamic";
+
+/** 매장 화면의 제목은 매장 이름이고, 초대받은 손님만 들어오는 곳이라 검색에는 안 나오게 한다 */
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const store = await getStoreBySlug(slug);
+  return {
+    title: { absolute: store.tagline ? `${store.name} — ${store.tagline}` : store.name },
+    description: store.tagline || `${store.name} 예약`,
+    robots: { index: false, follow: false },
+  };
+}
 
 /** 매장 테마(화이트라벨) CSS 변수 주입 + 이용 정지 게이트 */
 export default async function StoreLayout({ children, params }: { children: React.ReactNode; params: Promise<{ slug: string }> }) {
