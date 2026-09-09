@@ -461,7 +461,7 @@ export default async function Home() {
           </div>
 
           {/* 카드 · 포스터 */}
-          <div className="mt-12 grid gap-10 md:grid-cols-[1.1fr_1fr]">
+          <div className="mt-12 grid gap-10 md:grid-cols-2">
             <div>
               <h3 className="font-serif text-[22px] font-bold">직원이 건네는 명함</h3>
               <p className="mt-2 text-[13px] leading-[1.8] text-mute">코드 칸에 네임펜으로 네 글자 적어서 방문한 손님에게. 관리자 화면에서 A4 한 장에 열 장씩 뽑아요.</p>
@@ -474,7 +474,7 @@ export default async function Home() {
               <h3 className="font-serif text-[22px] font-bold">테이블·카운터에 붙이는 포스터</h3>
               <p className="mt-2 text-[13px] leading-[1.8] text-mute">한 줄이에요. 찍으면 끝. 쿠폰 금액이 크게 박혀요. 같은 화면에서 A4로 뽑아요.</p>
               <div className="mt-5 flex flex-col items-center gap-2">
-                <InstallPoster storeName="우리 매장" amount={30000} qr={cardQr} width="min(100%, 300px)" />
+                <InstallPoster storeName="우리 매장" amount={30000} qr={cardQr} width="min(100%, 340px)" />
                 <div className="text-[11px] text-mute">실제 인쇄되는 포스터예요 · A4</div>
               </div>
             </div>
