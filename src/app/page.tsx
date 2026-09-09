@@ -5,6 +5,7 @@ import { PricingTable } from "@/components/pricing-table";
 import { RevisitCalculator } from "@/components/revisit-calculator";
 import { ThemeGallery } from "@/components/theme-gallery";
 import { InviteCard } from "@/components/invite-card";
+import { InstallPoster } from "@/components/install-poster";
 import QRCode from "qrcode";
 import { OPERATOR_CONTACT, TERMS_VERSION } from "@/lib/terms";
 import { won } from "@/lib/utils";
@@ -166,7 +167,7 @@ export default async function Home() {
             <a href="#why" className="hover:text-ink">왜 앱인가</a>
             <a href="#own-app" className="hover:text-ink">전용 앱</a>
             <a href="#revisit" className="hover:text-ink">재방문</a>
-            <a href="#onboard" className="hover:text-ink">손님 설치</a>
+            <a href="#onboard" className="hover:text-ink">찍으면 끝</a>
             <a href="#features" className="hover:text-ink">기능</a>
             <a href="#privacy" className="hover:text-ink">손님 정보</a>
             <a href="#legal" className="hover:text-ink">합법 운영</a>
@@ -428,39 +429,66 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 기존 손님 폰에 깔기 */}
+      {/* 손님은 찍으면 끝 */}
       <section id="onboard" className="border-b border-line/60 bg-card/60">
         <div className="mx-auto max-w-6xl px-5 py-16">
-          <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Onboarding</div>
-          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">기존 손님 폰에는 이렇게 깔려요</h2>
-          <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">
-            앱은 손님 폰에 들어가야 의미가 있어요. 그래서 <b className="text-ink">명함 한 장</b>으로 끝나게 만들었어요. 앱스토어에서 받는 앱이 아니라 <b className="text-ink">QR 찍으면 바로 열리는 웹앱</b>이라 설치 부담이 없어요. 홈 화면에 추가하면 아이콘이 생기고, 안 해도 지갑 속 카드로 QR만 찍으면 돼요. 손님 번호는 묻지 않고, 자리에서 30초.
+          <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Customer onboarding</div>
+          <h2 className="mt-2 font-serif text-[30px] font-bold leading-[1.2] md:text-[40px]">
+            손님은 <span className="text-brand">QR 찍으면 끝</span>이에요
+          </h2>
+          <p className="mt-4 max-w-2xl text-[14px] leading-[1.9] text-mute">
+            앱스토어에서 받는 앱이 아니에요. 찍으면 그냥 열려요. 설치도, 전화번호도, 회원가입도 없어요.
+            <b className="text-ink"> 손님이 귀찮으면 끝이라서, 귀찮을 게 없게 만들었어요.</b>
           </p>
 
-          <div className="mt-8 grid items-center gap-8 md:grid-cols-[1fr_1fr]">
-            <div className="flex flex-col items-center gap-3">
-              <InviteCard storeName="우리 매장" amount={30000} qr={cardQr} url={DEMO.url} code="A3K9" width="min(100%, 420px)" />
-              <div className="text-[11px] text-mute">실제 인쇄되는 카드예요 · 명함 크기 · 관리자 화면에서 바로 인쇄</div>
+          {/* 세 단계 — 크게 */}
+          <div className="mt-8 grid gap-3 md:grid-cols-3">
+            {[
+              ["1", "찍고", "명함이나 포스터의 QR을 폰 카메라로. 앱스토어 안 가요."],
+              ["2", "코드 넣고", "직원이 준 네 글자. 닉네임이랑 PIN만 정해요. 실명·번호 없음."],
+              ["3", "끝", "30초. 쿠폰이 바로 들어와요. 홈 화면 추가는 하고 싶으면."],
+            ].map(([n, t, d]) => (
+              <div key={n} className="rounded-[26px] bg-card p-6 shadow-card">
+                <div className="font-serif text-[48px] font-bold leading-none text-brand">{n}</div>
+                <div className="mt-2 font-serif text-[24px] font-bold">{t}</div>
+                <p className="mt-2 text-[13px] leading-[1.8] text-mute">{d}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-[22px] bg-ink px-6 py-5 text-[14px] leading-[1.8] text-on-ink">
+            <b className="text-gold-lt">지갑에 명함 하나.</b> 깔았든 안 깔았든 상관없어요. 다음에 생각나면 지갑에서 꺼내 QR만 찍으면 바로 우리 매장이에요. 홈 화면에 추가해 두면 아이콘 한 번이고요.
+          </div>
+
+          {/* 카드 · 포스터 */}
+          <div className="mt-12 grid gap-10 md:grid-cols-[1.1fr_1fr]">
+            <div>
+              <h3 className="font-serif text-[22px] font-bold">직원이 건네는 명함</h3>
+              <p className="mt-2 text-[13px] leading-[1.8] text-mute">코드 칸에 네임펜으로 네 글자 적어서 방문한 손님에게. 관리자 화면에서 A4 한 장에 열 장씩 뽑아요.</p>
+              <div className="mt-5 flex flex-col items-center gap-2">
+                <InviteCard storeName="우리 매장" amount={30000} qr={cardQr} url={DEMO.url} code="A3K9" width="min(100%, 440px)" />
+                <div className="text-[11px] text-mute">실제 인쇄되는 카드예요 · 명함 크기</div>
+              </div>
             </div>
-            <ol className="flex flex-col gap-3">
-              {[
-                ["관리자가 손님 목록을 붙여 넣어요", "닉네임 한 줄에 한 명. 연결코드가 손님마다 하나씩 나와요. 앱을 안 깔아도 그 손님 기록은 이미 관리자 화면에 있어요."],
-                ["직원이 카드에 코드를 적어 건네요", "코드는 텔레그램으로 직원에게 알려 주고, 직원이 명함 빈칸에 네임펜으로 적어요. 방문한 손님, 아는 손님에게만 줘요."],
-                ["손님은 QR 찍고 코드만 넣으면 끝", "앱스토어 없이 바로 열려요. 실명도 번호도 안 넣고 닉네임과 PIN만. 홈 화면에 추가하면 아이콘이 생기고, 안 해도 카드를 지갑에 넣고 QR만 찍으면 돼요."],
-                ["환영 쿠폰이 바로 들어가요", "앱을 시작한 순간 쿠폰이 자동으로 들어가서 다음 예약에 써요. 깔 이유가 손님 쪽에도 생겨요."],
-                ["카드를 잃어버리면 코드만 다시", "코드는 손님마다 늘 있어요. 고객 관리에서 보고 말로 알려 주면 돼요. 카드를 다시 만들 필요도 없어요."],
-              ].map(([t, d], i) => (
-                <li key={t} className="flex gap-3 rounded-[20px] border border-line bg-card p-4">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand font-mono text-[12px] font-bold text-white">{i + 1}</span>
-                  <div>
-                    <div className="text-[13px] font-bold">{t}</div>
-                    <p className="mt-1 text-[12px] leading-[1.8] text-mute">{d}</p>
-                  </div>
-                </li>
-              ))}
+            <div>
+              <h3 className="font-serif text-[22px] font-bold">테이블·카운터에 붙이는 포스터</h3>
+              <p className="mt-2 text-[13px] leading-[1.8] text-mute">한 줄이에요. 찍으면 끝. 쿠폰 금액이 크게 박혀요. 같은 화면에서 A4로 뽑아요.</p>
+              <div className="mt-5 flex flex-col items-center gap-2">
+                <InstallPoster storeName="우리 매장" amount={30000} qr={cardQr} width="min(100%, 300px)" />
+                <div className="text-[11px] text-mute">실제 인쇄되는 포스터예요 · A4</div>
+              </div>
+            </div>
+          </div>
+
+          {/* 매장 쪽은 이것만 */}
+          <div className="mt-12 rounded-[26px] border border-line bg-card p-6">
+            <div className="text-[14px] font-bold">매장이 할 일은 세 가지뿐이에요</div>
+            <ol className="mt-3 grid gap-3 text-[13px] leading-[1.8] text-mute md:grid-cols-3">
+              <li><b className="text-ink">① 손님 닉네임 붙여 넣기</b> — 연결코드가 손님마다 나와요. 안 깔아도 그 손님 기록은 이미 관리자 화면에 있어요.</li>
+              <li><b className="text-ink">② 명함에 코드 적어 건네기</b> — 코드는 텔레그램으로 직원에게. 아는 손님, 방문한 손님에게만.</li>
+              <li><b className="text-ink">③ 끝</b> — 카드를 잃어버리면 코드만 다시 말해 주면 돼요. 환영 쿠폰 금액은 할인 관리에서 정해요.</li>
             </ol>
           </div>
-          <div className="mt-6 text-[11px] text-mute">카드는 관리자 화면 › 고객 관리 › 연결 카드 인쇄에서 A4 한 장에 열 장씩 나와요. 빈칸 카드도 되고, 아직 앱을 안 깐 손님 코드를 미리 찍어 나올 수도 있어요. 환영 쿠폰 금액은 할인 관리에서 정해요.</div>
         </div>
       </section>
 
