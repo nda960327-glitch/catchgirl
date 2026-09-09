@@ -99,10 +99,7 @@ export function StoreCardEditor({
                 {agents.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.code})</option>)}
               </Select>
             </Field>
-            <label className="flex items-center gap-2 self-end pb-3 text-[12px] font-semibold text-ink">
-              <input type="checkbox" checked={f.agentDidOnsite} onChange={(e) => setF({ ...f, agentDidOnsite: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" disabled={!f.agentId} />
-              방문 세팅을 담당직원이 직접 했음 (+커미션)
-            </label>
+
             <Field label="업체 담당자 연락처" hint="사장·실장 전화나 텔레그램">
               <Input value={f.ownerContact} maxLength={120} onChange={(e) => setF({ ...f, ownerContact: e.target.value })} placeholder="010-0000-0000 · @telegram" className="h-11" />
             </Field>

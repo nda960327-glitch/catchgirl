@@ -40,7 +40,7 @@ export default async function AgentsPage() {
             <div className="text-[9px] font-semibold uppercase tracking-[.2em] text-gold">Agents</div>
             <h1 className="mt-1 font-serif text-[24px] font-bold text-ink">담당직원</h1>
             <div className="mt-1 text-[12px] text-mute">
-              2년 약정 Pro {won(COMMISSION.PRO)} · Max {won(COMMISSION.MAX)} · 방문 세팅까지 하면 +{won(COMMISSION.ONSITE)}. 첫 출금이 성공한 달에 확정돼요. 지급은 매장 페이지에서 눌러요.
+              2년 약정 Pro {won(COMMISSION.PRO)} · Max {won(COMMISSION.MAX)} (매장 세팅까지 직원이 해 주는 조건, 세팅 몫 포함). 첫 출금이 성공한 달에 확정돼요. 지급은 매장 페이지에서 눌러요.
             </div>
           </div>
           <div className="rounded-2xl bg-card px-4 py-3 text-[11px] leading-[1.9] shadow-card">

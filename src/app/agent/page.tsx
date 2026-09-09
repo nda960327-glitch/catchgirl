@@ -107,12 +107,11 @@ export default async function AgentPortal({ searchParams }: { searchParams: Prom
 
         <Card className="mt-4 p-5">
           <div className="text-[14px] font-bold text-ink">커미션 규칙</div>
-          <div className="mt-2 grid gap-2 text-[12px] text-mute md:grid-cols-3">
-            <div className="rounded-xl bg-well p-3"><b className="text-ink">Pro</b> 2년 약정 · <b className="text-brand">{won(COMMISSION.PRO)}</b></div>
-            <div className="rounded-xl bg-well p-3"><b className="text-ink">Max</b> 2년 약정 · <b className="text-brand">{won(COMMISSION.MAX)}</b></div>
-            <div className="rounded-xl bg-well p-3"><b className="text-ink">방문 세팅</b>까지 직접 · <b className="text-brand">+{won(COMMISSION.ONSITE)}</b></div>
+          <div className="mt-2 grid gap-2 text-[12px] text-mute md:grid-cols-2">
+            <div className="rounded-xl bg-well p-3"><b className="text-ink">Pro</b> 2년 약정 · <b className="text-brand">{won(COMMISSION.PRO)}</b> <span className="text-[10px]">세팅 포함</span></div>
+            <div className="rounded-xl bg-well p-3"><b className="text-ink">Max</b> 2년 약정 · <b className="text-brand">{won(COMMISSION.MAX)}</b> <span className="text-[10px]">세팅 포함</span></div>
           </div>
-          <div className="mt-2 text-[11px] leading-[1.7] text-mute">무약정 매장은 커미션이 없어요. 매장이 승인되고 <b className="text-ink">첫 출금이 성공한 달</b>에 확정되고, 운영사가 그달 정산 때 지급해요.</div>
+          <div className="mt-2 text-[11px] leading-[1.7] text-mute">매장 세팅(사진·명단·직원 안내, 반나절)까지 해 주는 조건이에요. 무약정 매장은 커미션이 없어요. 매장이 승인되고 <b className="text-ink">첫 출금이 성공한 달</b>에 확정되고, 운영사가 그달 정산 때 지급해요.</div>
         </Card>
 
         <Card className="mt-4 p-5">
@@ -134,7 +133,7 @@ export default async function AgentPortal({ searchParams }: { searchParams: Prom
                       <td className="px-3 py-2 text-mute">{PLANS[r.plan].name} · {COMMITMENT_LABEL[r.commitment]}</td>
                       <td className="px-3 py-2 text-mute">{format(r.createdAt, "yy.MM.dd")}</td>
                       <td className="px-3 py-2">{r.suspended ? <Chip tone="red">이용 중지</Chip> : r.opened ? <Chip tone="green">운영 중</Chip> : <Chip tone="gold">승인 대기</Chip>}</td>
-                      <td className="px-3 py-2 text-right font-semibold text-ink">{r.c.amount ? won(r.c.amount) : "—"}{r.c.onsite ? <div className="text-[10px] font-normal text-mute">세팅 +{won(r.c.onsite)} 포함</div> : null}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-ink">{r.c.amount ? won(r.c.amount) : "—"}</td>
                       <td className="px-3 py-2"><Chip tone={TONE[r.c.status]}>{COMMISSION_STATUS_LABEL[r.c.status]}</Chip>{r.c.reason && <div className="mt-0.5 text-[10px] text-mute">{r.c.reason}</div>}</td>
                     </tr>
                   ))}
@@ -171,7 +170,7 @@ export default async function AgentPortal({ searchParams }: { searchParams: Prom
           <div className="mt-3 grid gap-2 text-[12px] md:grid-cols-2">
             <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">시연 페이지</div><div className="mt-0.5 text-mute">사장 폰에서 세 앱을 계정과 함께 바로 열어요.</div><Link href="/demo" target="_blank" className="mt-1 inline-block font-bold text-brand">{base.replace(/^https?:\/\//, "")}/demo ↗</Link></div>
             <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">홈페이지</div><div className="mt-0.5 text-mute">6,000만원 vs 10만원, 재방문, 명함까지 다 설명돼 있어요.</div><Link href="/" target="_blank" className="mt-1 inline-block font-bold text-brand">{base.replace(/^https?:\/\//, "")} ↗</Link></div>
-            <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">가격표</div><div className="mt-0.5 text-mute">무약정 13만/39만 · 2년 약정 10만/30만(23% 할인) · 방문 세팅 약정 무료 · 첫 달 무료 · 구축비 0.</div></div>
+            <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">가격표</div><div className="mt-0.5 text-mute">무약정 13만/39만 · 2년 약정 10만/30만(23% 할인) · 세팅은 약정이면 무료(내가 해 줌) · 첫 달 무료 · 구축비 0.</div></div>
             <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">약관·정지 정책</div><div className="mt-0.5 text-mute">사업자등록증 확인 후 승인, 위반 시 즉시 정지. 사장이 물으면 이걸 보여 주세요.</div><Link href="/platform/terms" target="_blank" className="mt-1 inline-block font-bold text-brand">약관 전문 ↗</Link></div>
           </div>
           <div className="mt-3 rounded-2xl bg-ink p-4 text-[12px] leading-[1.9] text-on-ink">
