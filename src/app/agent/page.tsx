@@ -9,6 +9,8 @@ import { won } from "@/lib/utils";
 import { Card, Chip } from "@/components/ui";
 import { logoutAgent } from "./actions";
 import { CopyLink } from "@/components/copy-link";
+import Link from "next/link";
+import { leaderboard } from "@/lib/leaderboard";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -23,11 +25,13 @@ const TONE: Record<CommissionStatus, "mute" | "gold" | "brand" | "green" | "red"
  */
 export default async function AgentPortal({ searchParams }: { searchParams: Promise<{ welcome?: string }> }) {
   const agent = await getAgent();
-  if (!agent) redirect("/agent/login");
+  if (!agent) redirect("/agent/join");
   const { welcome } = await searchParams;
   const host = (await headers()).get("host") ?? "www.catchgirl.kr";
   const base = host.startsWith("localhost") ? `http://${host}` : `https://${host}`;
   const referral = `${base}/signup?agent=${agent.code}`;
+  const board = await leaderboard();
+  const myRank = board.findIndex((r) => r.id === agent.id) + 1;
 
   const stores = await prisma.store.findMany({
     where: { agentId: agent.id },
@@ -138,6 +142,43 @@ export default async function AgentPortal({ searchParams }: { searchParams: Prom
               </table>
             </div>
           )}
+        </Card>
+
+        {/* 영업 순위 */}
+        <Card className="mt-4 p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div className="text-[14px] font-bold text-ink">영업 순위</div>
+            <div className="text-[11px] text-mute">확정·지급된 커미션 기준 · 활동 중인 직원 {board.length}명{myRank > 0 ? ` · 나는 ${myRank}위` : ""}</div>
+          </div>
+          <div className="mt-3 overflow-hidden rounded-2xl border border-line">
+            {board.length === 0 && <div className="px-4 py-6 text-center text-[12px] text-mute">아직 아무도 없어요</div>}
+            {board.map((r, i) => (
+              <div key={r.id} className={`flex flex-wrap items-center gap-3 border-b border-line/60 px-4 py-2.5 text-[12px] last:border-0 ${r.id === agent.id ? "bg-blush-lt/40" : ""}`}>
+                <span className={`w-6 text-center font-serif text-[16px] font-bold ${i === 0 ? "text-brand" : "text-mute"}`}>{i + 1}</span>
+                <span className="font-bold text-ink">{r.name}{r.id === agent.id ? " (나)" : ""}</span>
+                <span className="font-mono text-[10px] text-mute">{r.code}</span>
+                <span className="text-mute">매장 {r.stores}곳 · 운영 {r.open}곳</span>
+                <span className="ml-auto text-[11px] text-mute">이번 달 {won(r.thisMonth)}</span>
+                <span className="w-[90px] text-right font-bold text-brand">{won(r.earned)}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* 영업 자료 */}
+        <Card className="mt-4 p-5">
+          <div className="text-[14px] font-bold text-ink">영업할 때 쓰는 것</div>
+          <div className="mt-3 grid gap-2 text-[12px] md:grid-cols-2">
+            <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">시연 페이지</div><div className="mt-0.5 text-mute">사장 폰에서 세 앱을 계정과 함께 바로 열어요.</div><Link href="/demo" target="_blank" className="mt-1 inline-block font-bold text-brand">{base.replace(/^https?:\/\//, "")}/demo ↗</Link></div>
+            <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">홈페이지</div><div className="mt-0.5 text-mute">6,000만원 vs 10만원, 재방문, 명함까지 다 설명돼 있어요.</div><Link href="/" target="_blank" className="mt-1 inline-block font-bold text-brand">{base.replace(/^https?:\/\//, "")} ↗</Link></div>
+            <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">가격표</div><div className="mt-0.5 text-mute">무약정 13만/39만 · 2년 약정 10만/30만(23% 할인) · 방문 세팅 약정 무료 · 첫 달 무료 · 구축비 0.</div></div>
+            <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">약관·정지 정책</div><div className="mt-0.5 text-mute">사업자등록증 확인 후 승인, 위반 시 즉시 정지. 사장이 물으면 이걸 보여 주세요.</div><Link href="/platform/terms" target="_blank" className="mt-1 inline-block font-bold text-brand">약관 전문 ↗</Link></div>
+          </div>
+          <div className="mt-3 rounded-2xl bg-ink p-4 text-[12px] leading-[1.9] text-on-ink">
+            <div className="text-[10px] font-semibold uppercase tracking-[.2em] text-gold-lt">30초 멘트</div>
+            &ldquo;사장님, 손님이 QR 찍으면 예약되는 우리 매장 앱이 있어요. 외주로 만들면 6천만원인데 월 10만원이고 첫 달은 무료예요. 손님 번호는 안 받아서 털릴 것도 없고요. 무약정도 있는데 2년 하면 23% 싸고 세팅도 공짜라 다들 약정으로 해요. 5분만 보여드릴게요.&rdquo;
+            <div className="mt-2 text-[11px] opacity-75">사장이 &ldquo;우리 손님이 앱을 깔겠냐&rdquo; 하면: &ldquo;설치가 아니라 QR 찍으면 열리는 거예요. 명함 하나 건네면 끝이고, 찍는 순간 쿠폰이 들어가요.&rdquo;</div>
+          </div>
         </Card>
 
         <Card className="mt-4 p-5">
