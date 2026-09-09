@@ -4,10 +4,10 @@ import { OPERATOR_CONTACT } from "@/lib/terms";
 
 /**
  * 시연 안내 — 시연을 요청한 업체에 링크 하나로 보내는 페이지.
- * 홈 메뉴에는 걸지 않는다. 샘플 매장의 계정이 그대로 적혀 있으니 요청한 사람에게만 준다.
+ * 홈페이지 '설치·샘플' 에서 바로 연결된다. 샘플 매장 계정을 전부 공개한다 — 눌러 봐야 사고 싶어진다.
  */
 export const dynamic = "force-static";
-export const metadata = { title: "캐치걸 시연 안내", robots: { index: false, follow: false } } satisfies Metadata;
+export const metadata = { title: "캐치걸 시연 안내" } satisfies Metadata;
 
 const BASE = "https://secret-garden.catchgirl.kr";
 

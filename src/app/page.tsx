@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { DEBIT_DAY, ONSITE_SETUP_FEE, PLANS, TERM_MONTHS, termDiscountPercent, type Plan } from "@/lib/plans";
 import { PricingTable } from "@/components/pricing-table";
 import { RevisitCalculator } from "@/components/revisit-calculator";
+import { ThemeGallery } from "@/components/theme-gallery";
 import { OPERATOR_CONTACT, TERMS_VERSION } from "@/lib/terms";
 import { won } from "@/lib/utils";
 
@@ -48,7 +49,29 @@ const RETENTION_HOOKS = [
   ["재방문율이 매달 숫자로", "관리자 화면에 재방문율·재방문 손님 수·오래 안 온 손님이 그대로 떠요. 감이 아니라 숫자로 보고, 안 오는 단골에게 먼저 연락해요."],
 ];
 
+/* 외주로 만들면 얼마인지 — 위시켓 2025~2026.3 의뢰 73,213건 기준 */
+const BUILD_COST = [
+  ["손님 예약 앱", "2,000만~4,000만원", "온디맨드·예약 앱 평균 구간"],
+  ["직원 앱", "1,500만~3,000만원", "내 예약·정산·프로필 관리"],
+  ["관리자 웹 + 서버·DB", "2,000만~4,000만원", "타임라인·배치·수금·분석"],
+  ["세 개를 하나로 잇는 플랫폼", "3,000만~7,000만원 이상", "손님·직원·관리자가 같은 데이터를 봐야 해요"],
+  ["디자인·아이콘·테마", "300만~1,000만원", "스킨 5종, 로고에 맞춘 아이콘"],
+  ["유지보수·서버비", "매달 30만~100만원", "버그 수정, 서버, 업데이트"],
+  ["기간", "3~6개월", "기획·개발·테스트·심사"],
+];
+
+const CUSTOMIZABLE = [
+  ["매장 이름 · 로고 · 앱 아이콘", "로고 한 장 올리면 손님·직원·관리자 앱 아이콘이 그 로고로 깔려요"],
+  ["테마 5종 + 메인 컬러", "밝은 로즈·크림, 어두운 누아르·와인·미드나이트. 색 하나 고르면 화면 전체가 따라가요"],
+  ["프로필 항목", "키·몸무게·흡연·문신 외에 성형 여부, 외국어 같은 항목을 매장이 직접 만들어요. 손님 검색 조건으로도 붙어요"],
+  ["옵션 이름과 가격", "옵션1·옵션2 이름과 금액을 매장이 정해요"],
+  ["등급 혜택 · 쿠폰 · 요일 프로모션", "단골·VIP 금액, 비 오는 날 할인, 착한 손님 쿠폰"],
+  ["룸 이름 · 영업시간 · 교대", "1번 룸을 '달빛룸' 으로, 주간·야간 시간을 매장대로"],
+  ["공지 · 방문경로 · 문의 연락처", "손님 화면 공지, 손님이 어디서 왔는지 항목, 문의 버튼의 전화·텔레그램"],
+];
+
 const SOURCES = [
+  ["위시켓 — 앱 개발 비용, 2026년 최신 데이터 (의뢰 73,213건)", "https://blog.wishket.com/blog/app-development-cost-data-guide"],
   ["Harvard Business Review — The Value of Keeping the Right Customers (Bain)", "https://hbr.org/2014/10/the-value-of-keeping-the-right-customers"],
   ["Bain & Company — Prescription for cutting costs (Reichheld)", "https://media.bain.com/Images/BB_Prescription_cutting_costs.pdf"],
   ["SchedulingKit — Online Booking Statistics 2026", "https://schedulingkit.com/statistics/online-booking-statistics"],
@@ -97,6 +120,7 @@ const CHECKLIST = [
 
 const FAQ = [
   { q: "전화나 텔레그램으로 예약하는 손님은요?", a: "관리자 화면에서 3초면 대신 넣어요. 닉네임 몇 글자만 치면 기존 손님이 바로 뜨고, 전화·텔레그램·앱 어느 경로로 왔는지도 남아요. 앱을 안 쓰는 손님도 방문 기록은 똑같이 쌓여요." },
+  { q: "우리 매장만의 앱인가요? 다른 매장이랑 똑같은 화면 아니에요?", a: "매장 이름, 로고, 앱 아이콘, 테마와 메인 컬러, 룸 이름, 옵션, 프로필 항목, 혜택, 공지까지 매장 것으로 바뀌어요. 손님 폰에는 우리 매장 로고 아이콘으로 깔리고, 손님은 우리 매장 앱을 깐 거예요. 같은 뼈대 위에서 돌지만 다른 매장 화면과 같아 보이지 않아요. 외주로 만들면 수천만 원인 세 앱 세트를 월 10만원에 쓰는 이유가 그 뼈대예요." },
   { q: "정말 재방문이 늘어요?", a: "장치는 여섯 개예요. 홈 화면 아이콘, 즐겨찾기한 사람의 오늘 출근 표시, 5회·10회 자동 등급 혜택, 쿠폰·요일 프로모션, 후기·추천, 그리고 재방문율을 매달 숫자로 보는 관리자 화면. 업계 연구로는 재방문율 5%p가 이익 25~95%로 이어지고, 우리 앱에서는 관리자 화면에서 매달 직접 확인할 수 있어요. 안 늘면 어디서 막히는지가 보여요." },
   { q: "캐치테이블 같은 예약 앱이랑 뭐가 달라요?", a: "공개 앱이 아니에요. 매장이 준 연결코드가 있는 기존 손님만 들어오고, 주소가 퍼져도 남이 못 써요. 테이블이 아니라 '누가 자리를 맡을지' 를 고르는 예약이고, 출근·룸 배치·수금까지 매장 운영이 한 화면에 있어요." },
   { q: "손님 정보는 어디까지 받나요?", a: "닉네임과 PIN뿐이에요. 실명·전화번호를 넣는 칸 자체가 없어요. 매장이 관리자 메모에 적어 두는 연락처는 관리자만 보고, 손님 화면엔 절대 안 나가요." },
@@ -145,6 +169,7 @@ export default function Home() {
           </Link>
           <nav className="ml-auto hidden items-center gap-5 text-[12px] font-semibold text-mute md:flex">
             <a href="#why" className="hover:text-ink">왜 앱인가</a>
+            <a href="#own-app" className="hover:text-ink">전용 앱</a>
             <a href="#revisit" className="hover:text-ink">재방문</a>
             <a href="#features" className="hover:text-ink">기능</a>
             <a href="#privacy" className="hover:text-ink">손님 정보</a>
@@ -177,6 +202,7 @@ export default function Home() {
             <span className="rounded-full bg-ok-bg px-3 py-1.5 text-ok">사업자등록증 확인 후 승인</span>
             <span className="rounded-full bg-ok-bg px-3 py-1.5 text-ok">손님 실명·번호 수집 없음</span>
             <span className="rounded-full bg-blush-lt px-3 py-1.5 text-brand">초대받은 손님만</span>
+            <span className="rounded-full bg-blush-lt px-3 py-1.5 text-brand">우리 매장 로고로 깔리는 앱</span>
           </div>
         </div>
         <div className="flex justify-center gap-4 md:justify-end">
@@ -215,6 +241,76 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* 전용 앱 — 가성비 */}
+      <section id="own-app" className="border-b border-line/60">
+        <div className="mx-auto max-w-6xl px-5 py-16">
+          <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Your own app</div>
+          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">우리 매장 이름으로 된 앱 세 개가 생겨요</h2>
+          <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">
+            남의 앱을 빌려 쓰는 게 아니에요. 로고·색·테마·아이콘·이름까지 매장 것으로 된 손님 앱·직원 앱·관리자 앱이 만들어지고, <b className="text-ink">손님 폰 홈 화면에는 우리 매장 로고가 깔려요.</b>
+            로고 한 장 올리고 테마 하나 고르면 끝이에요. 다른 매장과 같은 화면은 어디에도 없어요.
+          </p>
+
+          <div className="mt-8"><ThemeGallery /></div>
+          <div className="mt-3 text-[11px] text-mute">실제 앱이 쓰는 색 그대로예요. 메인 컬러는 여기서 더 바꿀 수 있어요. 어두운 테마는 캐릭터 대신 매장 로고가 화면에 들어가요.</div>
+
+          <div className="mt-12 grid gap-8 md:grid-cols-[1.1fr_1fr]">
+            <div>
+              <h3 className="font-serif text-[22px] font-bold">이걸 외주로 만들면 얼마일까요</h3>
+              <p className="mt-2 text-[13px] leading-[1.9] text-mute">
+                국내 앱 개발 의뢰 7만 건 평균이 <b className="text-ink">3,270만원</b>이에요. 예약 앱 하나가 보통 2,000만~4,000만원, 손님·직원·관리자 세 개가 같은 데이터를 보는 플랫폼이면 <b className="text-ink">6,000만원을 넘기는 게 보통</b>이에요. 만들고 나면 서버비와 유지보수가 매달 따로 나가요.
+              </p>
+              <div className="mt-4 overflow-x-auto rounded-[22px] border border-line bg-card">
+                <table className="w-full min-w-[420px] text-left text-[12px]">
+                  <thead>
+                    <tr className="border-b border-line bg-well text-[11px] font-bold text-mute">
+                      <th className="px-4 py-2.5">항목</th><th className="px-4 py-2.5">외주 견적</th><th className="px-4 py-2.5">비고</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {BUILD_COST.map(([k, v, n]) => (
+                      <tr key={k} className="border-b border-line/60 align-top last:border-0">
+                        <td className="px-4 py-2.5 font-bold text-ink">{k}</td>
+                        <td className="px-4 py-2.5 text-ink">{v}</td>
+                        <td className="px-4 py-2.5 text-[11px] text-mute">{n}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-2 text-[10px] text-mute">출처: 위시켓 2026 앱 개발 비용 데이터 (2025~2026.3 의뢰 73,213건). 매장마다 요구가 달라 실제 견적은 달라요.</div>
+            </div>
+            <div className="flex flex-col justify-center rounded-[26px] bg-ink p-6 text-on-ink md:p-8">
+              <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold-lt">캐치걸이면</div>
+              <div className="mt-2 font-serif text-[40px] font-bold leading-none text-gold-lt">월 100,000원</div>
+              <div className="mt-2 text-[13px] opacity-85">2년 약정 Pro 기준 · 첫 달 무료 · 방문 세팅 무료</div>
+              <div className="mt-5 grid grid-cols-2 gap-3 text-[12px]">
+                <div className="rounded-xl bg-on-ink/10 p-3"><div className="opacity-70">6,000만원 앱을 24개월로 나누면</div><div className="mt-0.5 text-[15px] font-bold">월 250만원</div></div>
+                <div className="rounded-xl bg-on-ink/10 p-3"><div className="opacity-70">캐치걸 2년 총액</div><div className="mt-0.5 text-[15px] font-bold">240만원</div></div>
+              </div>
+              <ul className="mt-5 flex flex-col gap-1.5 text-[12px] opacity-90">
+                <li>· 세 앱 + 서버 + DB + 매일 백업이 다 들어 있어요</li>
+                <li>· 승인 당일 열려요. 3~6개월 기다릴 일이 없어요</li>
+                <li>· 업데이트는 자동이고, 요청한 기능은 계속 붙어요</li>
+                <li>· 로고·테마·아이콘·항목을 관리자 화면에서 바로 바꿔요</li>
+              </ul>
+              <div className="mt-5 text-[12px] font-bold text-gold-lt">앱 세 개 세트를 2년 써도 외주 한 달 치 값이에요.</div>
+            </div>
+          </div>
+
+          <h3 className="mt-12 font-serif text-[22px] font-bold">코드 없이 매장이 직접 바꾸는 것</h3>
+          <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+            {CUSTOMIZABLE.map(([t, d]) => (
+              <div key={t} className="rounded-[22px] border border-line bg-card p-4">
+                <div className="text-[13px] font-bold">{t}</div>
+                <p className="mt-1.5 text-[11px] leading-[1.8] text-mute">{d}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 text-[11px] text-mute">전부 관리자 화면에서 바꾸고 즉시 반영돼요. 앱스토어 심사가 없어서 기다림도 없어요. 더 필요한 건 말씀하세요. 다른 매장에도 도움이 되는 건 요금제와 관계없이 만들어 드려요.</div>
         </div>
       </section>
 
@@ -553,15 +649,10 @@ export default function Home() {
             </p>
             <div className="mt-6 rounded-[22px] border border-line bg-card p-5">
               <div className="text-[13px] font-bold">샘플 매장으로 직접 눌러 보세요</div>
-              <p className="mt-1 text-[12px] leading-[1.8] text-mute">10년치 예약·손님·매출이 들어 있는 예시 매장이에요. 손님 앱은 아래 계정으로 바로 들어가요.</p>
-              <div className="mt-3 rounded-xl bg-well px-3 py-2.5 font-mono text-[12px] leading-[1.9]">
-                주소   {DEMO.url}<br />
-                닉네임 {DEMO.nickname} · PIN {DEMO.pin}<br />
-                연결코드 {DEMO.code} (새 계정으로 시작해 보고 싶을 때)
-              </div>
+              <p className="mt-1 text-[12px] leading-[1.8] text-mute">10년치 예약·손님·매출이 들어 있는 예시 매장이에요. 손님 앱·관리자·직원 앱 세 개를 계정과 함께 전부 열어 뒀어요. 마음껏 눌러 보세요.</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <a href={`${DEMO.url}/login`} target="_blank" rel="noreferrer" className="cta-grad rounded-xl px-4 py-2.5 text-[12px] font-bold text-white shadow-cta">샘플 손님 앱 열기 ↗</a>
-                <a href={`https://t.me/${OPERATOR_CONTACT.telegram}`} target="_blank" rel="noreferrer" className="rounded-xl border border-line bg-card px-4 py-2.5 text-[12px] font-bold hover:border-brand">관리자 화면 시연 요청</a>
+                <Link href="/demo" className="cta-grad rounded-xl px-4 py-2.5 text-[12px] font-bold text-white shadow-cta">샘플 세 앱 열어 보기 ›</Link>
+                <a href={`${DEMO.url}/login`} target="_blank" rel="noreferrer" className="rounded-xl border border-line bg-card px-4 py-2.5 text-[12px] font-bold hover:border-brand">손님 앱 바로 열기 ↗</a>
               </div>
             </div>
           </div>
