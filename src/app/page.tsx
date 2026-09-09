@@ -116,6 +116,8 @@ const NAV: [string, string][] = [
 ];
 
 const FAQ = [
+  { q: "불법 앱 아니에요?", a: "아니에요. 바(bar) 전용이고, 영업 허가증과 업장 사진, 주소, 사업자등록증을 다 확인한 매장만 열어요. 착석바는 유흥주점(1종) 허가가 있어야 하고, 단란주점·일반음식점은 바 안쪽에서 응대하는 바만 돼요. 허가와 영업 형태가 안 맞으면 신청 단계에서 막혀요. 앱 안에서 성적인 말과 욕설은 프로그램이 저장 자체를 막고, 위반이 확인되면 즉시 정지예요." },
+  { q: "어떤 바가 쓸 수 있어요?", a: "착석바(1종 유흥주점 허가), 토킹바, 클래식바, 모던바, 칵테일바(2종 또는 일반음식점 이상)요. 원래 착석바 전용으로 만든 앱이라 바텐더 지명 예약·룸 배치·수금이 다 그 흐름에 맞춰져 있고, 다른 바에서도 같은 화면으로 써요." },
   { q: "기존 손님한테 앱을 어떻게 깔게 해요?", a: "명함 한 장이에요. 관리자가 손님 닉네임을 붙여 넣으면 연결코드가 나오고, 직원이 카드 빈칸에 코드를 적어 방문 손님에게 건네요. 손님은 QR 찍고 코드만 넣으면 끝이고, 그 순간 환영 쿠폰이 들어가요. 앱스토어에서 받는 앱이 아니라 QR로 바로 열리는 웹앱이라 설치 부담이 없고, 홈 화면 추가는 선택이에요. 지갑에 카드를 넣고 다니다 QR만 찍어도 돼요. 실명·번호는 안 넣고, 안 깔아도 그 손님 기록은 관리자 화면에 이미 있어요. 카드를 잃어버리면 코드만 다시 알려 주면 돼요." },
   { q: "전화나 텔레그램으로 예약하는 손님은요?", a: "관리자 화면에서 3초면 대신 넣어요. 닉네임 몇 글자만 치면 기존 손님이 바로 뜨고, 전화·텔레그램·앱 어느 경로로 왔는지도 남아요. 앱을 안 쓰는 손님도 방문 기록은 똑같이 쌓여요." },
   { q: "우리 매장만의 앱인가요? 개발사에 맡긴 거랑 뭐가 달라요?", a: "받는 건 같아요. 매장 이름·로고·앱 아이콘·전용 주소·우리 매장만의 데이터로 된 손님·직원·관리자 앱 세 개. 손님 폰에는 우리 매장 로고로 깔려요. 다른 건 만드는 방식이에요. 엔진은 이미 만들어져 있고 매장 것(이름·로고·테마·손님·직원)만 새로 만들어서, 6,000만원과 3~6개월 대신 0원과 당일이 돼요. 그래서 큰 회사만 갖던 앱을 동네 매장도 초기 투자 없이 가져요." },
@@ -127,7 +129,7 @@ const FAQ = [
   { q: "할인을 주면 직원 몫이 줄어요?", a: "아니요. 쿠폰·등급 혜택·요일 프로모션은 전부 매장 몫에서 빠지고, 직원이 받는 돈은 그대로예요. 수금 시트에 할인이 반영된 금액이 바로 나와요." },
   { q: "세팅은 누가 해요?", a: "매장이 직접 해요. 룸·조 시간·옵션은 신청서에서 이미 들어가고, 승인되면 대시보드에 '문 열기 전에 채워 두세요' 목록이 떠요. 로고 올리기, 캐치걸 등록, 출근 요일, 손님 옮기기(닉네임 붙여 넣기)까지 30분이면 끝나요. 그래서 구축비가 없어요. 직접 와서 해 드리는 방문 세팅은 선택이고 1회 30만원이에요." },
   { q: "결제는 어떻게 해요?", a: "CMS 자동이체예요. 승인되면 운영사가 출금 동의 링크를 보내고, 사장님이 링크에서 계좌를 등록하면 끝이에요. 매월 5일에 매장 계좌에서 자동으로 빠지고, 첫 출금은 만원이에요. 카드번호를 부르거나 매달 송금할 일이 없어요." },
-  { q: "약정이 부담돼요.", a: "무약정도 있어요. Pro 13만원, Max 39만원을 매달 내고 언제든 위약금 없이 해지해요. 2년 약정은 23% 싸고 방문 세팅 30만원이 무료인 대신, 중간에 해지하면 그동안 받은 할인(Pro 월 3만원, Max 월 9만원 × 낸 달 수)과 무료로 받은 방문 세팅비만 돌려주시면 돼요. 남은 기간을 다 물리는 게 아니에요." },
+  { q: "약정이 부담돼요.", a: "무약정도 있어요. Pro 13만원, Max 26만원을 매달 내고 언제든 위약금 없이 해지해요. 2년 약정은 23% 싸고 방문 세팅 30만원이 무료인 대신, 중간에 해지하면 그동안 받은 할인(Pro 월 3만원, Max 월 6만원 × 낸 달 수)과 무료로 받은 방문 세팅비만 돌려주시면 돼요. 남은 기간을 다 물리는 게 아니에요." },
   { q: "해지하면요?", a: "무약정은 위약금 없이 언제든, 약정은 받은 할인만 돌려주고 해지해요. 손님 화면이 먼저 닫히고 관리자 화면은 90일 더 열려 있어서 기록을 내려받을 수 있어요. 그 뒤엔 데이터를 지워요." },
 ];
 
@@ -184,12 +186,12 @@ export default async function Home() {
       {/* 히어로 */}
       <section className="mx-auto grid max-w-6xl items-center gap-10 px-5 pb-16 pt-14 md:grid-cols-[1.1fr_1fr] md:pt-20">
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Catchgirl · 매장 전용 전담 매니저 예약 앱</div>
+          <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Catchgirl · 바(bar) 전용 · 전담 바텐더 지명 예약 앱</div>
           <h1 className="mt-3 font-serif text-[32px] font-bold leading-[1.22] md:text-[46px]">
             전화로 받던 예약,<br />이제 손님이 앱에서<br className="md:hidden" /> 직접 잡아요
           </h1>
           <p className="mt-5 max-w-xl text-[14px] leading-[1.9] text-mute">
-            기존 손님만 초대해 쓰는 우리 매장 전용 앱이에요. 손님이 자리를 맡을 전담 매니저(바텐더)를 고르고 시간을 잡으면, 매장에는 알림이 오고 방문 기록이 쌓여요.
+            바 전용, 기존 손님만 초대해 쓰는 우리 매장 앱이에요. 오마카세에서 셰프를 고르듯, 손님이 오늘 자기 자리를 맡을 <b className="text-ink">전담 바텐더를 미리 지명</b>하고 시간을 잡으면 매장에 알림이 오고 방문 기록이 쌓여요.
             머리 아픈 정산도, 밤늦은 전화도 앱이 대신해요. <b className="text-ink">예약이 편해지면 재방문이 늘고, 재방문이 곧 매출이에요.</b> 손님의 실명과 전화번호는 처음부터 받지 않아요.
           </p>
           <div className="mt-7 flex flex-wrap gap-2.5">
@@ -197,7 +199,7 @@ export default async function Home() {
             <a href="#install" className="rounded-2xl border border-line bg-card px-6 py-3.5 text-[14px] font-bold text-ink hover:border-brand">샘플 매장 둘러보기</a>
           </div>
           <div className="mt-6 flex flex-wrap gap-2 text-[11px] font-bold">
-            <span className="rounded-full bg-ok-bg px-3 py-1.5 text-ok">사업자등록증 확인 후 승인</span>
+            <span className="rounded-full bg-ok-bg px-3 py-1.5 text-ok">합법 바만 · 허가증·업장 사진 확인 후 승인</span>
             <span className="rounded-full bg-ok-bg px-3 py-1.5 text-ok">손님 실명·번호 수집 없음</span>
             <span className="rounded-full bg-blush-lt px-3 py-1.5 text-brand">초대받은 손님만</span>
             <span className="rounded-full bg-blush-lt px-3 py-1.5 text-brand">우리 매장 로고로 깔리는 앱</span>
@@ -670,22 +672,56 @@ export default async function Home() {
       <section id="legal" className="scroll-mt-16 mx-auto max-w-6xl px-5 py-16">
         <div className="rounded-[28px] border border-gold/40 bg-card p-6 shadow-card md:p-10">
           <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Compliance</div>
-          <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">합법 매장만, 확인하고 엽니다</h2>
+          <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">불법 앱이 아니에요. 합법 바만 받아요.</h2>
           <p className="mt-3 max-w-3xl text-[13px] leading-[1.9] text-mute">
-            캐치걸은 테이블을 맡아 응대할 전담 매니저(바텐더)를 미리 지정해 예약하는 앱이고, 매장 운영을 돕는 소프트웨어예요. 유흥이나 그 밖의 목적을 위한 서비스가 아니에요.
-            같은 문장이 모든 매장의 손님 화면에 지울 수 없는 공지로 늘 걸려 있어요.
+            캐치걸은 <b className="text-ink">착석바 전용 앱으로 시작</b>했어요. 손님이 오늘 자기 자리를 맡을 바텐더를 오마카세 고르듯 미리 지명하는 앱이고, 지금은 토킹바·클래식바·모던바·칵테일바까지 받아요.
+            어느 바든 <b className="text-ink">영업 허가 범위 안에서만</b> 등록돼요. 허가 종류가 영업 형태와 맞지 않으면 신청 단계에서 막혀요.
           </p>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+
+          <div className="mt-6 grid gap-3 md:grid-cols-3">
             {[
-              ["1. 사업자등록증 확인", "가입 신청 때 등록증 사본과 사업자등록번호, 업태·종목, 대표자를 받아요. 번호는 국세청 검증번호까지 맞아야 해요."],
-              ["2. 국세청 조회 후 승인", "운영사가 홈택스에서 계속사업자인지, 업종이 맞는지 확인한 뒤에야 매장이 열려요. 그 전엔 화면이 잠겨 있어요."],
-              ["3. 위반 시 즉시 정지", "성매매 알선·청소년 고용·성적 서비스 광고 등 약관 3항의 행위가 확인되면 사전 통지 없이 바로 닫고, 환불하지 않아요."],
-            ].map(([t, d]) => (
-              <div key={t} className="rounded-2xl bg-well p-4">
-                <div className="text-[13px] font-bold">{t}</div>
+              ["유흥주점 (1종)", "착석바", "종업원이 손님 옆에 앉아 응대하는 것(유흥접객)은 식품위생법상 이 허가에서만 합법이에요. 그래서 착석바는 1종 허가증이 있어야 등록돼요."],
+              ["단란주점 (2종)", "토킹바 · 클래식바 · 모던바 · 칵테일바", "술을 팔고 손님이 노래할 수 있지만 종업원 동석은 안 돼요. 바텐더가 바 안쪽에 서서 건너편 손님과 대화하는 바만 등록돼요."],
+              ["일반음식점", "토킹바 · 클래식바 · 모던바 · 칵테일바", "술을 팔 수 있지만 유흥종사자 고용·동석은 안 돼요. 바 카운터 안에서 응대하는 바만 등록돼요."],
+            ].map(([lic, bars, d]) => (
+              <div key={lic} className="rounded-2xl bg-well p-4">
+                <div className="text-[13px] font-bold">{lic}</div>
+                <div className="mt-0.5 text-[11px] font-bold text-brand">{bars}</div>
                 <p className="mt-1.5 text-[12px] leading-[1.8] text-mute">{d}</p>
               </div>
             ))}
+          </div>
+
+          <h3 className="mt-8 font-serif text-[20px] font-bold">등록 전에 확인하는 것</h3>
+          <div className="mt-4 grid gap-3 md:grid-cols-5">
+            {[
+              ["1", "사업자등록증", "번호는 국세청 검증번호까지, 상호·대표자·업태를 사본과 대조"],
+              ["2", "영업 허가증", "유흥주점·단란주점 허가증 또는 일반음식점 영업신고증 사본"],
+              ["3", "업장 사진", "간판이 보이는 외부와 바 카운터 내부. 실제 바인지 봐요"],
+              ["4", "영업장 주소", "등록증·허가증 소재지와 같은지"],
+              ["5", "홈택스 조회", "계속사업자인지, 업종이 맞는지 확인한 뒤에야 열려요"],
+            ].map(([n, t, d]) => (
+              <div key={n} className="rounded-2xl border border-line bg-card p-4">
+                <div className="font-mono text-[11px] font-bold text-brand">{n}</div>
+                <div className="mt-1 text-[13px] font-bold">{t}</div>
+                <p className="mt-1 text-[11px] leading-[1.7] text-mute">{d}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 grid gap-3 md:grid-cols-2">
+            <div className="rounded-2xl bg-ink p-5 text-on-ink">
+              <div className="text-[13px] font-bold text-gold-lt">성적인 말은 프로그램이 막아요</div>
+              <p className="mt-1.5 text-[12px] leading-[1.8] opacity-85">
+                손님 요청사항, 후기, 댓글, 닉네임, 바텐더 소개, 공지. 앱 안에 글을 적는 모든 칸에서 욕설과 성적인 표현은 저장되지 않아요. 띄어쓰기나 기호로 바꿔 써도 걸러요. 매장이 열어 두고 싶어도 못 열어요.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-bad-bg p-5">
+              <div className="text-[13px] font-bold text-bad">위반하면 사전 통지 없이 바로 닫아요</div>
+              <p className="mt-1.5 text-[12px] leading-[1.8] text-ink">
+                성매매 알선·청소년 고용·성적 서비스 광고·허가 범위 밖 영업이 확인되면 약관 4항에 따라 즉시 정지하고, 낸 요금은 돌려주지 않아요. 수사기관 요청이 있으면 기록을 제공해요. 같은 안내가 모든 매장의 손님 화면에 지울 수 없는 공지로 늘 걸려 있어요.
+              </p>
+            </div>
           </div>
           <div className="mt-5 text-[12px] text-mute">
             전문은 <Link href="/platform/terms" className="font-bold text-brand underline-offset-2 hover:underline">서비스 이용 약관 ({TERMS_VERSION} 판)</Link>에서 볼 수 있어요.

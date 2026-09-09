@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { clearSession, requireStaff, setSession } from "@/lib/auth";
 import { getStoreBySlug } from "@/lib/store";
+import { cleanCheck } from "@/lib/profanity";
 
 export type R = { ok: true } | { ok: false; error: string };
 
@@ -121,6 +122,7 @@ export async function staffReplyReview(slug: string, reviewId: string, text: str
     const rv = await prisma.review.findUnique({ where: { id: reviewId } });
     if (!rv || rv.staffId !== me.id) return { ok: false, error: "본인 후기에만 답글을 달 수 있어요." };
     const t = text.trim();
+    { const dirty = cleanCheck(t); if (!dirty.ok) return dirty; }
     await prisma.review.update({ where: { id: reviewId }, data: { reply: t || null, repliedAt: t ? new Date() : null } });
     revalidatePath(`/${slug}`, "layout");
     return { ok: true };
@@ -138,6 +140,7 @@ export async function staffReplyComment(slug: string, commentId: string, text: s
     if (!c || c.staffId !== me.id) return { ok: false, error: "본인 게시판 댓글에만 답글을 달 수 있어요." };
     const t = text.trim();
     if (!t) return { ok: false, error: "내용을 입력해 주세요." };
+    { const dirty = cleanCheck(t); if (!dirty.ok) return dirty; }
     await prisma.comment.create({ data: { storeId: store.id, staffId: me.id, authorType: "STAFF", authorName: me.nickname, content: t, parentId: c.parentId ?? c.id } });
     revalidatePath(`/${slug}`, "layout");
     return { ok: true };

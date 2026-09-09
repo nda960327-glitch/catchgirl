@@ -170,7 +170,7 @@ export default async function AgentPortal({ searchParams }: { searchParams: Prom
           <div className="mt-3 grid gap-2 text-[12px] md:grid-cols-2">
             <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">시연 페이지</div><div className="mt-0.5 text-mute">사장 폰에서 세 앱을 계정과 함께 바로 열어요.</div><Link href="/demo" target="_blank" className="mt-1 inline-block font-bold text-brand">{base.replace(/^https?:\/\//, "")}/demo ↗</Link></div>
             <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">홈페이지</div><div className="mt-0.5 text-mute">6,000만원 vs 10만원, 재방문, 명함까지 다 설명돼 있어요.</div><Link href="/" target="_blank" className="mt-1 inline-block font-bold text-brand">{base.replace(/^https?:\/\//, "")} ↗</Link></div>
-            <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">가격표</div><div className="mt-0.5 text-mute">무약정 13만/39만 · 2년 약정 10만/30만(23% 할인) · 세팅은 약정이면 무료(내가 해 줌) · 첫 달 무료 · 구축비 0.</div></div>
+            <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">가격표</div><div className="mt-0.5 text-mute">무약정 13만/26만 · 2년 약정 10만/20만(23% 할인) · 세팅은 약정이면 무료(내가 해 줌) · 첫 달 무료 · 구축비 0.</div></div>
             <div className="rounded-xl bg-well p-3"><div className="font-bold text-ink">약관·정지 정책</div><div className="mt-0.5 text-mute">사업자등록증 확인 후 승인, 위반 시 즉시 정지. 사장이 물으면 이걸 보여 주세요.</div><Link href="/platform/terms" target="_blank" className="mt-1 inline-block font-bold text-brand">약관 전문 ↗</Link></div>
           </div>
           <div className="mt-3 rounded-2xl bg-ink p-4 text-[12px] leading-[1.9] text-on-ink">

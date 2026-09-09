@@ -7,9 +7,10 @@ import { Button, Chip, Field, Input } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { uploadImages } from "@/lib/image-client";
 import { TERMS_VERSION, formatBizNumber } from "@/lib/terms";
+import { BAR_TYPES, LICENSES, barLabel, barLicenseProblem, licenseLabel } from "@/lib/bar";
 import { recordTermsAgreement, unverifyBiz, updateBizInfo, verifyBiz } from "../actions";
 
-export type BizInfo = { bizName: string; bizNumber: string; bizType: string; bizOwner: string; bizDocUrl: string; bizVerifyMemo: string };
+export type BizInfo = { bizName: string; bizNumber: string; bizType: string; bizOwner: string; bizDocUrl: string; bizVerifyMemo: string; barType: string; licenseType: string; address: string; licenseDocUrl: string; venuePhotos: string[] };
 
 /**
  * 업체 한 곳의 사업자 확인과 약관 동의 기록.
@@ -34,7 +35,20 @@ export function BizBox({
   const [agreedBy, setAgreedBy] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const licRef = useRef<HTMLInputElement>(null);
+  const venueRef = useRef<HTMLInputElement>(null);
   const [pending, start] = useTransition();
+  const lawProblem = biz.barType || biz.licenseType ? barLicenseProblem(biz.barType, biz.licenseType) : "업장 유형·허가가 없어요";
+  const onLicense = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploading(true);
+    try { const [up] = await uploadImages([files[0]]); setF((x) => ({ ...x, licenseDocUrl: up.url })); } catch (e) { toast(e instanceof Error ? e.message : "업로드에 실패했어요.", "error"); } finally { setUploading(false); if (licRef.current) licRef.current.value = ""; }
+  };
+  const onVenue = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploading(true);
+    try { const ups = await uploadImages(Array.from(files).slice(0, 3 - f.venuePhotos.length)); setF((x) => ({ ...x, venuePhotos: [...x.venuePhotos, ...ups.map((u) => u.url)].slice(0, 3) })); } catch (e) { toast(e instanceof Error ? e.message : "업로드에 실패했어요.", "error"); } finally { setUploading(false); if (venueRef.current) venueRef.current.value = ""; }
+  };
   const router = useRouter();
   const { toast } = useToast();
 
@@ -110,6 +124,14 @@ export function BizBox({
               <dt className="text-mute">등록번호</dt><dd className="font-mono text-ink">{biz.bizNumber || "—"}</dd>
               <dt className="text-mute">업태·종목</dt><dd className="text-ink">{biz.bizType || "—"}</dd>
               <dt className="text-mute">대표자</dt><dd className="text-ink">{biz.bizOwner || "—"}</dd>
+              <dt className="text-mute">영업장</dt><dd className="text-ink">{biz.address || "—"}</dd>
+              <dt className="text-mute">바 유형</dt><dd className="text-ink">{barLabel(biz.barType) || "—"}{biz.barType === "SEATED" && <span className="ml-1 text-[10px] text-mute">(1종 필요)</span>}</dd>
+              <dt className="text-mute">영업 허가</dt><dd className={lawProblem ? "font-bold text-bad" : "text-ink"}>{licenseLabel(biz.licenseType) || "—"}{lawProblem && biz.barType && biz.licenseType ? " · 유형과 안 맞아요" : ""}</dd>
+              <dt className="text-mute">허가증</dt><dd>{biz.licenseDocUrl ? <a href={biz.licenseDocUrl} target="_blank" rel="noreferrer" className="font-bold text-brand underline-offset-2 hover:underline">사본 보기 ↗</a> : <span className="text-bad">없음</span>}</dd>
+              <dt className="text-mute">업장 사진</dt><dd className="flex flex-wrap gap-1.5">{biz.venuePhotos.length === 0 ? <span className="text-bad">없음</span> : biz.venuePhotos.map((u) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <a key={u} href={u} target="_blank" rel="noreferrer"><img src={u} alt="업장" className="h-14 w-14 rounded-lg border border-line object-cover" /></a>
+              ))}</dd>
               {biz.bizVerifyMemo && (<><dt className="text-mute">확인 메모</dt><dd className="text-ink">{biz.bizVerifyMemo}</dd></>)}
             </dl>
           </div>
@@ -120,6 +142,43 @@ export function BizBox({
               <Field label="사업자등록번호" hint={f.bizNumber ? formatBizNumber(f.bizNumber) : ""}><Input value={f.bizNumber} onChange={(e) => setF({ ...f, bizNumber: e.target.value })} maxLength={12} className="h-10 font-mono text-[12px]" inputMode="numeric" /></Field>
               <Field label="업태 · 종목"><Input value={f.bizType} onChange={(e) => setF({ ...f, bizType: e.target.value })} maxLength={80} className="h-10 text-[12px]" /></Field>
               <Field label="대표자"><Input value={f.bizOwner} onChange={(e) => setF({ ...f, bizOwner: e.target.value })} maxLength={30} className="h-10 text-[12px]" /></Field>
+              <Field label="영업장 주소"><Input value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} maxLength={120} className="h-10 text-[12px]" /></Field>
+              <Field label="바 유형" hint="착석바는 1종만">
+                <select value={f.barType} onChange={(e) => setF({ ...f, barType: e.target.value })} className="h-10 w-full rounded-xl border border-line bg-card px-3 text-[12px] text-ink">
+                  <option value="">고르기</option>
+                  {BAR_TYPES.map((b) => <option key={b.key} value={b.key}>{b.label}</option>)}
+                </select>
+              </Field>
+              <Field label="영업 허가">
+                <select value={f.licenseType} onChange={(e) => setF({ ...f, licenseType: e.target.value })} className="h-10 w-full rounded-xl border border-line bg-card px-3 text-[12px] text-ink">
+                  <option value="">고르기</option>
+                  {LICENSES.map((l) => <option key={l.key} value={l.key}>{l.label}</option>)}
+                </select>
+              </Field>
+            </div>
+            {f.barType && f.licenseType && barLicenseProblem(f.barType, f.licenseType) && <div className="rounded-xl bg-bad-bg px-3 py-2 text-[11px] text-bad">{barLicenseProblem(f.barType, f.licenseType)}</div>}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-semibold text-mute">허가증 사본</span>
+              {f.licenseDocUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={f.licenseDocUrl} alt="" className="h-14 w-14 rounded-lg border border-line object-cover" />
+              )}
+              <input ref={licRef} type="file" accept="image/*" className="hidden" onChange={(e) => onLicense(e.target.files)} />
+              <Button size="sm" variant="outline" onClick={() => licRef.current?.click()} loading={uploading}>{f.licenseDocUrl ? "다시 올리기" : "올리기"}</Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-semibold text-mute">업장 사진 (최대 3장)</span>
+              {f.venuePhotos.map((u) => (
+                <span key={u} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={u} alt="" className="h-14 w-14 rounded-lg border border-line object-cover" />
+                  <button type="button" onClick={() => setF({ ...f, venuePhotos: f.venuePhotos.filter((x) => x !== u) })} className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full bg-ink text-[11px] text-white">×</button>
+                </span>
+              ))}
+              {f.venuePhotos.length < 3 && (<>
+                <input ref={venueRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => onVenue(e.target.files)} />
+                <Button size="sm" variant="outline" onClick={() => venueRef.current?.click()} loading={uploading}>올리기</Button>
+              </>)}
             </div>
             <Field label="확인 메모"><Input value={f.bizVerifyMemo} onChange={(e) => setF({ ...f, bizVerifyMemo: e.target.value })} maxLength={300} className="h-10 text-[12px]" /></Field>
             <div className="flex flex-wrap items-center gap-2">
@@ -138,9 +197,17 @@ export function BizBox({
         )}
 
         {!verifiedAt && !edit && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-well p-2.5">
+          <div className="mt-3 rounded-xl bg-well p-2.5">
+            <div className="mb-2 flex flex-wrap gap-1.5 text-[10px] font-bold">
+              {[
+                ["등록증", !!biz.bizDocUrl], ["허가증", !!biz.licenseDocUrl], ["업장 사진", biz.venuePhotos.length > 0], ["주소", !!biz.address], ["유형·허가 합법", !lawProblem],
+              ].map(([k, ok]) => <span key={String(k)} className={`rounded-full px-2 py-0.5 ${ok ? "bg-ok-bg text-ok" : "bg-bad-bg text-bad"}`}>{ok ? "✓" : "✗"} {k}</span>)}
+            </div>
+            {lawProblem && biz.barType && <div className="mb-2 text-[11px] text-bad">{lawProblem}</div>}
+          <div className="flex flex-wrap items-center gap-2">
             <Input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="조회 결과 (예: 계속사업자 · 일반음식점 신고)" maxLength={300} className="h-10 flex-1 text-[12px]" />
             <Button size="sm" onClick={verify} loading={pending}>{pendingApproval ? "확인 완료 · 승인하고 매장 열기" : "홈택스 조회 후 확인 완료"}</Button>
+          </div>
           </div>
         )}
       </div>

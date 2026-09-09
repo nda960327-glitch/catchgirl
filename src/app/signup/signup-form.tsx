@@ -8,6 +8,7 @@ import { resizeImage } from "@/lib/image-client";
 import { COMMITMENT_LABEL, PLANS, TERM_MONTHS, billedPrice, onsiteSetupFee, termDiscountPercent, type Commitment } from "@/lib/plans";
 import { THEMES, type ThemeKey } from "@/lib/themes";
 import { OPERATOR_CONTACT, TERMS, TERMS_VERSION, formatBizNumber } from "@/lib/terms";
+import { BAR_TYPES, LICENSES, barLicenseProblem, type BarType, type LicenseType } from "@/lib/bar";
 import { won } from "@/lib/utils";
 import { signupStore } from "./actions";
 
@@ -19,6 +20,7 @@ const BLANK = {
   openTime: "12:00", shiftSplitTime: "20:00", closeTime: "04:00", roomCount: 10,
   contactPhone: "", contactTelegram: "", ownerContact: "", agentCode: "",
   bizName: "", bizNumber: "", bizType: "", bizOwner: "",
+  barType: "" as BarType | "", licenseType: "" as LicenseType | "", address: "",
   termsAgreed: false, termsAgreedBy: "", website: "",
 };
 
@@ -28,6 +30,11 @@ type Doc = { full: string; thumb: string } | null;
 export function SignupForm({ agentCode = "" }: { agentCode?: string }) {
   const [f, setF] = useState({ ...BLANK, agentCode });
   const [doc, setDoc] = useState<Doc>(null);
+  const [licenseDoc, setLicenseDoc] = useState<Doc>(null);
+  const [venue, setVenue] = useState<NonNullable<Doc>[]>([]);
+  const licRef = useRef<HTMLInputElement>(null);
+  const venueRef = useRef<HTMLInputElement>(null);
+  const lawProblem = f.barType && f.licenseType ? barLicenseProblem(f.barType, f.licenseType) : null;
   const [slugTouched, setSlugTouched] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [done, setDone] = useState<{ slug: string; email: string } | null>(null);
@@ -46,18 +53,38 @@ export function SignupForm({ agentCode = "" }: { agentCode?: string }) {
     } catch (e) { toast(e instanceof Error ? e.message : "이미지를 읽지 못했어요.", "error"); } finally { setPreparing(false); if (fileRef.current) fileRef.current.value = ""; }
   };
 
+  const prep = async (files: FileList | null, max: number) => {
+    const list = Array.from(files ?? []).slice(0, max);
+    return Promise.all(list.map(async (file) => ({ full: await resizeImage(file, 1600), thumb: await resizeImage(file, 320, 0.8, 400_000) })));
+  };
+  const onLicense = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setPreparing(true);
+    try { const [d] = await prep(files, 1); setLicenseDoc(d); } catch (e) { toast(e instanceof Error ? e.message : "이미지를 읽지 못했어요.", "error"); } finally { setPreparing(false); if (licRef.current) licRef.current.value = ""; }
+  };
+  const onVenue = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setPreparing(true);
+    try { const more = await prep(files, 3 - venue.length); setVenue((v) => [...v, ...more].slice(0, 3)); } catch (e) { toast(e instanceof Error ? e.message : "이미지를 읽지 못했어요.", "error"); } finally { setPreparing(false); if (venueRef.current) venueRef.current.value = ""; }
+  };
+
   const ready =
     f.name && f.slug && f.adminEmail && f.adminPassword.length >= 6 && f.adminPassword === f.adminPassword2 &&
-    f.ownerContact && f.bizName && f.bizNumber && f.bizType && f.bizOwner && !!doc && f.termsAgreed && f.termsAgreedBy;
+    f.ownerContact && f.bizName && f.bizNumber && f.bizType && f.bizOwner && !!doc &&
+    f.barType && f.licenseType && !lawProblem && f.address.trim().length >= 5 && !!licenseDoc && venue.length >= 1 &&
+    f.termsAgreed && f.termsAgreedBy;
 
   const submit = () =>
     start(async () => {
       if (f.adminPassword !== f.adminPassword2) return toast("비밀번호 두 칸이 서로 달라요.", "error");
       if (!doc) return toast("사업자등록증 사본을 올려 주세요.", "error");
+      if (lawProblem) return toast(lawProblem, "error");
+      if (!licenseDoc) return toast("영업 허가증·신고증 사본을 올려 주세요.", "error");
+      if (venue.length === 0) return toast("업장 사진을 한 장 이상 올려 주세요.", "error");
       if (!f.termsAgreed) return toast("약관에 동의해 주세요.", "error");
       const { adminPassword2: _drop, ...rest } = f;
       void _drop;
-      const r = await signupStore({ ...rest, termsAgreed: true, bizDoc: doc });
+      const r = await signupStore({ ...rest, barType: f.barType as BarType, licenseType: f.licenseType as LicenseType, termsAgreed: true, bizDoc: doc, licenseDoc, venuePhotos: venue });
       if (!r.ok) return toast(r.error, "error");
       setDone({ slug: r.data!.slug, email: f.adminEmail });
       window.scrollTo({ top: 0 });
@@ -189,6 +216,9 @@ export function SignupForm({ agentCode = "" }: { agentCode?: string }) {
           <Field label="업태 · 종목"><Input value={f.bizType} onChange={(e) => setF({ ...f, bizType: e.target.value })} placeholder="예: 음식점업 · 일반음식점" maxLength={80} className="h-11" /></Field>
           <Field label="대표자"><Input value={f.bizOwner} onChange={(e) => setF({ ...f, bizOwner: e.target.value })} maxLength={30} className="h-11" /></Field>
         </div>
+        <Field label="영업장 주소" hint="등록증·허가증의 소재지와 같아야 해요" className="mt-3">
+          <Input value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="예: 서울 강남구 ○○로 12, 2층" maxLength={120} className="h-11" />
+        </Field>
         <Field label="사업자등록증 사본" hint="사진이나 스캔 한 장" className="mt-3">
           <div className="flex flex-wrap items-center gap-2">
             {doc ? (
@@ -199,6 +229,62 @@ export function SignupForm({ agentCode = "" }: { agentCode?: string }) {
             )}
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => onDoc(e.target.files)} />
             <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} loading={preparing}>{doc ? "다시 올리기" : "사본 올리기"}</Button>
+          </div>
+        </Field>
+      </section>
+
+      {/* 바 인증 */}
+      <section className="rounded-[24px] border border-brand/30 bg-card p-5 shadow-card">
+        <div className="text-[13px] font-bold text-ink">바(bar) 인증</div>
+        <div className="mt-0.5 text-[11px] leading-[1.7] text-mute">이 앱은 바 전용이에요. 어떤 바인지, 어떤 허가로 영업하는지 확인하고 열어요. 착석바는 유흥주점(1종) 허가가 있어야 해요.</div>
+        <div className="mt-3 text-[11px] font-semibold text-mute">업장 유형</div>
+        <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+          {BAR_TYPES.map((b) => (
+            <button key={b.key} type="button" onClick={() => setF({ ...f, barType: b.key })} className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${f.barType === b.key ? "border-brand bg-blush-lt/40" : "border-line bg-card hover:border-brand"}`}>
+              <div className="text-[12px] font-bold text-ink">{b.label}{b.key === "SEATED" && <span className="ml-1.5 rounded-full bg-gold-lt/60 px-1.5 py-0.5 text-[9px] text-ink">1종만</span>}</div>
+              <div className="mt-0.5 text-[11px] text-mute">{b.desc}</div>
+            </button>
+          ))}
+        </div>
+        {f.barType && <div className="mt-2 rounded-xl bg-well px-3 py-2 text-[11px] leading-[1.7] text-mute">{BAR_TYPES.find((b) => b.key === f.barType)?.law}</div>}
+        <Field label="영업 허가 종류" hint="허가증·신고증에 적힌 대로" className="mt-3">
+          <div className="grid gap-2 sm:grid-cols-3">
+            {LICENSES.map((l) => (
+              <button key={l.key} type="button" onClick={() => setF({ ...f, licenseType: l.key })} className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${f.licenseType === l.key ? "border-brand bg-blush-lt/40" : "border-line bg-card hover:border-brand"}`}>
+                <div className="text-[12px] font-bold text-ink">{l.label}</div>
+                <div className="mt-0.5 text-[10px] leading-[1.5] text-mute">{l.desc}</div>
+              </button>
+            ))}
+          </div>
+        </Field>
+        {lawProblem && <div className="mt-2 rounded-xl border border-bad/30 bg-bad-bg px-3 py-2 text-[11px] leading-[1.7] text-bad">{lawProblem}</div>}
+        <Field label="영업 허가증·신고증 사본" hint="유흥주점 허가증 / 단란주점 허가증 / 일반음식점 영업신고증" className="mt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {licenseDoc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={licenseDoc.thumb} alt="허가증" className="h-20 w-20 rounded-xl border border-line object-cover" />
+            ) : (
+              <span className="flex h-20 w-20 items-center justify-center rounded-xl border border-dashed border-line text-[10px] text-mute">없음</span>
+            )}
+            <input ref={licRef} type="file" accept="image/*" className="hidden" onChange={(e) => onLicense(e.target.files)} />
+            <Button size="sm" variant="outline" onClick={() => licRef.current?.click()} loading={preparing}>{licenseDoc ? "다시 올리기" : "사본 올리기"}</Button>
+          </div>
+        </Field>
+        <Field label="업장 사진" hint="간판이 보이는 외부 1장 + 바 카운터 내부 1장 · 최대 3장" className="mt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {venue.map((v, i) => (
+              <div key={i} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={v.thumb} alt={`업장 사진 ${i + 1}`} className="h-20 w-20 rounded-xl border border-line object-cover" />
+                <button type="button" onClick={() => setVenue(venue.filter((_, j) => j !== i))} className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full bg-ink text-[11px] text-white">×</button>
+              </div>
+            ))}
+            {venue.length < 3 && (
+              <>
+                <input ref={venueRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => onVenue(e.target.files)} />
+                <Button size="sm" variant="outline" onClick={() => venueRef.current?.click()} loading={preparing}>{venue.length ? "더 올리기" : "사진 올리기"}</Button>
+              </>
+            )}
           </div>
         </Field>
       </section>

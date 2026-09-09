@@ -11,6 +11,7 @@ import { cancelReservation, createReservation, sendDueReminders, SlotConflictErr
 import { ymd } from "@/lib/utils";
 import { ensureInviteCode, freshInviteCode } from "@/lib/invite";
 import { josa, staffLabelOf } from "@/lib/labels";
+import { cleanCheck } from "@/lib/profanity";
 
 export type R<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 const fail = (e: unknown, fallback = "처리에 실패했어요."): R<never> => ({ ok: false, error: e instanceof Error && e.message !== "UNAUTHORIZED" ? e.message : e instanceof Error ? "권한이 없어요." : fallback });
@@ -152,6 +153,7 @@ export async function saveStaff(slug: string, input: z.input<typeof staffSchema>
     const p = staffSchema.safeParse(input);
     if (!p.success) return { ok: false, error: p.error.issues[0].message };
     const d = p.data;
+    { const dirty = cleanCheck(d.nickname, d.bio, d.tags.join(" "), d.tattooNote, ...d.profileValues.map((v) => v.value)); if (!dirty.ok) return dirty; }
     const base = {
       nickname: d.nickname, bio: d.bio, tags: JSON.stringify(d.tags), photos: JSON.stringify(d.photos),
       isActive: d.isActive, capacityPerSlot: d.capacityPerSlot, hourlyPrice: d.hourlyPrice, adminMemo: d.adminMemo, loginId: d.loginId || null,
@@ -467,6 +469,7 @@ export async function saveNotice(slug: string, input: z.input<typeof noticeSchem
     const p = noticeSchema.safeParse(input);
     if (!p.success) return { ok: false, error: p.error.issues[0].message };
     const d = p.data;
+    { const dirty = cleanCheck(d.title, d.body); if (!dirty.ok) return dirty; }
     if (d.id) {
       const ex = await prisma.notice.findUnique({ where: { id: d.id } });
       if (!ex || ex.storeId !== store.id) return { ok: false, error: "공지를 찾을 수 없어요." };
@@ -499,7 +502,7 @@ export async function deleteNotice(slug: string, noticeId: string): Promise<R> {
 /* ─── 추가 옵션 관리 ─── */
 const optionSchema = z.object({
   id: z.string().optional(),
-  name: z.string().trim().min(1, "옵션 이름을 입력해 주세요").max(20),
+  name: z.string().trim().min(1, "옵션 이름을 입력해 주세요").max(20).refine((v) => cleanCheck(v).ok, "쓸 수 없는 표현이 들어 있어요."),
   price: z.coerce.number().int().min(0).max(100_000_000),
   isActive: z.boolean().default(true),
 });
@@ -545,9 +548,9 @@ export async function deleteStoreOption(slug: string, optionId: string): Promise
  * 보기(CHOICE)면 손님 화면의 조건 검색 칩으로도 쓸 수 있다. */
 const profileFieldSchema = z.object({
   id: z.string().optional(),
-  label: z.string().trim().min(1, "항목 이름을 입력해 주세요").max(12, "항목 이름은 12자까지예요"),
+  label: z.string().trim().min(1, "항목 이름을 입력해 주세요").max(12, "항목 이름은 12자까지예요").refine((v) => cleanCheck(v).ok, "쓸 수 없는 표현이 들어 있어요."),
   kind: z.enum(["CHOICE", "TEXT"]).default("CHOICE"),
-  options: z.array(z.string().trim().min(1).max(12)).max(12).default([]),
+  options: z.array(z.string().trim().min(1).max(12).refine((v) => cleanCheck(v).ok, "쓸 수 없는 표현이 들어 있어요.")).max(12).default([]),
   showInFilter: z.boolean().default(true),
   isActive: z.boolean().default(true),
 });
@@ -594,7 +597,7 @@ export async function deleteProfileField(slug: string, fieldId: string): Promise
 
 /* ─── 고객 관리 ─── */
 const customerInfoSchema = z.object({
-  nickname: z.string().trim().min(1).max(12),
+  nickname: z.string().trim().min(1).max(12).refine((v) => cleanCheck(v).ok, "쓸 수 없는 표현이 들어 있어요."),
   adminContact: z.string().trim().max(120).default(""),
   adminMemo: z.string().max(500).default(""),
   isBlacklisted: z.boolean().default(false),
@@ -774,6 +777,7 @@ export async function adminReviewAction(slug: string, reviewId: string, action: 
       : action === "show" ? { isHidden: false }
       : action === "dismiss" ? { isReported: false, reportReason: null }
       : { reply: (payload ?? "").trim() || null, repliedAt: payload?.trim() ? new Date() : null };
+    if (action === "reply") { const dirty = cleanCheck(payload); if (!dirty.ok) return dirty; }
     await prisma.review.update({ where: { id: reviewId }, data });
     revalidatePath(`/${slug}`, "layout");
     return { ok: true };
@@ -790,6 +794,7 @@ export async function adminCommentAction(slug: string, commentId: string, action
     if (action === "reply") {
       const text = (payload ?? "").trim();
       if (!text) return { ok: false, error: "내용을 입력해 주세요." };
+      { const dirty = cleanCheck(text); if (!dirty.ok) return dirty; }
       // 관리자는 관리자 이름으로 단다 — 캐치걸 이름을 빌리지 않는다
       await prisma.comment.create({ data: { storeId: store.id, staffId: c.staffId, authorType: "ADMIN", authorName: admin.name, content: text, parentId: c.parentId ?? c.id } });
     } else {
@@ -1053,10 +1058,10 @@ export async function setStorePlan(slug: string, plan: "PRO" | "MAX"): Promise<R
 
 /* ─── 매장 설정 (화이트라벨) ─── */
 const storeSchema = z.object({
-  name: z.string().trim().min(1).max(30),
-  staffLabel: z.string().trim().min(1, "직원 호칭을 적어 주세요").max(8, "호칭은 8자까지예요").default("캐치걸"),
-  tagline: z.string().trim().max(40).default(""),
-  heroTitle: z.string().trim().min(1, "홈 문구를 입력해 주세요").max(60),
+  name: z.string().trim().min(1).max(30).refine((v) => cleanCheck(v).ok, "쓸 수 없는 표현이 들어 있어요."),
+  staffLabel: z.string().trim().min(1, "직원 호칭을 적어 주세요").max(8, "호칭은 8자까지예요").default("캐치걸").refine((v) => cleanCheck(v).ok, "쓸 수 없는 표현이 들어 있어요."),
+  tagline: z.string().trim().max(40).default("").refine((v) => cleanCheck(v).ok, "쓸 수 없는 표현이 들어 있어요."),
+  heroTitle: z.string().trim().min(1, "홈 문구를 입력해 주세요").max(60).refine((v) => cleanCheck(v).ok, "쓸 수 없는 표현이 들어 있어요."),
   logoUrl: z.string().nullable().default(null),
   coverUrl: z.string().nullable().default(null),
   themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),

@@ -11,6 +11,7 @@ import { amountForMonth, logPlatform } from "@/lib/platform-data";
 import { SLUG_RE, emailProblem, provisionStore, slugProblem } from "@/lib/provision";
 import { COMMITMENT_LABEL, PLANS, commitmentOf, planOf } from "@/lib/plans";
 import { PENDING_REASON, TERMS_VERSION, formatBizNumber, isValidBizNumber } from "@/lib/terms";
+import { barLicenseProblem } from "@/lib/bar";
 
 export type R<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 const denied = (): R<never> => ({ ok: false, error: "권한이 없어요." });
@@ -59,6 +60,11 @@ const storeSchema = z.object({
   bizDocUrl: z.string().trim().min(1, "사업자등록증 사본을 올려 주세요").max(300),
   bizVerified: z.literal(true, { errorMap: () => ({ message: "국세청 조회로 사업자 상태와 업종을 확인한 뒤 체크해 주세요" }) }),
   bizVerifyMemo: z.string().trim().max(300).default(""),
+  barType: z.enum(["SEATED", "TALKING", "CLASSIC", "MODERN", "COCKTAIL"], { errorMap: () => ({ message: "업장 유형을 골라 주세요" }) }),
+  licenseType: z.enum(["ENTERTAINMENT", "DANRAN", "RESTAURANT"], { errorMap: () => ({ message: "영업 허가 종류를 골라 주세요" }) }),
+  address: z.string().trim().min(5, "영업장 주소를 적어 주세요").max(120),
+  licenseDocUrl: z.string().trim().max(300).default(""),
+  venuePhotos: z.array(z.string()).max(3).default([]),
   // 약관 — 대표자가 읽고 동의했음을 파는 쪽이 확인한다
   termsAgreed: z.literal(true, { errorMap: () => ({ message: "약관 동의를 확인해 주세요" }) }),
   termsAgreedBy: z.string().trim().min(1, "약관에 동의한 사람을 적어 주세요").max(60),
@@ -81,6 +87,8 @@ export async function createStore(input: z.input<typeof storeSchema>): Promise<R
   if (slugErr) return { ok: false, error: slugErr };
   const emailErr = await emailProblem(d.adminEmail);
   if (emailErr) return { ok: false, error: emailErr };
+  const lawErr = barLicenseProblem(d.barType, d.licenseType);
+  if (lawErr) return { ok: false, error: lawErr };
 
   try {
     const store = await provisionStore({
@@ -102,6 +110,7 @@ export async function createStore(input: z.input<typeof storeSchema>): Promise<R
       ownerContact: "",
       platformMemo: "",
       biz: { bizName: d.bizName, bizNumber: formatBizNumber(d.bizNumber), bizType: d.bizType, bizOwner: d.bizOwner, bizDocUrl: d.bizDocUrl, bizVerifyMemo: d.bizVerifyMemo },
+      bar: { barType: d.barType, licenseType: d.licenseType, licenseDocUrl: d.licenseDocUrl, venuePhotos: d.venuePhotos, address: d.address },
       bizVerifiedAt: new Date(),
       terms: { version: TERMS_VERSION, agreedBy: d.termsAgreedBy },
       isSuspended: false,
@@ -206,6 +215,11 @@ const bizSchema = z.object({
   bizOwner: z.string().trim().min(1, "대표자를 적어 주세요").max(30),
   bizDocUrl: z.string().trim().max(300).default(""),
   bizVerifyMemo: z.string().trim().max(300).default(""),
+  barType: z.string().max(20).default(""),
+  licenseType: z.string().max(20).default(""),
+  address: z.string().trim().max(120).default(""),
+  licenseDocUrl: z.string().trim().max(300).default(""),
+  venuePhotos: z.array(z.string()).max(3).default([]),
 });
 
 /** 등록증 내용을 고친다. 상호·번호·업종이 바뀌면 확인은 다시 해야 하므로 확인 표시를 지운다. */
@@ -217,11 +231,13 @@ export async function updateBizInfo(slug: string, input: z.input<typeof bizSchem
   if (!store) return { ok: false, error: "매장을 찾을 수 없어요." };
   const d = p.data;
   const bizNumber = formatBizNumber(d.bizNumber);
-  const identityChanged = bizNumber !== store.bizNumber || d.bizName !== store.bizName || d.bizType !== store.bizType;
+  const identityChanged = bizNumber !== store.bizNumber || d.bizName !== store.bizName || d.bizType !== store.bizType || d.barType !== store.barType || d.licenseType !== store.licenseType || d.address !== store.address;
+  if (d.barType && d.licenseType) { const lawErr = barLicenseProblem(d.barType, d.licenseType); if (lawErr) return { ok: false, error: lawErr }; }
   await prisma.store.update({
     where: { id: store.id },
     data: {
       bizName: d.bizName, bizNumber, bizType: d.bizType, bizOwner: d.bizOwner, bizDocUrl: d.bizDocUrl, bizVerifyMemo: d.bizVerifyMemo,
+      barType: d.barType, licenseType: d.licenseType, address: d.address, licenseDocUrl: d.licenseDocUrl, venuePhotos: JSON.stringify(d.venuePhotos),
       ...(identityChanged ? { bizVerifiedAt: null } : {}),
     },
   });
@@ -236,6 +252,11 @@ export async function verifyBiz(slug: string, memo: string): Promise<R> {
   const store = await storeBySlug(slug);
   if (!store) return { ok: false, error: "매장을 찾을 수 없어요." };
   if (!store.bizNumber || !store.bizDocUrl) return { ok: false, error: "등록증 사본과 사업자등록번호가 먼저 있어야 해요." };
+  if (!store.licenseDocUrl) return { ok: false, error: "영업 허가증·신고증 사본이 먼저 있어야 해요." };
+  if (JSON.parse(store.venuePhotos || "[]").length === 0) return { ok: false, error: "업장 사진이 한 장 이상 있어야 해요." };
+  if (!store.address) return { ok: false, error: "영업장 주소가 먼저 있어야 해요." };
+  const lawErr = barLicenseProblem(store.barType, store.licenseType);
+  if (lawErr) return { ok: false, error: lawErr };
   const m = memo.trim().slice(0, 300);
   // 직접 신청해 잠겨 있던 매장은 확인이 곧 승인이다 — 여기서 연다
   const opening = store.isSuspended && store.suspendedReason === PENDING_REASON;

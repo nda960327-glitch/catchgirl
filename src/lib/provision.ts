@@ -52,6 +52,8 @@ export type ProvisionInput = {
   ownerContact: string;
   platformMemo: string;
   biz: { bizName: string; bizNumber: string; bizType: string; bizOwner: string; bizDocUrl: string; bizVerifyMemo: string };
+  /** 바 인증 — 유형, 허가, 허가증, 업장 사진, 주소 */
+  bar: { barType: string; licenseType: string; licenseDocUrl: string; venuePhotos: string[]; address: string };
   /** 콘솔에서 확인하고 만들면 지금, 업체가 직접 신청하면 null (확인 뒤에 채운다) */
   bizVerifiedAt: Date | null;
   terms: { version: string; agreedBy: string };
@@ -84,6 +86,11 @@ export async function provisionStore(d: ProvisionInput) {
       bizOwner: d.biz.bizOwner,
       bizDocUrl: d.biz.bizDocUrl,
       bizVerifyMemo: d.biz.bizVerifyMemo,
+      barType: d.bar.barType,
+      licenseType: d.bar.licenseType,
+      licenseDocUrl: d.bar.licenseDocUrl,
+      venuePhotos: JSON.stringify(d.bar.venuePhotos),
+      address: d.bar.address,
       bizVerifiedAt: d.bizVerifiedAt,
       termsVersion: d.terms.version,
       termsAgreedAt: new Date(),

@@ -6,6 +6,8 @@ import { logPlatform } from "@/lib/platform-data";
 import { SLUG_RE, emailProblem, provisionStore, slugProblem } from "@/lib/provision";
 import { PENDING_REASON, TERMS_VERSION, formatBizNumber, isValidBizNumber } from "@/lib/terms";
 import { MAX_FULL, MAX_THUMB, decodeDataUrl } from "@/lib/image-server";
+import { barLicenseProblem } from "@/lib/bar";
+import { cleanCheck } from "@/lib/profanity";
 
 export type R<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 
@@ -40,6 +42,12 @@ const signupSchema = z.object({
   bizOwner: z.string().trim().min(1, "대표자를 적어 주세요").max(30),
   // 등록증 사본 — 세션이 없어 업로드 API 를 못 쓰므로 신청서에 같이 담아 보낸다
   bizDoc: z.object({ full: z.string().min(1, "사업자등록증 사본을 올려 주세요"), thumb: z.string().min(1) }),
+  // 바 인증 — 어떤 바인지, 어떤 허가인지, 허가증과 업장 사진, 주소
+  barType: z.enum(["SEATED", "TALKING", "CLASSIC", "MODERN", "COCKTAIL"], { errorMap: () => ({ message: "업장 유형을 골라 주세요" }) }),
+  licenseType: z.enum(["ENTERTAINMENT", "DANRAN", "RESTAURANT"], { errorMap: () => ({ message: "영업 허가 종류를 골라 주세요" }) }),
+  address: z.string().trim().min(5, "영업장 주소를 적어 주세요").max(120),
+  licenseDoc: z.object({ full: z.string().min(1, "영업 허가증·신고증 사본을 올려 주세요"), thumb: z.string().min(1) }),
+  venuePhotos: z.array(z.object({ full: z.string().min(1), thumb: z.string().min(1) })).min(1, "업장 사진을 한 장 이상 올려 주세요").max(3),
   termsAgreed: z.literal(true, { errorMap: () => ({ message: "약관에 동의해 주세요" }) }),
   termsAgreedBy: z.string().trim().min(1, "동의하는 분의 이름을 적어 주세요").max(60),
   /** 봇이 채우는 칸 — 사람은 못 본다. 채워져 있으면 조용히 성공한 척한다 */
@@ -52,9 +60,17 @@ export async function signupStore(input: z.input<typeof signupSchema>): Promise<
   const d = p.data;
   if (d.website) return { ok: true, data: { slug: d.slug } };
 
+  const lawErr = barLicenseProblem(d.barType, d.licenseType);
+  if (lawErr) return { ok: false, error: lawErr };
+  const dirty = cleanCheck(d.name, d.bizName, d.address, d.staffLabel);
+  if (!dirty.ok) return dirty;
   const full = decodeDataUrl(d.bizDoc.full, MAX_FULL);
   const thumb = decodeDataUrl(d.bizDoc.thumb, MAX_THUMB);
   if (!full || !thumb) return { ok: false, error: "등록증 사본 이미지를 읽을 수 없어요. 다시 올려 주세요." };
+  const lic = { full: decodeDataUrl(d.licenseDoc.full, MAX_FULL), thumb: decodeDataUrl(d.licenseDoc.thumb, MAX_THUMB) };
+  if (!lic.full || !lic.thumb) return { ok: false, error: "허가증 사본 이미지를 읽을 수 없어요. 다시 올려 주세요." };
+  const venues = d.venuePhotos.map((v) => ({ full: decodeDataUrl(v.full, MAX_FULL), thumb: decodeDataUrl(v.thumb, MAX_THUMB) }));
+  if (venues.some((v) => !v.full || !v.thumb)) return { ok: false, error: "업장 사진을 읽을 수 없어요. 다시 올려 주세요." };
 
   const slugErr = await slugProblem(d.slug);
   if (slugErr) return { ok: false, error: slugErr };
@@ -69,6 +85,12 @@ export async function signupStore(input: z.input<typeof signupSchema>): Promise<
 
   try {
     const img = await prisma.image.create({ data: { mime: full.mime, data: full.buf, thumb: thumb.buf }, select: { id: true } });
+    const licImg = await prisma.image.create({ data: { mime: lic.full!.mime, data: lic.full!.buf, thumb: lic.thumb!.buf }, select: { id: true } });
+    const venueImgs: string[] = [];
+    for (const v of venues) {
+      const row = await prisma.image.create({ data: { mime: v.full!.mime, data: v.full!.buf, thumb: v.thumb!.buf }, select: { id: true } });
+      venueImgs.push(row.id);
+    }
     const store = await provisionStore({
       name: d.name,
       slug: d.slug,
@@ -88,12 +110,13 @@ export async function signupStore(input: z.input<typeof signupSchema>): Promise<
       ownerContact: d.ownerContact,
       platformMemo: `직접 신청 (${new Date().toLocaleDateString("ko-KR")})`,
       biz: { bizName: d.bizName, bizNumber: formatBizNumber(d.bizNumber), bizType: d.bizType, bizOwner: d.bizOwner, bizDocUrl: `/api/img/${img.id}`, bizVerifyMemo: "" },
+      bar: { barType: d.barType, licenseType: d.licenseType, licenseDocUrl: `/api/img/${licImg.id}`, venuePhotos: venueImgs.map((id) => `/api/img/${id}`), address: d.address },
       bizVerifiedAt: null,
       terms: { version: TERMS_VERSION, agreedBy: d.termsAgreedBy },
       isSuspended: true,
       suspendedReason: PENDING_REASON,
     });
-    await prisma.image.update({ where: { id: img.id }, data: { storeId: store.id } });
+    await prisma.image.updateMany({ where: { id: { in: [img.id, licImg.id, ...venueImgs] } }, data: { storeId: store.id } });
     await logPlatform("SIGNUP", `${d.name} (/${d.slug}) · ${d.bizName} ${formatBizNumber(d.bizNumber)} · ${d.bizType} · 연락 ${d.ownerContact}`, store.id);
     await logPlatform("TERMS_AGREED", `${TERMS_VERSION} 판 · ${d.termsAgreedBy} (직접 신청)`, store.id);
     return { ok: true, data: { slug: store.slug } };

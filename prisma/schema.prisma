@@ -52,6 +52,12 @@ model Store {
   bizDocUrl           String    @default("") // 등록증 사본 (/api/img/…)
   bizVerifiedAt       DateTime? // 운영사가 국세청 조회로 확인한 시각
   bizVerifyMemo       String    @default("") // 확인 메모 (조회 결과, 허가 종류)
+  // 바(bar) 인증 — 이 앱은 바 전용이다. 어떤 바인지, 어떤 허가로 영업하는지, 어디에 있는지, 실제 업장 사진.
+  barType             String    @default("") // SEATED | TALKING | CLASSIC | MODERN | COCKTAIL
+  licenseType         String    @default("") // ENTERTAINMENT(1종) | DANRAN(2종) | RESTAURANT(일반음식점)
+  licenseDocUrl       String    @default("") // 영업 허가증·신고증 사본
+  venuePhotos         String    @default("[]") // 업장 사진 (간판·바 카운터) JSON string[]
+  address             String    @default("") // 영업장 주소 (등록증·허가증과 같아야 한다)
   // 약관 동의 — 어느 판에 누가 언제 동의했는지
   termsVersion        String    @default("")
   termsAgreedAt       DateTime?

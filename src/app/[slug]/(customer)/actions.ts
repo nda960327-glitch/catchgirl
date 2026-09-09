@@ -9,6 +9,7 @@ import { clearSession, getCustomer, requireCustomer, setSession } from "@/lib/au
 import { getStoreBySlug } from "@/lib/store";
 import { cancelReservation, createReservation, SlotConflictError } from "@/lib/reservations";
 import { josa, staffLabelOf } from "@/lib/labels";
+import { cleanCheck } from "@/lib/profanity";
 
 export type ActionResult<T = undefined> = { ok: true; data?: T } | { ok: false; error: string; conflict?: boolean };
 
@@ -31,6 +32,8 @@ export async function loginCustomer(slug: string, form: FormData, next?: string)
   const parsed = loginSchema.safeParse(pick(form, ["nickname", "pin", "inviteCode"]));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const { nickname, pin, inviteCode } = parsed.data;
+  const dirty = cleanCheck(nickname);
+  if (!dirty.ok) return dirty;
 
   const byNickname = await prisma.customer.findUnique({ where: { storeId_nickname: { storeId: store.id, nickname } } });
 
@@ -87,6 +90,8 @@ export async function updateMyProfile(slug: string, form: FormData): Promise<Act
     .safeParse(pick(form, ["nickname"]));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const d = parsed.data;
+  const dirty = cleanCheck(d.nickname);
+  if (!dirty.ok) return dirty;
   try {
     await prisma.customer.update({ where: { id: me.id }, data: { nickname: d.nickname } });
   } catch (e) {
@@ -132,6 +137,7 @@ export async function bookReservation(slug: string, input: z.input<typeof bookSc
   if (!customer) return { ok: false, error: "LOGIN_REQUIRED" };
   const parsed = bookSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "입력값을 확인해 주세요." };
+  { const dirty = cleanCheck(parsed.data.requestNote, parsed.data.purposeTag); if (!dirty.ok) return dirty; }
   try {
     const r = await createReservation({ ...parsed.data, storeId: store.id, customerId: customer.id, createdBy: "CUSTOMER" });
     revalidatePath(`/${slug}`);
@@ -202,6 +208,8 @@ export async function addComment(slug: string, staffId: string, content: string,
   if (!customer) return { ok: false, error: "LOGIN_REQUIRED" };
   const text = content.trim();
   if (!text || text.length > 300) return { ok: false, error: "댓글은 1~300자" };
+  const dirty = cleanCheck(text);
+  if (!dirty.ok) return dirty;
   await prisma.comment.create({
     data: { storeId: store.id, staffId, customerId: customer.id, authorType: "CUSTOMER", authorName: customer.nickname, content: text, parentId: parentId ?? null },
   });
@@ -222,6 +230,8 @@ export async function submitReview(slug: string, input: z.input<typeof reviewSch
   if (!customer) return { ok: false, error: "LOGIN_REQUIRED" };
   const parsed = reviewSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  const dirty = cleanCheck(parsed.data.content);
+  if (!dirty.ok) return dirty;
   const r = await prisma.reservation.findUnique({ where: { id: parsed.data.reservationId }, include: { review: true } });
   if (!r || r.customerId !== customer.id) return { ok: false, error: "예약을 찾을 수 없어요." };
   if (r.status !== "COMPLETED") return { ok: false, error: "방문 완료된 예약만 후기를 쓸 수 있어요." };

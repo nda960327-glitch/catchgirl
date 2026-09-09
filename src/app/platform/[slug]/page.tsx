@@ -7,7 +7,7 @@ import { isPlatform } from "@/lib/platform";
 import { amountForMonth, billingStatus, nextBillingDate, storeHealth, storeLinks } from "@/lib/platform-data";
 import { COMMITMENT_LABEL, PLANS, TERM_MONTHS, commitmentOf, earlyTerminationFee, planOf } from "@/lib/plans";
 import { THEMES, themeOf } from "@/lib/themes";
-import { won, wonShort } from "@/lib/utils";
+import { parseJsonArray, won, wonShort } from "@/lib/utils";
 import { Card, Chip } from "@/components/ui";
 import { StoreCardEditor } from "../store-card-editor";
 import { BizBox } from "./biz-box";
@@ -194,7 +194,7 @@ export default async function StoreDetailPage({ params }: { params: Promise<{ sl
           </div>
           <BizBox
             slug={store.slug}
-            biz={{ bizName: store.bizName, bizNumber: store.bizNumber, bizType: store.bizType, bizOwner: store.bizOwner, bizDocUrl: store.bizDocUrl, bizVerifyMemo: store.bizVerifyMemo }}
+            biz={{ bizName: store.bizName, bizNumber: store.bizNumber, bizType: store.bizType, bizOwner: store.bizOwner, bizDocUrl: store.bizDocUrl, bizVerifyMemo: store.bizVerifyMemo, barType: store.barType, licenseType: store.licenseType, address: store.address, licenseDocUrl: store.licenseDocUrl, venuePhotos: parseJsonArray<string>(store.venuePhotos) }}
             verifiedAt={store.bizVerifiedAt ? format(store.bizVerifiedAt, "yyyy.MM.dd HH:mm") : null}
             pendingApproval={pendingApproval}
             terms={{ version: store.termsVersion, agreedAt: store.termsAgreedAt ? format(store.termsAgreedAt, "yyyy.MM.dd") : null, agreedBy: store.termsAgreedBy }}

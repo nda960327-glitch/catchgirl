@@ -10,6 +10,7 @@ import { won } from "@/lib/utils";
 import { THEMES, type ThemeKey } from "@/lib/themes";
 import { TERMS_VERSION, formatBizNumber } from "@/lib/terms";
 import { uploadImages } from "@/lib/image-client";
+import { BAR_TYPES, LICENSES, barLicenseProblem, type BarType, type LicenseType } from "@/lib/bar";
 import { createStore } from "./actions";
 
 /** 매장 이름으로 주소 후보를 만든다 — 한글은 못 쓰니 영문만 남긴다 */
@@ -21,6 +22,7 @@ const BLANK = {
   openTime: "12:00", shiftSplitTime: "20:00", closeTime: "04:00",
   roomCount: 10, plan: "PRO" as "PRO" | "MAX", commitment: "TERM24" as Commitment, agentId: "", theme: "rose" as ThemeKey, contactPhone: "", contactTelegram: "",
   bizName: "", bizNumber: "", bizType: "", bizOwner: "", bizDocUrl: "", bizVerified: false, bizVerifyMemo: "",
+  barType: "" as BarType | "", licenseType: "" as LicenseType | "", address: "", licenseDocUrl: "", venuePhotos: [] as string[],
   termsAgreed: false, termsAgreedBy: "",
 };
 
@@ -57,7 +59,10 @@ export function NewStoreForm({ agents }: { agents: AgentLite[] }) {
     start(async () => {
       // 체크가 안 된 채 보내면 서버가 같은 말을 하지만, 여기서 먼저 막아 두는 게 빠르다
       if (!f.bizVerified || !f.termsAgreed) return toast("사업자 확인과 약관 동의를 먼저 체크해 주세요.", "error");
-      const r = await createStore({ ...f, bizVerified: true, termsAgreed: true });
+      if (!f.barType || !f.licenseType) return toast("업장 유형과 영업 허가를 골라 주세요.", "error");
+      const lawErr = barLicenseProblem(f.barType, f.licenseType);
+      if (lawErr) return toast(lawErr, "error");
+      const r = await createStore({ ...f, barType: f.barType as BarType, licenseType: f.licenseType as LicenseType, bizVerified: true, termsAgreed: true });
       if (!r.ok) return toast(r.error, "error");
       setDone({ slug: r.data!.slug, email: f.adminEmail, password: f.adminPassword });
       setF(BLANK);
@@ -176,6 +181,25 @@ export function NewStoreForm({ agents }: { agents: AgentLite[] }) {
               <Input value={f.bizOwner} onChange={(e) => setF({ ...f, bizOwner: e.target.value })} maxLength={30} className="h-11" />
             </Field>
           </div>
+          <Field label="영업장 주소" hint="등록증·허가증 소재지와 같아야" className="mt-3">
+            <Input value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} maxLength={120} className="h-11" />
+          </Field>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Field label="업장 유형" hint="착석바는 1종만">
+              <Select value={f.barType} onChange={(e) => setF({ ...f, barType: e.target.value as BarType })} className="w-full">
+                <option value="">고르기</option>
+                {BAR_TYPES.map((b) => <option key={b.key} value={b.key}>{b.label}</option>)}
+              </Select>
+            </Field>
+            <Field label="영업 허가" hint="허가증대로">
+              <Select value={f.licenseType} onChange={(e) => setF({ ...f, licenseType: e.target.value as LicenseType })} className="w-full">
+                <option value="">고르기</option>
+                {LICENSES.map((l) => <option key={l.key} value={l.key}>{l.label}</option>)}
+              </Select>
+            </Field>
+          </div>
+          {f.barType && f.licenseType && barLicenseProblem(f.barType, f.licenseType) && <div className="mt-2 rounded-xl bg-bad-bg px-3 py-2 text-[11px] text-bad">{barLicenseProblem(f.barType, f.licenseType)}</div>}
+          <div className="mt-2 text-[10px] text-mute">허가증 사본과 업장 사진은 만든 뒤 매장 페이지 '사업자 확인' 에서 올려요. 없으면 확인 완료가 안 돼요.</div>
           <Field label="사업자등록증 사본" hint="사진이나 스캔 한 장" className="mt-3">
             <div className="flex flex-wrap items-center gap-2">
               {f.bizDocUrl ? (
@@ -220,7 +244,7 @@ export function NewStoreForm({ agents }: { agents: AgentLite[] }) {
         <Button
           onClick={submit}
           loading={pending}
-          disabled={!f.name || !f.slug || !f.adminEmail || !f.adminPassword || !f.bizName || !f.bizNumber || !f.bizType || !f.bizOwner || !f.bizDocUrl || !f.bizVerified || !f.termsAgreed || !f.termsAgreedBy}
+          disabled={!f.name || !f.slug || !f.adminEmail || !f.adminPassword || !f.bizName || !f.bizNumber || !f.bizType || !f.bizOwner || !f.bizDocUrl || !f.barType || !f.licenseType || !f.address || !f.bizVerified || !f.termsAgreed || !f.termsAgreedBy}
         >
           매장 만들기
         </Button>
