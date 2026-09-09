@@ -3,14 +3,16 @@ import { PricingTable } from "@/components/pricing-table";
 import { OPERATOR_CONTACT, TERMS_VERSION } from "@/lib/terms";
 import { SignupForm } from "./signup-form";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 export const metadata = { title: "매장 가입 신청" };
 
 /**
  * 업체가 직접 매장을 신청하는 화면 — 로그인 없이 열린다.
  * 신청하면 잠긴 채로 만들어지고, 운영사가 등록증을 확인해 승인해야 열린다.
  */
-export default function SignupPage() {
+export default async function SignupPage({ searchParams }: { searchParams: Promise<{ agent?: string }> }) {
+  const { agent } = await searchParams;
+  const agentCode = (agent ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
   return (
     <div className="min-h-dvh bg-frame">
       <div className="mx-auto max-w-2xl px-5 py-10">
@@ -26,7 +28,7 @@ export default function SignupPage() {
         <div className="mt-2 text-[11px] text-mute">초기 구축비는 없어요. 결제는 CMS 자동이체로, 승인 뒤 운영사가 보내는 링크로 출금 동의를 등록하면 매월 5일 매장 계좌에서 빠져요. 첫 달은 무료예요. 신청만으로 요금이 나가지 않아요.</div>
 
         <div className="mt-6">
-          <SignupForm />
+          <SignupForm agentCode={agentCode} />
         </div>
 
         <div className="mt-6 rounded-2xl bg-card p-4 text-[11px] leading-[1.8] text-mute shadow-card">

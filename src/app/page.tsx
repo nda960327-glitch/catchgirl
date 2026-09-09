@@ -828,7 +828,7 @@ export default async function Home() {
           <div className="flex flex-col gap-1">
             <Link href="/signup" className="hover:text-ink">가입 신청</Link>
             <Link href="/platform/terms" className="hover:text-ink">이용 약관</Link>
-            <Link href="/agent/login" className="hover:text-ink">담당직원 로그인</Link>
+            <Link href="/agent/login" className="hover:text-ink">담당직원 로그인 · 가입</Link>
             <Link href="/platform" className="hover:text-ink">운영사 콘솔</Link>
           </div>
           <div className="max-w-sm">

@@ -25,8 +25,8 @@ const BLANK = {
 /** 등록증 사본은 신청서와 함께 보낸다 — 세션이 없어 업로드 API 를 쓸 수 없다 */
 type Doc = { full: string; thumb: string } | null;
 
-export function SignupForm() {
-  const [f, setF] = useState(BLANK);
+export function SignupForm({ agentCode = "" }: { agentCode?: string }) {
+  const [f, setF] = useState({ ...BLANK, agentCode });
   const [doc, setDoc] = useState<Doc>(null);
   const [slugTouched, setSlugTouched] = useState(false);
   const [preparing, setPreparing] = useState(false);
@@ -171,7 +171,7 @@ export function SignupForm() {
           <Field label="연락받을 전화 또는 텔레그램" hint="운영사가 확인 결과를 알려드릴 곳 · 손님에게는 안 보여요">
             <Input value={f.ownerContact} onChange={(e) => setF({ ...f, ownerContact: e.target.value })} placeholder="010-0000-0000 또는 @telegram" maxLength={120} className="h-11" />
           </Field>
-          <Field label="담당직원 코드" hint="소개해 준 직원이 있으면 그 코드 · 없으면 비워 두세요">
+          <Field label="담당직원 코드" hint={agentCode ? "소개 링크로 오셔서 코드가 들어가 있어요" : "소개해 준 직원이 있으면 그 코드 · 없으면 비워 두세요"}>
             <Input value={f.agentCode} onChange={(e) => setF({ ...f, agentCode: e.target.value.toUpperCase() })} placeholder="예: KIM01" maxLength={10} className="h-11 font-mono" />
           </Field>
         </div>

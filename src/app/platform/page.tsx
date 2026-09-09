@@ -20,7 +20,7 @@ const DEMO_SLUG = "secret-garden";
 const ACTION_LABEL: Record<string, string> = {
   STORE_CREATED: "매장 생성", PLAN_CHANGED: "요금제 변경", CONTRACT_UPDATED: "계약 정보", ADMIN_RESET: "관리자 계정",
   ENTERED_AS_ADMIN: "관리자로 들어감", SUSPENDED: "이용 중지", RESUMED: "이용 재개", PAID: "입금", UNPAID: "입금 취소",
-  BROADCAST: "전체 공지", STORE_DELETED: "매장 삭제", SIGNUP: "가입 신청", APPROVED: "가입 승인", BIZ_VERIFIED: "사업자 확인", CMS_UPDATED: "자동이체 정보",
+  BROADCAST: "전체 공지", STORE_DELETED: "매장 삭제", SIGNUP: "가입 신청", APPROVED: "가입 승인", BIZ_VERIFIED: "사업자 확인", CMS_UPDATED: "자동이체 정보", AGENT_SIGNUP: "담당직원 가입", AGENT_CREATED: "담당직원 생성",
 };
 
 /**

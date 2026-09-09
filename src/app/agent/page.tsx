@@ -8,6 +8,8 @@ import { PENDING_REASON } from "@/lib/terms";
 import { won } from "@/lib/utils";
 import { Card, Chip } from "@/components/ui";
 import { logoutAgent } from "./actions";
+import { CopyLink } from "@/components/copy-link";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -19,9 +21,13 @@ const TONE: Record<CommissionStatus, "mute" | "gold" | "brand" | "green" | "red"
  * 담당직원 화면 — 내가 데려온 매장과 커미션.
  * 매장 안은 못 들어간다. 이름·요금제·약정·상태·커미션만 보인다.
  */
-export default async function AgentPortal() {
+export default async function AgentPortal({ searchParams }: { searchParams: Promise<{ welcome?: string }> }) {
   const agent = await getAgent();
   if (!agent) redirect("/agent/login");
+  const { welcome } = await searchParams;
+  const host = (await headers()).get("host") ?? "www.catchgirl.kr";
+  const base = host.startsWith("localhost") ? `http://${host}` : `https://${host}`;
+  const referral = `${base}/signup?agent=${agent.code}`;
 
   const stores = await prisma.store.findMany({
     where: { agentId: agent.id },
@@ -65,6 +71,20 @@ export default async function AgentPortal() {
             <button className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-mute">나가기</button>
           </form>
         </div>
+
+        {welcome && (
+          <Card className="mt-5 border-brand/40 bg-blush-lt/40 p-5">
+            <div className="font-serif text-[18px] font-bold text-ink">가입됐어요. 내 코드는 <span className="font-mono text-brand">{agent.code}</span></div>
+            <p className="mt-1 text-[12px] leading-[1.8] text-mute">매장 사장에게 아래 링크를 보내면 신청서에 코드가 미리 들어가 있어요. 직접 신청서를 쓰는 사장에게는 코드만 알려 줘도 돼요. 매장이 승인되고 첫 출금이 성공하면 커미션이 확정돼요.</p>
+          </Card>
+        )}
+
+        <Card className="mt-5 p-5">
+          <div className="text-[14px] font-bold text-ink">내 소개 링크</div>
+          <div className="mt-1 text-[11px] text-mute">이 링크로 신청하면 담당직원 코드가 자동으로 들어가요. 카톡·문자·텔레그램으로 그냥 보내세요.</div>
+          <div className="mt-2"><CopyLink value={referral} /></div>
+          <div className="mt-2 text-[11px] text-mute">코드만 알려 줄 때: <b className="font-mono text-ink">{agent.code}</b> · 홈페이지 <b className="text-ink">{base.replace(/^https?:\/\//, "")}</b> · 시연 안내 <b className="text-ink">{base.replace(/^https?:\/\//, "")}/demo</b></div>
+        </Card>
 
         <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
