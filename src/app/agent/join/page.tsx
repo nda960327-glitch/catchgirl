@@ -76,6 +76,36 @@ export default async function AgentJoinPage() {
         </div>
       </section>
 
+      {/* 밤일하는 분 */}
+      <section className="mx-auto max-w-5xl px-5 pb-6">
+        <div className="grid gap-4 rounded-[28px] border border-brand/30 bg-blush-lt/40 p-6 md:grid-cols-[1.2fr_1fr] md:p-8">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-brand">밤에 일하는 분이면</div>
+            <h2 className="mt-2 font-serif text-[26px] font-bold leading-[1.25] md:text-[32px]">낮이 비잖아요.<br />낮 미팅 한 번에 {won(P)}이에요.</h2>
+            <p className="mt-3 text-[13px] leading-[1.9] text-mute">
+              밤에 일하는 사람은 낮에 시간이 있어요. 그 시간에 아는 사장 한 분 만나서 5분 보여 주고 한 건만 잡으면 그 낮이 {won(P)}이에요.
+              이 업계 사장을 이미 아는 사람이 바로 당신이에요. 손님으로, 직원으로, 옆 가게로 알고 지낸 매장이 전부 대상이에요. 남들은 소개받아야 만나는 사장을 당신은 카톡 한 통에 만나요.
+            </p>
+            <ul className="mt-4 grid gap-2 text-[12px] sm:grid-cols-2">
+              {[
+                ["일주일에 낮 미팅 두 번", `한 달 8건 → ${won(P * 8)}`],
+                ["그중 셋이 Max면", `${won(P * 5 + M * 3)}`],
+                ["방문 세팅까지 직접", `한 곳에 +${won(O)} · 반나절`],
+                ["출근 전에 끝나요", "낮 2시 미팅, 5시 퇴근, 밤엔 원래 일"],
+              ].map(([t, d]) => (
+                <li key={t} className="rounded-xl bg-card px-3 py-2.5"><div className="font-bold text-ink">{t}</div><div className="text-mute">{d}</div></li>
+              ))}
+            </ul>
+          </div>
+          <div className="flex flex-col justify-center rounded-2xl bg-ink p-5 text-on-ink">
+            <div className="text-[10px] font-semibold uppercase tracking-[.2em] text-gold-lt">낮 한 번 = </div>
+            <div className="mt-1 font-serif text-[40px] font-bold leading-none text-gold-lt">{won(P)}</div>
+            <div className="mt-2 text-[12px] leading-[1.8] opacity-85">밤 일당 며칠 치예요. 잠 줄일 필요 없어요. 커피 한 잔 마시면서 폰 하나 보여 주는 거예요.</div>
+            <Link href="/agent/signup" className="mt-4 rounded-xl bg-gold-lt px-4 py-2.5 text-center text-[12px] font-bold text-ink">내 코드 받고 낮에 한 건 잡기</Link>
+          </div>
+        </div>
+      </section>
+
       {/* 투잡 */}
       <section className="mx-auto max-w-5xl px-5 pb-14">
         <div className="rounded-[28px] bg-ink p-6 text-on-ink md:p-10">
