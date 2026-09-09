@@ -7,6 +7,7 @@ import { customFilterKey, parseCustomFilterKey, parseFieldOptions } from "@/lib/
 import { TopBar, Sticker } from "@/components/ui";
 import { StaffCard } from "@/components/staff-card";
 import { FilterBar } from "./filter-bar";
+import { josa, staffLabelOf } from "@/lib/labels";
 
 // 지금 자리가 있는지는 매 순간 달라지므로 캐시하지 않는다
 export const dynamic = "force-dynamic";
@@ -63,12 +64,12 @@ export default async function BartenderListPage({
 
   return (
     <div className="animate-fade">
-      <TopBar title="캐치걸" back={`/${slug}`} />
+      <TopBar title={staffLabelOf(store)} back={`/${slug}`} />
       <div className="flex items-center gap-3 px-5 pt-5">
         <Sticker k="p9" size={58} />
         <div>
           <div className="font-serif text-[18px] font-bold text-ink">누구와 함께 할까요</div>
-          <div className="mt-1 text-[11px] text-mute">캐치걸를 고르면 날짜와 시간을 선택할 수 있어요</div>
+          <div className="mt-1 text-[11px] text-mute">{josa(staffLabelOf(store), "을")} 고르면 날짜와 시간을 선택할 수 있어요</div>
         </div>
       </div>
 
@@ -104,7 +105,7 @@ export default async function BartenderListPage({
             <Sticker k="p6" size={80} variant="decor" />
             <div className="mt-1 text-[13px] font-semibold text-ink">지금 바로 되는 자리가 없어요</div>
             <div className="mt-0.5 text-[11px] text-mute">조건을 줄이거나 다른 날짜를 확인해 보세요</div>
-            <Link href={href({ now: false })} className="mt-2 text-[11px] font-semibold text-brand">전체 캐치걸 보기 ›</Link>
+            <Link href={href({ now: false })} className="mt-2 text-[11px] font-semibold text-brand">전체 {staffLabelOf(store)} 보기 ›</Link>
           </div>
         ) : (
           staff.map((s) => <StaffCard key={s.id} s={s} href={`/${slug}/bartenders/${s.id}`} />)

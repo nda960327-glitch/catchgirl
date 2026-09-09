@@ -9,6 +9,7 @@ import { parseJsonArray } from "@/lib/utils";
 import { Avatar, Card, Chip, Eyebrow, GradeChip, StatusChip, Stars } from "@/components/ui";
 import { CustomerAccount, CustomerInfoForm, CustomerNotes } from "./memo-form";
 import { Coupons } from "./coupons";
+import { staffLabelOf } from "@/lib/labels";
 
 export default async function CustomerDetail({ params }: { params: Promise<{ slug: string; id: string }> }) {
   const { slug, id } = await params;
@@ -115,7 +116,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ slu
         <div className="flex flex-col gap-5">
           <Card className="p-5">
             <Eyebrow>Preference</Eyebrow>
-            <div className="mt-1 text-[14px] font-bold text-ink">주로 지정한 캐치걸</div>
+            <div className="mt-1 text-[14px] font-bold text-ink">주로 지정한 {staffLabelOf(store)}</div>
             <div className="mt-3 flex flex-col gap-2">
               {staffRank.length === 0 && <div className="text-[12px] text-mute">아직 예약 이력이 없어요</div>}
               {staffRank.map((x, i) => (

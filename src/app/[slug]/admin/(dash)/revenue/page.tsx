@@ -8,6 +8,7 @@ import { cn, parseJsonArray, won, wonShort, ymd, STORE_FEE_PER_HOUR, WEEKDAYS_KO
 import { Avatar, Card, Chip, Eyebrow } from "@/components/ui";
 import { PlanBadge } from "@/components/admin-nav";
 import { PLANS, planOf } from "@/lib/plans";
+import { staffLabelOf } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -134,7 +135,7 @@ export default async function RevenuePage({
   const kpis = [
     { label: "총 매출", value: wonShort(customerPaid), sub: `손님이 낸 금액 · 옵션 ${wonShort(optionRevenue)} 포함` },
     { label: "매장 몫 (수수료)", value: wonShort(storeRevenue - discountTotal), sub: `${totalHours}시간 × ${won(STORE_FEE_PER_HOUR)} − 할인 ${wonShort(discountTotal)}`, strong: true },
-    { label: "캐치걸 몫", value: wonShort(staffPayout), sub: "정가 기준 · 할인에 영향 없음" },
+    { label: `${staffLabelOf(store)} 몫`, value: wonShort(staffPayout), sub: "정가 기준 · 할인에 영향 없음" },
     { label: "할인", value: wonShort(discountTotal), sub: "매장이 부담한 금액" },
     { label: "예약 건수", value: `${earning.length}건`, sub: "취소·노쇼 제외" },
     { label: "건당 평균", value: wonShort(avgPerBooking), sub: "손님이 낸 금액 기준" },
@@ -219,14 +220,14 @@ export default async function RevenuePage({
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.3fr_1fr]">
         {/* 직원별 */}
         <Card className="p-5">
-          <div className="text-[13px] font-bold text-ink">캐치걸별 매출</div>
-          <div className="mt-0.5 text-[11px] text-mute">이용 시간이 많은 순 · 고객 결제액은 캐치걸 요금 + 옵션이에요</div>
+          <div className="text-[13px] font-bold text-ink">{staffLabelOf(store)}별 매출</div>
+          <div className="mt-0.5 text-[11px] text-mute">이용 시간이 많은 순 · 고객 결제액은 {staffLabelOf(store)} 요금 + 옵션이에요</div>
           {byStaff.length === 0 ? (
             <div className="mt-4 rounded-2xl border border-dashed border-line py-8 text-center text-[12px] text-mute">이 달 예약이 없어요</div>
           ) : (
             <div className="mt-3">
               <div className="hidden grid-cols-[1.2fr_60px_70px_100px_110px] gap-2 border-b border-line px-1 pb-2 text-[10px] font-semibold text-mute md:grid">
-                <span>캐치걸</span><span className="text-right">예약</span><span className="text-right">시간</span><span className="text-right">매장 매출</span><span className="text-right">고객 결제액</span>
+                <span>{staffLabelOf(store)}</span><span className="text-right">예약</span><span className="text-right">시간</span><span className="text-right">매장 매출</span><span className="text-right">고객 결제액</span>
               </div>
               {byStaff.map((s, i) => (
                 <Link
@@ -324,7 +325,7 @@ export default async function RevenuePage({
           <div className="mt-3 flex flex-wrap gap-2">
             {[
               ["reservations", "예약 내역", "건별 금액·상태·룸까지"],
-              ["staff", "캐치걸 정산", "1인당 시간·매장 몫·캐치걸 몫"],
+              ["staff", `${staffLabelOf(store)} 정산`, `1인당 시간·매장 몫·${staffLabelOf(store)} 몫`],
               ["customers", "고객 명단", "연락처·방문·누적 지출 (기간 전체)"],
             ].map(([t, label, hint]) => (
               <a
@@ -339,7 +340,7 @@ export default async function RevenuePage({
           </div>
         ) : (
           <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl bg-well px-4 py-3">
-            <span className="text-[11px] text-mute">Max 요금제로 올리시면 예약 내역·캐치걸 정산·고객 명단을 CSV 로 내려받으실 수 있어요.</span>
+            <span className="text-[11px] text-mute">Max 요금제로 올리시면 예약 내역·{staffLabelOf(store)} 정산·고객 명단을 CSV 로 내려받으실 수 있어요.</span>
             <Link href={`/${slug}/admin/plan`} className="text-[11px] font-bold text-brand underline-offset-2 hover:underline">요금제 보기 ›</Link>
           </div>
         )}

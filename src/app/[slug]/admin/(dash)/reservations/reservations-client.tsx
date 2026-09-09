@@ -10,6 +10,7 @@ import { useToast } from "@/components/providers";
 import { cn, ymd } from "@/lib/utils";
 import { CHANNELS, CHANNEL_LABEL, type Channel } from "@/lib/sources";
 import { adminCreateReservation, adminSetReservationStatus, adminUpdateReservation } from "../../actions";
+import { useStaffLabel } from "@/components/store-label";
 
 export type ResRow = {
   id: string; code: string; startTime: string; date: string; time: string; endLabel: string; hours: number; totalPrice: number; optionNames: string[];
@@ -41,6 +42,7 @@ export function ReservationsClient({ slug, rows, staff, customers, sources, filt
   filters: { date: string; staffId: string; q: string; status: string }; times: string[]; openNew: boolean; focusId?: string; staffPhotos: Record<string, string | null>;
   page: number; pageCount: number; totalCount: number;
 }) {
+  const staffLabel = useStaffLabel();
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
@@ -81,7 +83,7 @@ export function ReservationsClient({ slug, rows, staff, customers, sources, filt
         <Field label="날짜">
           <Input type="date" value={f.date} onChange={(e) => apply({ date: e.target.value })} className="h-10 w-[150px] text-[12px]" />
         </Field>
-        <Field label="캐치걸">
+        <Field label={staffLabel}>
           <Select value={f.staffId} onChange={(e) => apply({ staffId: e.target.value })} className="h-10">
             <option value="">전체</option>
             {staff.map((s) => <option key={s.id} value={s.id}>{s.nickname}</option>)}
@@ -111,7 +113,7 @@ export function ReservationsClient({ slug, rows, staff, customers, sources, filt
       {/* 리스트 */}
       <Card className="mt-3 overflow-hidden">
         <div className="hidden grid-cols-[110px_90px_1fr_1fr_110px_170px] gap-2 border-b border-line bg-well px-4 py-2.5 text-[11px] font-semibold text-mute md:grid">
-          <span>일시</span><span>캐치걸</span><span>고객</span><span>요청사항</span><span>상태</span><span className="text-right">처리</span>
+          <span>일시</span><span>{staffLabel}</span><span>고객</span><span>요청사항</span><span>상태</span><span className="text-right">처리</span>
         </div>
         {rows.length === 0 && <div className="py-10 text-center text-[12px] text-mute">조건에 맞는 예약이 없어요</div>}
         {rows.map((r) => (
@@ -222,6 +224,7 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
  * "재방문이면 앱" 으로 묶어 두면 숫자가 틀어진다.
  */
 function NewReservationModal({ slug, staff, customers, sources, times, defaultDate, onClose }: { slug: string; staff: StaffLite[]; customers: CustomerLite[]; sources: SourceLite[]; times: string[]; defaultDate: string; onClose: () => void }) {
+  const staffLabel = useStaffLabel();
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
@@ -330,7 +333,7 @@ function NewReservationModal({ slug, staff, customers, sources, times, defaultDa
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="캐치걸"><Select value={form.staffId} onChange={(e) => setForm({ ...form, staffId: e.target.value })} className="w-full">{staff.map((s) => <option key={s.id} value={s.id}>{s.nickname}</option>)}</Select></Field>
+          <Field label={staffLabel}><Select value={form.staffId} onChange={(e) => setForm({ ...form, staffId: e.target.value })} className="w-full">{staff.map((s) => <option key={s.id} value={s.id}>{s.nickname}</option>)}</Select></Field>
           <Field label="이용 시간"><Select value={String(form.hours)} onChange={(e) => setForm({ ...form, hours: Number(e.target.value) })} className="w-full">{HOUR_CHOICES.map((h) => <option key={h} value={h}>{h}시간</option>)}</Select></Field>
           <Field label="날짜"><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="h-11" /></Field>
           <Field label="시간"><Select value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="w-full">{times.map((t) => <option key={t}>{t}</option>)}</Select></Field>
@@ -345,6 +348,7 @@ function NewReservationModal({ slug, staff, customers, sources, times, defaultDa
 }
 
 function EditModal({ slug, row, staff, times, onClose }: { slug: string; row: ResRow; staff: StaffLite[]; times: string[]; onClose: () => void }) {
+  const staffLabel = useStaffLabel();
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
@@ -363,13 +367,13 @@ function EditModal({ slug, row, staff, times, onClose }: { slug: string; row: Re
     <Modal title={`예약 수정 · ${row.customerName}`} onClose={onClose}>
       <div className="mt-5 flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="캐치걸"><Select value={form.staffId} onChange={(e) => setForm({ ...form, staffId: e.target.value })} className="w-full">{staff.map((s) => <option key={s.id} value={s.id}>{s.nickname}</option>)}</Select></Field>
+          <Field label={staffLabel}><Select value={form.staffId} onChange={(e) => setForm({ ...form, staffId: e.target.value })} className="w-full">{staff.map((s) => <option key={s.id} value={s.id}>{s.nickname}</option>)}</Select></Field>
           <Field label="이용 시간"><Select value={String(form.hours)} onChange={(e) => setForm({ ...form, hours: Number(e.target.value) })} className="w-full">{HOUR_CHOICES.map((h) => <option key={h} value={h}>{h}시간</option>)}</Select></Field>
           <Field label="날짜"><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="h-11" /></Field>
           <Field label="시간"><Select value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="w-full">{times.map((t) => <option key={t}>{t}</option>)}</Select></Field>
         </div>
         <Field label="요청사항"><Textarea rows={2} value={form.requestNote} onChange={(e) => setForm({ ...form, requestNote: e.target.value })} /></Field>
-        {moved && <div className="rounded-xl bg-blush-lt px-3 py-2 text-[11px] text-brand">일시/캐치걸/이용 시간을 바꾸면 기존 예약은 취소되고 새 예약번호로 다시 생성돼요. 금액도 지금 요금으로 다시 계산돼요.</div>}
+        {moved && <div className="rounded-xl bg-blush-lt px-3 py-2 text-[11px] text-brand">일시/{staffLabel}/이용 시간을 바꾸면 기존 예약은 취소되고 새 예약번호로 다시 생성돼요. 금액도 지금 요금으로 다시 계산돼요.</div>}
         <Button size="lg" onClick={submit} loading={pending}>저장</Button>
       </div>
     </Modal>

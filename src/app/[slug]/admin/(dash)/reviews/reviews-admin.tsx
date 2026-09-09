@@ -7,6 +7,7 @@ import { Button, Card, Chip, Stars, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { adminCommentAction, adminReviewAction } from "../../actions";
+import { useStaffLabel } from "@/components/store-label";
 
 export type AdminReview = { id: string; staffName: string; customerName: string; rating: number; content: string; photos: string[]; isHidden: boolean; isReported: boolean; reportReason: string | null; reply: string | null; createdAt: string };
 export type AdminComment = { id: string; staffName: string; authorName: string; authorType: string; content: string; isHidden: boolean; createdAt: string; replies: AdminComment[] };
@@ -119,11 +120,12 @@ function CommentLine({ c, slug, pending, act, replyFor, setReplyFor, replyText, 
   c: AdminComment; slug: string; pending: boolean; act: ActFn;
   replyFor: string | null; setReplyFor: (v: string | null) => void; replyText: string; setReplyText: (v: string) => void; isReply?: boolean;
 }) {
+  const staffLabel = useStaffLabel();
   return (
     <div className={cn(c.isHidden && "opacity-50")}>
       <div className="flex flex-wrap items-center gap-2 text-[12px]">
         <span className="font-bold text-ink">{c.authorName}</span>
-        {c.authorType !== "CUSTOMER" && <Chip>{c.authorType === "ADMIN" ? "매장 답글" : "캐치걸 답글"}</Chip>}
+        {c.authorType !== "CUSTOMER" && <Chip>{c.authorType === "ADMIN" ? "매장 답글" : `${staffLabel} 답글`}</Chip>}
         {!isReply && <span className="text-mute">@ {c.staffName} 게시판</span>}
         {c.isHidden && <Chip tone="mute">숨김</Chip>}
         <span className="ml-auto text-[10px] text-mute">{format(new Date(c.createdAt), "MM.dd HH:mm")}</span>

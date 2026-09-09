@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui";
+import { staffLabelOf } from "@/lib/labels";
 
 /**
  * 새 매장 첫 화면의 할 일 목록.
@@ -8,7 +9,8 @@ import { Card } from "@/components/ui";
  * 세팅은 매장이 직접 한다 — 그래서 무엇을 아직 안 했는지가 대시보드 맨 위에 보여야 한다.
  * 데이터를 보고 스스로 채워지는 목록이라 누를 버튼이 없다. 다 하면 사라진다.
  */
-export async function SetupChecklist({ slug, storeId, logoUrl, createdAt }: { slug: string; storeId: string; logoUrl: string | null; createdAt: Date }) {
+export async function SetupChecklist({ slug, storeId, logoUrl, createdAt, staffLabel }: { slug: string; storeId: string; logoUrl: string | null; createdAt: Date; staffLabel: string }) {
+  const label = staffLabelOf({ staffLabel });
   // 오래된 매장에는 안 띄운다 — 다 채우고도 남을 시간이다
   if (Date.now() - createdAt.getTime() > 1000 * 60 * 60 * 24 * 120) return null;
 
@@ -22,7 +24,7 @@ export async function SetupChecklist({ slug, storeId, logoUrl, createdAt }: { sl
 
   const items = [
     { done: !!logoUrl, label: "매장 로고 올리기", hint: "앱 아이콘과 화면 색이 이 로고를 따라가요", href: `/${slug}/admin/settings` },
-    { done: staff > 0, label: "캐치걸 등록하기", hint: staff > 0 && staffWithPhoto < staff ? `${staff - staffWithPhoto}명은 아직 사진이 없어요` : "이름·시급·프로필·제공 옵션", href: `/${slug}/admin/staff?edit=new` },
+    { done: staff > 0, label: `${label} 등록하기`, hint: staff > 0 && staffWithPhoto < staff ? `${staff - staffWithPhoto}명은 아직 사진이 없어요` : "이름·시급·프로필·제공 옵션", href: `/${slug}/admin/staff?edit=new` },
     { done: schedules > 0, label: "출근 요일 잡기", hint: "요일별로 나올 수 있는 사람을 정해야 손님 화면에 떠요", href: `/${slug}/admin/staff/schedule` },
     { done: rooms > 0, label: "룸 이름 바꾸기", hint: "'1번 룸' 대신 매장에서 부르는 이름으로", href: `/${slug}/admin/settings` },
     { done: customers > 0, label: "기존 손님 옮기기", hint: "닉네임 목록을 붙여 넣으면 연결코드가 한꺼번에 나와요", href: `/${slug}/admin/customers` },

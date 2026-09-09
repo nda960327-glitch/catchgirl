@@ -7,6 +7,7 @@ import { Eyebrow } from "@/components/ui";
 import { ScheduleBoard } from "./schedule-board";
 import { WeekBoard } from "./week-board";
 import { AttendanceCard, type AttendanceRow } from "./attendance-card";
+import { staffLabelOf } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +88,7 @@ export default async function SchedulePage({
         </div>
         <div className="flex gap-2">
           <Link href={`/${slug}/admin/settings#rooms`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink">룸 이름·개수 ›</Link>
-          <Link href={`/${slug}/admin/staff`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink">캐치걸 목록 ›</Link>
+          <Link href={`/${slug}/admin/staff`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink">{staffLabelOf(store)} 목록 ›</Link>
         </div>
       </div>
 

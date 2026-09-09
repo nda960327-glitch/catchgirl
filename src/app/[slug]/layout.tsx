@@ -2,6 +2,7 @@ import { getStoreBySlug } from "@/lib/store";
 import { THEMES, themeOf, themeStyle } from "@/lib/themes";
 import { isPlatform } from "@/lib/platform";
 import { Suspended } from "@/components/suspended";
+import { StoreLabelProvider } from "@/components/store-label";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export default async function StoreLayout({ children, params }: { children: Reac
         data-nologo={dark && !logo ? "" : undefined}
         style={logo ? ({ "--store-logo": `url("${logo}")` } as React.CSSProperties) : undefined}
       >
-        {children}
+        <StoreLabelProvider staffLabel={store.staffLabel}>{children}</StoreLabelProvider>
       </div>
     </>
   );

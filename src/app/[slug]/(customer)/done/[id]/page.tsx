@@ -7,6 +7,7 @@ import { resolveRooms } from "@/lib/reservations";
 import { fmtDateKo, fmtTimeKo } from "@/lib/utils";
 import { Sticker } from "@/components/ui";
 import { DoneActions } from "./done-actions";
+import { staffLabelOf } from "@/lib/labels";
 
 export default async function DonePage({ params }: { params: Promise<{ slug: string; id: string }> }) {
   const { slug, id } = await params;
@@ -22,7 +23,7 @@ export default async function DonePage({ params }: { params: Promise<{ slug: str
   const rows: [string, string][] = [
     ["일시", `${fmtDateKo(r.startTime)} ${fmtTimeKo(r.startTime)}`],
     ["이용 시간", `${r.hours}시간 (~ ${fmtTimeKo(r.endTime)})`],
-    ["캐치걸", r.staff.nickname],
+    [staffLabelOf(store), r.staff.nickname],
     ["자리", roomName ?? "방문 시 안내"],
     ["닉네임", r.customer.nickname],
     ...(r.options.length ? ([["옵션", r.options.map((o) => o.name).join(", ")]] as [string, string][]) : []),
@@ -65,7 +66,7 @@ export default async function DonePage({ params }: { params: Promise<{ slug: str
         slug={slug}
         reservationId={r.id}
         status={r.status}
-        ics={{ title: `${store.name} · ${r.staff.nickname} 캐치걸`, start: r.startTime.toISOString(), end: r.endTime.toISOString(), location: store.name, code: r.code }}
+        ics={{ title: `${store.name} · ${r.staff.nickname} ${staffLabelOf(store)}`, start: r.startTime.toISOString(), end: r.endTime.toISOString(), location: store.name, code: r.code }}
       />
       <Link href={`/${slug}`} className="mt-4 text-[11px] text-mute underline-offset-2 hover:underline">홈으로</Link>
     </div>

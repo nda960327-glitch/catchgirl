@@ -18,6 +18,7 @@ export type R<T = undefined> = { ok: true; data?: T } | { ok: false; error: stri
  */
 const signupSchema = z.object({
   name: z.string().trim().min(1, "매장 이름을 입력해 주세요").max(30),
+  staffLabel: z.string().trim().min(1).max(8).default("캐치걸"),
   slug: z.string().trim().min(2, "주소는 2자 이상이어야 해요").max(30).regex(SLUG_RE, "주소는 영문 소문자·숫자·하이픈만 쓸 수 있어요"),
   adminEmail: z.string().trim().email("이메일 형식을 확인해 주세요"),
   adminPassword: z.string().min(6, "비밀번호는 6자 이상으로 정해 주세요").max(50),
@@ -71,6 +72,7 @@ export async function signupStore(input: z.input<typeof signupSchema>): Promise<
     const store = await provisionStore({
       name: d.name,
       slug: d.slug,
+      staffLabel: d.staffLabel,
       plan: d.plan,
       commitment: d.commitment,
       agentId,

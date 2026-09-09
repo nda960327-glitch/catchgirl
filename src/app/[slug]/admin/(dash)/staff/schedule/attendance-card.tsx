@@ -6,6 +6,8 @@ import { Card, Chip } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { cn, SHIFT_LABEL } from "@/lib/utils";
 import { setAttendance } from "../../../actions";
+import { useStaffLabel } from "@/components/store-label";
+import { josa } from "@/lib/labels";
 
 export type AttendanceRow = {
   id: string;
@@ -37,6 +39,7 @@ const MARKS = [
  * 그게 곧 사고이므로, 표시하면서 몇 건이 물려 있는지 같이 보여 준다.
  */
 export function AttendanceCard({ slug, date, rows }: { slug: string; date: string; rows: AttendanceRow[] }) {
+  const staffLabel = useStaffLabel();
   const [pending, start] = useTransition();
   const [noteFor, setNoteFor] = useState<string | null>(null);
   const router = useRouter();
@@ -70,7 +73,7 @@ export function AttendanceCard({ slug, date, rows }: { slug: string; date: strin
 
       {affected > 0 && (
         <div className="mt-2.5 rounded-2xl border border-bad/25 bg-bad-bg px-4 py-2.5 text-[11px] leading-[1.7] text-ink">
-          펑크난 자리에 <b>예약 {affected}건</b>이 걸려 있어요. 다른 캐치걸로 옮기거나 손님께 미리 연락해 주세요.
+          펑크난 자리에 <b>예약 {affected}건</b>이 걸려 있어요. 다른 {josa(staffLabel, "으로")} 옮기거나 손님께 미리 연락해 주세요.
         </div>
       )}
 

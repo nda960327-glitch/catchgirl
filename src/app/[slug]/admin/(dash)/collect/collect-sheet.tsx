@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, Chip } from "@/components/ui";
 import { cn, SHIFT_LABEL, won } from "@/lib/utils";
+import { useStaffLabel } from "@/components/store-label";
 
 export type CollectRow = {
   id: string;
@@ -29,6 +30,7 @@ export type CollectRow = {
  * (시크릿 모드 등) 화면은 그대로 동작해야 한다.
  */
 export function CollectSheet({ date, rows }: { date: string; rows: CollectRow[] }) {
+  const staffLabel = useStaffLabel();
   const key = `collect-done-${date}`;
   const [done, setDone] = useState<Set<string>>(new Set());
   const [ready, setReady] = useState(false);
@@ -143,7 +145,7 @@ export function CollectSheet({ date, rows }: { date: string; rows: CollectRow[] 
       <div className="mt-3 px-1 text-[10px] leading-[1.8] text-mute">
         받은 방은 눌러서 체크해 두세요. 이 기기에만 저장되고 날짜가 바뀌면 새로 시작해요.
         <br />
-        할인은 매장이 부담한 금액이라 받을 돈에서 빠져 있어요. 캐치걸에게 줄 몫은 정가 기준 그대로예요.
+        할인은 매장이 부담한 금액이라 받을 돈에서 빠져 있어요. {staffLabel}에게 줄 몫은 정가 기준 그대로예요.
       </div>
     </>
   );

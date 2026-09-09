@@ -2,8 +2,10 @@
 
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card } from "@/components/ui";
+import { useStaffLabel } from "@/components/store-label";
 
 export function Charts({ weekly, share }: { weekly: { day: string; count: number }[]; share: { name: string; count: number }[] }) {
+  const staffLabel = useStaffLabel();
   const total = share.reduce((a, s) => a + s.count, 0) || 1;
   return (
     <div className="mt-5 grid gap-4 lg:grid-cols-5">
@@ -23,7 +25,7 @@ export function Charts({ weekly, share }: { weekly: { day: string; count: number
         </div>
       </Card>
       <Card className="p-5 lg:col-span-2">
-        <div className="text-[13px] font-bold text-ink">캐치걸별 예약 점유율</div>
+        <div className="text-[13px] font-bold text-ink">{staffLabel}별 예약 점유율</div>
         <div className="mt-0.5 text-[11px] text-mute">최근 30일</div>
         <div className="mt-3 h-[200px]">
           <ResponsiveContainer width="100%" height="100%">

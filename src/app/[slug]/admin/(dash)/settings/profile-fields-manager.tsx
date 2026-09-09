@@ -6,6 +6,7 @@ import { Button, Card, Chip, Eyebrow, Field, Input } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { deleteProfileField, saveProfileField } from "../../actions";
+import { useStaffLabel } from "@/components/store-label";
 
 export type ProfileFieldItem = {
   id: string;
@@ -25,6 +26,7 @@ export type ProfileFieldItem = {
  * 매장이 이름과 보기를 정한다. 보기 항목은 손님 화면 조건 검색 칩으로도 붙는다.
  */
 export function ProfileFieldsManager({ slug, items }: { slug: string; items: ProfileFieldItem[] }) {
+  const staffLabel = useStaffLabel();
   const [rows, setRows] = useState(items);
   const [pending, start] = useTransition();
   const router = useRouter();
@@ -48,7 +50,7 @@ export function ProfileFieldsManager({ slug, items }: { slug: string; items: Pro
 
   const remove = (row: ProfileFieldItem) =>
     start(async () => {
-      const who = row.usedBy > 0 ? `\n\n캐치걸 ${row.usedBy}명이 적어 둔 값도 함께 지워져요.` : "";
+      const who = row.usedBy > 0 ? `\n\n${staffLabel} ${row.usedBy}명이 적어 둔 값도 함께 지워져요.` : "";
       if (!confirm(`'${row.label}' 항목을 삭제할까요?${who}`)) return;
       const r = await deleteProfileField(slug, row.id);
       toast(r.ok ? "삭제했어요" : r.error, r.ok ? "success" : "error");
@@ -62,7 +64,7 @@ export function ProfileFieldsManager({ slug, items }: { slug: string; items: Pro
       <p className="mt-1 text-[12px] leading-[1.7] text-mute">
         키·몸무게·흡연·문신 말고 더 보여주고 싶은 게 있으면 여기서 항목을 만드세요. 예: 외국어(영어·일본어·중국어), 성형 여부(자연·있음).
         <br />
-        <b className="text-ink">보기</b>로 만든 항목은 손님 화면의 조건 검색 칩으로도 붙어요. 값은 직원 관리에서 캐치걸마다 적어요.
+        <b className="text-ink">보기</b>로 만든 항목은 손님 화면의 조건 검색 칩으로도 붙어요. 값은 직원 관리에서 {staffLabel}마다 적어요.
       </p>
 
       <div className="mt-4 flex flex-col gap-2.5">
@@ -86,6 +88,7 @@ function FieldRow({
   onSave: () => void;
   onRemove: () => void;
 }) {
+  const staffLabel = useStaffLabel();
   const [optInput, setOptInput] = useState("");
   const addOpt = () => {
     const v = optInput.trim();
@@ -155,7 +158,7 @@ function FieldRow({
           </div>
         </div>
       )}
-      {row.usedBy > 0 && <div className="mt-2 text-[10px] text-mute">캐치걸 {row.usedBy}명이 값을 적어 뒀어요</div>}
+      {row.usedBy > 0 && <div className="mt-2 text-[10px] text-mute">{staffLabel} {row.usedBy}명이 값을 적어 뒀어요</div>}
     </div>
   );
 }

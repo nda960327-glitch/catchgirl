@@ -9,6 +9,7 @@ import { COMMITMENT_LABEL, DEBIT_DAY, DISCOUNT_LABEL, DISCOUNT_RATE, ONSITE_SETU
 import { billingMonths, firstDebitMonth, monthsSubscribed, nextBillingDate } from "@/lib/platform-data";
 import { PlanSwitch } from "./plan-switch";
 import { TERMS, TERMS_TITLE, TERMS_VERSION, bizStatus } from "@/lib/terms";
+import { staffLabelOf } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
 
   const rows = [
     { label: "등록 고객", ...usageOf(customerCount, spec.limits.customers), unit: "명" },
-    { label: "캐치걸", ...usageOf(staffCount, spec.limits.staff), unit: "명" },
+    { label: staffLabelOf(store), ...usageOf(staffCount, spec.limits.staff), unit: "명" },
     { label: "룸", ...usageOf(roomCount, spec.limits.rooms), unit: "개" },
   ];
   const overRows = rows.filter((r) => r.over);
@@ -138,7 +139,7 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
             <tbody>
               {[
                 ["등록 고객", (p: Plan) => limitText(PLANS[p].limits.customers)],
-                ["캐치걸", (p: Plan) => limitText(PLANS[p].limits.staff)],
+                [staffLabelOf(store), (p: Plan) => limitText(PLANS[p].limits.staff)],
                 ["룸", (p: Plan) => roomLimitText(PLANS[p].limits.rooms)],
                 ["예약·고객·후기 관리", () => "전부"],
                 ["매출 관리 · 스케줄 관리", () => "전부"],

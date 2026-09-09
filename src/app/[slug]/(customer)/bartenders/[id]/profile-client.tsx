@@ -7,6 +7,8 @@ import { Avatar, Button, Card, Chip, Empty, GradeChip, Stars, Textarea } from "@
 import { useToast } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { addComment, reportReview, toggleFavorite, voteStaff } from "../../actions";
+import { useStaffLabel } from "@/components/store-label";
+import { josa } from "@/lib/labels";
 
 export type ReviewItem = { id: string; nickname: string; grade: string; rating: number; content: string; photos: string[]; reply: string | null; createdAt: string; mine: boolean };
 export type CommentItem = { id: string; authorName: string; authorType: string; content: string; createdAt: string; replies: CommentItem[] };
@@ -23,6 +25,7 @@ export function ProfileClient({
   favorited: boolean;
   votes: { up: number; down: number; my: "UP" | "DOWN" | null };
 }) {
+  const staffLabel = useStaffLabel();
   const [tab, setTab] = useState<0 | 1>(0);
   const [fav, setFav] = useState(favorited);
   const [vote, setVote] = useState(votes);
@@ -146,7 +149,7 @@ export function ProfileClient({
           </button>
         </div>
         <div className="mt-1.5 text-center text-[10px] text-mute">
-          {vote.my ? "같은 버튼을 다시 누르면 취소돼요" : "한 캐치걸에 한 표만 줄 수 있어요"}
+          {vote.my ? "같은 버튼을 다시 누르면 취소돼요" : `한 ${staffLabel}에 한 표만 줄 수 있어요`}
         </div>
 
         {/* 탭 */}
@@ -173,6 +176,7 @@ export function ProfileClient({
 }
 
 function ReviewsTab({ slug, reviews, loggedIn, requireLogin }: { slug: string; reviews: ReviewItem[]; loggedIn: boolean; requireLogin: () => void }) {
+  const staffLabel = useStaffLabel();
   const { toast } = useToast();
   if (!reviews.length) return <Empty sticker="p6" title="아직 후기가 없어요" desc="방문을 완료한 분만 후기를 남길 수 있어요" />;
   return (
@@ -195,7 +199,7 @@ function ReviewsTab({ slug, reviews, loggedIn, requireLogin }: { slug: string; r
           )}
           {r.reply && (
             <div className="mt-3 rounded-2xl bg-blush-lt px-3.5 py-3">
-              <div className="text-[10px] font-bold text-brand">캐치걸 답글</div>
+              <div className="text-[10px] font-bold text-brand">{staffLabel} 답글</div>
               <p className="mt-1 text-[12px] leading-[1.7] text-ink">{r.reply}</p>
             </div>
           )}
@@ -221,6 +225,7 @@ function ReviewsTab({ slug, reviews, loggedIn, requireLogin }: { slug: string; r
 }
 
 function CommentsTab({ slug, staffId, staffName, comments, loggedIn, requireLogin }: { slug: string; staffId: string; staffName: string; comments: CommentItem[]; loggedIn: boolean; requireLogin: () => void }) {
+  const staffLabel = useStaffLabel();
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -254,7 +259,7 @@ function CommentsTab({ slug, staffId, staffName, comments, loggedIn, requireLogi
         </div>
       </div>
       {!comments.length ? (
-        <Empty sticker="p2" title="첫 댓글을 남겨볼까요" desc="캐치걸가 직접 답글을 달아드려요" />
+        <Empty sticker="p2" title="첫 댓글을 남겨볼까요" desc={`${josa(staffLabel, "이")} 직접 답글을 달아드려요`} />
       ) : (
         <div className="mt-4 flex flex-col gap-3">
           {comments.map((c) => (
@@ -274,6 +279,7 @@ function CommentsTab({ slug, staffId, staffName, comments, loggedIn, requireLogi
 }
 
 function CommentRow({ c, onReply }: { c: CommentItem; onReply?: () => void }) {
+  const staffLabel = useStaffLabel();
   const isStaff = c.authorType !== "CUSTOMER";
   return (
     <div className={cn("flex gap-2.5 rounded-2xl p-3", isStaff ? "bg-blush-lt" : "border border-line bg-card")}>
@@ -281,7 +287,7 @@ function CommentRow({ c, onReply }: { c: CommentItem; onReply?: () => void }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span className="text-[12px] font-bold text-ink">{c.authorName}</span>
-          {isStaff && <Chip>{c.authorType === "ADMIN" ? "매장" : "캐치걸"}</Chip>}
+          {isStaff && <Chip>{c.authorType === "ADMIN" ? "매장" : staffLabel}</Chip>}
           <span className="ml-auto text-[10px] text-mute/80">{format(new Date(c.createdAt), "MM.dd HH:mm")}</span>
         </div>
         <p className="mt-1 text-[12px] leading-[1.7] text-ink/90">{c.content}</p>

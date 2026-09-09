@@ -9,6 +9,8 @@ import { uploadImages } from "@/lib/image-client";
 import { cn } from "@/lib/utils";
 import type { ProfileFieldDef } from "@/lib/profile";
 import { deleteStaff, saveStaff, staffDeletionImpact } from "../../actions";
+import { useStaffLabel } from "@/components/store-label";
+import { josa } from "@/lib/labels";
 
 export type StaffFull = {
   id: string; nickname: string; bio: string; tags: string[]; photos: string[]; isActive: boolean; capacityPerSlot: number; hourlyPrice: number; adminMemo: string; loginId: string;
@@ -30,12 +32,13 @@ const EMPTY: StaffFull = {
 };
 
 export function StaffManager({ slug, items, storeOptions, profileFields, initialEdit }: { slug: string; items: StaffFull[]; storeOptions: StoreOptionLite[]; profileFields: ProfileFieldDef[]; initialEdit?: string }) {
+  const staffLabel = useStaffLabel();
   const [editing, setEditing] = useState<StaffFull | null>(initialEdit === "new" ? EMPTY : items.find((i) => i.id === initialEdit) ?? null);
   return (
     <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_440px]">
       <div className="flex flex-col gap-3">
         <div className="flex justify-end">
-          <Button size="sm" onClick={() => setEditing(EMPTY)}>+ 캐치걸 등록</Button>
+          <Button size="sm" onClick={() => setEditing(EMPTY)}>+ {staffLabel} 등록</Button>
         </div>
         {items.map((s) => (
           <Card key={s.id} className={cn("p-4", editing?.id === s.id && "border-brand")}>
@@ -93,7 +96,7 @@ export function StaffManager({ slug, items, storeOptions, profileFields, initial
       </div>
       <div className="xl:sticky xl:top-6 xl:self-start">
         {editing ? <StaffEditor key={editing.id || "new"} slug={slug} init={editing} storeOptions={storeOptions} profileFields={profileFields} onClose={() => setEditing(null)} /> : (
-          <Card className="flex h-48 items-center justify-center p-6 text-center text-[12px] text-mute">캐치걸를 선택하면 여기서 수정할 수 있어요</Card>
+          <Card className="flex h-48 items-center justify-center p-6 text-center text-[12px] text-mute">{josa(staffLabel, "을")} 선택하면 여기서 수정할 수 있어요</Card>
         )}
       </div>
     </div>
@@ -101,6 +104,7 @@ export function StaffManager({ slug, items, storeOptions, profileFields, initial
 }
 
 function StaffEditor({ slug, init, storeOptions, profileFields, onClose }: { slug: string; init: StaffFull; storeOptions: StoreOptionLite[]; profileFields: ProfileFieldDef[]; onClose: () => void }) {
+  const staffLabel = useStaffLabel();
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
@@ -137,7 +141,7 @@ function StaffEditor({ slug, init, storeOptions, profileFields, onClose }: { slu
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between">
-        <div className="font-serif text-[17px] font-bold text-ink">{f.id ? `${init.nickname} 수정` : "새 캐치걸"}</div>
+        <div className="font-serif text-[17px] font-bold text-ink">{f.id ? `${init.nickname} 수정` : `새 ${staffLabel}`}</div>
         <button onClick={onClose} className="h-8 w-8 rounded-full border border-line bg-card text-mute">✕</button>
       </div>
       <div className="mt-4 flex flex-col gap-3.5">
@@ -251,7 +255,7 @@ function StaffEditor({ slug, init, storeOptions, profileFields, onClose }: { slu
           </div>
         </div>
 
-        <Field label="관리자 메모" hint="캐치걸에겐 안 보임">
+        <Field label="관리자 메모" hint={`${staffLabel}에겐 안 보임`}>
           <Textarea rows={2} value={f.adminMemo} onChange={(e) => setF({ ...f, adminMemo: e.target.value })} placeholder="예: 지명 많음. 주말 야간 고정 선호" />
         </Field>
         <Field label="태그" hint="Enter로 추가">
@@ -294,6 +298,7 @@ function StaffEditor({ slug, init, storeOptions, profileFields, onClose }: { slu
 
 /** 삭제는 예약·후기까지 함께 지우므로, 무엇이 사라지는지 먼저 보여주고 확인받는다 */
 function DeleteStaffButton({ slug, staffId, onDeleted }: { slug: string; staffId: string; onDeleted: () => void }) {
+  const staffLabel = useStaffLabel();
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
@@ -304,7 +309,7 @@ function DeleteStaffButton({ slug, staffId, onDeleted }: { slug: string; staffId
       if (!impact.ok) return toast(impact.error, "error");
       const { nickname, reservations, reviews } = impact.data!;
       const lines = [
-        `${nickname} 캐치걸를 삭제할까요?`,
+        `${nickname} ${josa(staffLabel, "을")} 삭제할까요?`,
         "",
         reservations || reviews
           ? `예약 ${reservations}건과 후기 ${reviews}건이 함께 영구 삭제됩니다. 매출 이력도 사라져요.`
@@ -315,7 +320,7 @@ function DeleteStaffButton({ slug, staffId, onDeleted }: { slug: string; staffId
       if (!confirm(lines.join("\n"))) return;
       const r = await deleteStaff(slug, staffId);
       if (!r.ok) return toast(r.error, "error");
-      toast(`${nickname} 캐치걸를 삭제했어요`, "success");
+      toast(`${nickname} ${josa(staffLabel, "을")} 삭제했어요`, "success");
       onDeleted();
       router.refresh();
     });
@@ -323,7 +328,7 @@ function DeleteStaffButton({ slug, staffId, onDeleted }: { slug: string; staffId
 
   return (
     <button onClick={onClick} disabled={pending} className="h-11 rounded-2xl border border-blush bg-card text-[13px] font-bold text-bad transition-colors hover:bg-bad-bg disabled:opacity-50">
-      {pending ? "확인 중…" : "캐치걸 삭제"}
+      {pending ? "확인 중…" : `${staffLabel} 삭제`}
     </button>
   );
 }

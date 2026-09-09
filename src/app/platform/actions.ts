@@ -86,6 +86,7 @@ export async function createStore(input: z.input<typeof storeSchema>): Promise<R
     const store = await provisionStore({
       name: d.name,
       slug: d.slug,
+      staffLabel: "캐치걸",
       plan: d.plan,
       commitment: d.commitment,
       agentId: d.agentId || null,

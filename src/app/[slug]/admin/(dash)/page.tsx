@@ -11,6 +11,7 @@ import { InstallApp } from "@/components/install-app";
 import { Charts } from "./charts";
 import { Timeline } from "./timeline";
 import { SetupChecklist } from "./setup-checklist";
+import { staffLabelOf } from "@/lib/labels";
 
 export default async function DashboardPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -92,7 +93,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
       </div>
 
       <InstallApp role="admin" className="mt-4" />
-      <SetupChecklist slug={slug} storeId={store.id} logoUrl={store.logoUrl} createdAt={store.createdAt} />
+      <SetupChecklist slug={slug} storeId={store.id} logoUrl={store.logoUrl} createdAt={store.createdAt} staffLabel={store.staffLabel} />
 
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {kpis.map((k) => (
@@ -192,7 +193,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
         <div className="flex items-center justify-between">
           <div>
             <div className="text-[13px] font-bold text-ink">오늘의 타임라인</div>
-            <div className="mt-0.5 text-[11px] text-mute">캐치걸 × 시간대 예약 현황</div>
+            <div className="mt-0.5 text-[11px] text-mute">{staffLabelOf(store)} × 시간대 예약 현황</div>
           </div>
           <div className="flex gap-2 text-[10px]">
             <Chip tone="brand">확정</Chip><Chip tone="green">완료</Chip><Chip tone="red">노쇼</Chip>

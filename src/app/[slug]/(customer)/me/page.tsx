@@ -12,6 +12,7 @@ import { Avatar, Card, Eyebrow, GradeChip, Stars, TopBar } from "@/components/ui
 import { HistoryTabs, type HistoryItem } from "./history-tabs";
 import { ProfileForm } from "./profile-form";
 import { logoutCustomer } from "../actions";
+import { josa, staffLabelOf } from "@/lib/labels";
 
 export default async function MyPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -130,9 +131,9 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
       {/* 찜한 캐치걸 */}
       <section className="px-4 pt-7">
         <Eyebrow className="px-1">Favorites</Eyebrow>
-        <h2 className="mt-1 px-1 font-serif text-[17px] font-bold text-ink">찜한 캐치걸</h2>
+        <h2 className="mt-1 px-1 font-serif text-[17px] font-bold text-ink">찜한 {staffLabelOf(store)}</h2>
         {favorites.length === 0 ? (
-          <div className="mt-3 rounded-2xl border border-dashed border-line px-4 py-5 text-center text-[12px] text-mute">아직 찜한 캐치걸가 없어요</div>
+          <div className="mt-3 rounded-2xl border border-dashed border-line px-4 py-5 text-center text-[12px] text-mute">아직 찜한 {josa(staffLabelOf(store), "이")} 없어요</div>
         ) : (
           <div className="no-scrollbar mt-3 flex gap-3 overflow-x-auto pb-1">
             {favorites.map((f) => (

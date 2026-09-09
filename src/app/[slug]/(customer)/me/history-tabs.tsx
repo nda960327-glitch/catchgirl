@@ -9,10 +9,13 @@ import { Avatar, Button, Card, Empty, StatusChip } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { cancelMyReservation } from "../actions";
+import { useStaffLabel } from "@/components/store-label";
+import { josa } from "@/lib/labels";
 
 export type HistoryItem = { id: string; code: string; status: string; startTime: string; endTime: string; hours: number; totalPrice: number; roomName: string | null; partySize: number; staffId: string; staffName: string; staffPhoto: string | null; hasReview: boolean };
 
 export function HistoryTabs({ slug, items }: { slug: string; items: HistoryItem[] }) {
+  const staffLabel = useStaffLabel();
   const [tab, setTab] = useState<"upcoming" | "done" | "cancelled">("upcoming");
   const router = useRouter();
   const { toast } = useToast();
@@ -44,7 +47,7 @@ export function HistoryTabs({ slug, items }: { slug: string; items: HistoryItem[
         ))}
       </div>
       {list.length === 0 ? (
-        <Empty sticker={tab === "upcoming" ? "p9" : "p2"} title={tab === "upcoming" ? "예정된 예약이 없어요" : "내역이 없어요"} desc={tab === "upcoming" ? "오늘 자리를 지키는 캐치걸를 만나보세요" : undefined} action={tab === "upcoming" ? <Link href={`/${slug}/bartenders`} className="rounded-full bg-blush-lt px-4 py-2 text-[12px] font-bold text-brand">캐치걸 보기</Link> : undefined} />
+        <Empty sticker={tab === "upcoming" ? "p9" : "p2"} title={tab === "upcoming" ? "예정된 예약이 없어요" : "내역이 없어요"} desc={tab === "upcoming" ? `오늘 자리를 지키는 ${josa(staffLabel, "을")} 만나보세요` : undefined} action={tab === "upcoming" ? <Link href={`/${slug}/bartenders`} className="rounded-full bg-blush-lt px-4 py-2 text-[12px] font-bold text-brand">{staffLabel} 보기</Link> : undefined} />
       ) : (
         <div className="mt-3 flex flex-col gap-2.5">
           {list.map((r) => {

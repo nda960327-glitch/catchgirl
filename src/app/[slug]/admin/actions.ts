@@ -10,6 +10,7 @@ import { getStoreBySlug } from "@/lib/store";
 import { cancelReservation, createReservation, sendDueReminders, SlotConflictError } from "@/lib/reservations";
 import { ymd } from "@/lib/utils";
 import { ensureInviteCode, freshInviteCode } from "@/lib/invite";
+import { josa, staffLabelOf } from "@/lib/labels";
 
 export type R<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 const fail = (e: unknown, fallback = "처리에 실패했어요."): R<never> => ({ ok: false, error: e instanceof Error && e.message !== "UNAUTHORIZED" ? e.message : e instanceof Error ? "권한이 없어요." : fallback });
@@ -162,7 +163,7 @@ export async function saveStaff(slug: string, input: z.input<typeof staffSchema>
     let id = d.id;
     if (id) {
       const ex = await prisma.staff.findUnique({ where: { id } });
-      if (!ex || ex.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+      if (!ex || ex.storeId !== store.id) return { ok: false, error: `${josa(staffLabelOf(store), "을")} 찾을 수 없어요.` };
       // set 은 수정할 때만 쓸 수 있다 (생성 시엔 connect)
       await prisma.staff.update({ where: { id }, data: { ...base, options: { set: optionIds } } });
     } else {
@@ -195,7 +196,7 @@ export async function staffDeletionImpact(slug: string, staffId: string): Promis
     const store = await getStoreBySlug(slug);
     await requireAdmin(store.id);
     const s = await prisma.staff.findUnique({ where: { id: staffId } });
-    if (!s || s.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+    if (!s || s.storeId !== store.id) return { ok: false, error: `${josa(staffLabelOf(store), "을")} 찾을 수 없어요.` };
     const [reservations, reviews] = await Promise.all([
       prisma.reservation.count({ where: { staffId } }),
       prisma.review.count({ where: { staffId } }),
@@ -215,7 +216,7 @@ export async function deleteStaff(slug: string, staffId: string): Promise<R> {
     const store = await getStoreBySlug(slug);
     await requireAdmin(store.id);
     const s = await prisma.staff.findUnique({ where: { id: staffId } });
-    if (!s || s.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+    if (!s || s.storeId !== store.id) return { ok: false, error: `${josa(staffLabelOf(store), "을")} 찾을 수 없어요.` };
     await prisma.staff.delete({ where: { id: staffId } });
     revalidatePath(`/${slug}`, "layout");
     return { ok: true };
@@ -291,7 +292,7 @@ export async function assignShift(
     }
 
     const staff = await prisma.staff.findUnique({ where: { id: staffId } });
-    if (!staff || staff.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+    if (!staff || staff.storeId !== store.id) return { ok: false, error: `${josa(staffLabelOf(store), "을")} 찾을 수 없어요.` };
 
     // 시각을 안 주면 그 조의 기본 시간대로 채운다
     const preset = shift === "DAY" ? { startTime: store.openTime, endTime: store.shiftSplitTime } : { startTime: store.shiftSplitTime, endTime: store.closeTime };
@@ -315,7 +316,7 @@ export async function assignShift(
       return mine.a < other.b && mine.b > other.a;
     });
     if (clash) {
-      return { ok: false, error: clash.staffId === staffId ? "이 캐치걸의 다른 배치와 시간이 겹쳐요." : "이 룸의 다른 배치와 시간이 겹쳐요." };
+      return { ok: false, error: clash.staffId === staffId ? `이 ${staffLabelOf(store)}의 다른 배치와 시간이 겹쳐요.` : "이 룸의 다른 배치와 시간이 겹쳐요." };
     }
 
     await prisma.$transaction([
@@ -349,7 +350,7 @@ export async function setStaffAvailability(
     if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return { ok: false, error: "요일을 확인해 주세요." };
     if (shift !== "DAY" && shift !== "NIGHT") return { ok: false, error: "조를 확인해 주세요." };
     const staff = await prisma.staff.findUnique({ where: { id: staffId } });
-    if (!staff || staff.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+    if (!staff || staff.storeId !== store.id) return { ok: false, error: `${josa(staffLabelOf(store), "을")} 찾을 수 없어요.` };
 
     if (!on) {
       await prisma.staffSchedule.deleteMany({ where: { staffId, weekday, shift } });
@@ -427,7 +428,7 @@ export async function adminAddTimeOff(slug: string, input: z.input<typeof timeOf
     if (!p.success) return { ok: false, error: "입력값을 확인해 주세요." };
     const d = p.data;
     const s = await prisma.staff.findUnique({ where: { id: d.staffId } });
-    if (!s || s.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+    if (!s || s.storeId !== store.id) return { ok: false, error: `${josa(staffLabelOf(store), "을")} 찾을 수 없어요.` };
     if (d.startTime === d.endTime) return { ok: false, error: "시작과 종료 시각이 같아요." };
     await prisma.staffTimeOff.create({ data: { ...d, createdBy: "ADMIN" } });
     revalidatePath(`/${slug}`, "layout");
@@ -1033,6 +1034,7 @@ export async function setStorePlan(slug: string, plan: "PRO" | "MAX"): Promise<R
 /* ─── 매장 설정 (화이트라벨) ─── */
 const storeSchema = z.object({
   name: z.string().trim().min(1).max(30),
+  staffLabel: z.string().trim().min(1, "직원 호칭을 적어 주세요").max(8, "호칭은 8자까지예요").default("캐치걸"),
   tagline: z.string().trim().max(40).default(""),
   heroTitle: z.string().trim().min(1, "홈 문구를 입력해 주세요").max(60),
   logoUrl: z.string().nullable().default(null),

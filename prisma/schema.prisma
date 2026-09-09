@@ -17,6 +17,7 @@ model Store {
   name                String
   slug                String   @unique
   tagline             String   @default("")
+  staffLabel          String   @default("캐치걸") // 직원을 부르는 말 — 매니저·바텐더·캐치걸 등 매장이 정한다. 화면 문구가 전부 이걸 따른다
   // 고객 홈 상단 큰 문구. {n} 자리에 오늘 예약 가능한 캐치걸 수가 들어간다.
   heroTitle           String   @default("오늘 자리를 지키는\n{n} 사람")
   logoUrl             String?

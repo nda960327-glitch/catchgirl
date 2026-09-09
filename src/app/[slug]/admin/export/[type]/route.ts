@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { businessDayRange } from "@/lib/slots";
 import { STORE_FEE_PER_HOUR, ymd } from "@/lib/utils";
 import { PLANS, planOf } from "@/lib/plans";
+import { staffLabelOf } from "@/lib/labels";
 
 /**
  * 매장 데이터를 CSV 로 내려준다. Max 요금제 기능.
@@ -61,7 +62,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       orderBy: { startTime: "asc" },
     });
     csv = toCsv(
-      ["예약번호", "영업일", "시작", "종료", "시간", "캐치걸", "고객", "룸", "상태", "시간당 금액", "옵션", "옵션 금액", "결제 금액", "매장 몫", "등록 경로"],
+      ["예약번호", "영업일", "시작", "종료", "시간", staffLabelOf(store), "고객", "룸", "상태", "시간당 금액", "옵션", "옵션 금액", "결제 금액", "매장 몫", "등록 경로"],
       rows.map((r) => [
         r.code,
         ymd(businessDayRange(store, ymd(r.startTime)).start),
@@ -97,7 +98,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
       by.set(r.staffId, e);
     }
     csv = toCsv(
-      ["캐치걸", "예약 건수", "이용 시간", "손님이 낸 금액", "매장 몫(수수료)", "캐치걸 몫"],
+      [staffLabelOf(store), "예약 건수", "이용 시간", "손님이 낸 금액", "매장 몫(수수료)", `${staffLabelOf(store)} 몫`],
       [...by.values()]
         .sort((a, b) => b.paid - a.paid)
         .map((e) => {
@@ -105,7 +106,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
           return [e.name, e.count, e.hours, e.paid, fee, e.paid - fee];
         }),
     );
-    name = `캐치걸정산_${month}`;
+    name = `${staffLabelOf(store)}정산_${month}`;
     asciiName = `staff-settlement_${month}`;
   } else if (type === "customers") {
     const rows = await prisma.customer.findMany({

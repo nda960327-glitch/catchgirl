@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Avatar, Chip } from "@/components/ui";
 import { cn, STATUS_LABEL } from "@/lib/utils";
+import { useStaffLabel } from "@/components/store-label";
 
 export type TimelineItem = {
   id: string;
@@ -146,11 +147,12 @@ export function Timeline({
 }
 
 function DetailModal({ slug, item, staffName, onClose }: { slug: string; item: TimelineItem; staffName: string; onClose: () => void }) {
+  const staffLabel = useStaffLabel();
   const grade = item.customerVisits >= 10 ? "VIP" : item.customerVisits >= 5 ? "단골" : "신규";
   const rows: [string, string][] = [
     ["예약번호", item.code],
     ["시간", `${item.time} ~ ${item.endTime} (${item.hours}시간)`],
-    ["캐치걸", staffName],
+    [staffLabel, staffName],
     ["금액", won(item.totalPrice)],
     ...(item.optionNames.length ? ([["옵션", item.optionNames.join(", ")]] as [string, string][]) : []),
     ["등록", item.createdBy === "ADMIN" ? "관리자(전화)" : "고객 앱"],

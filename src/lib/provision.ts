@@ -34,6 +34,8 @@ export async function emailProblem(email: string): Promise<string | null> {
 export type ProvisionInput = {
   name: string;
   slug: string;
+  /** 직원 호칭 — 캐치걸·매니저·바텐더 */
+  staffLabel: string;
   plan: Plan;
   commitment: Commitment;
   /** 데려온 담당직원 — 없으면 null */
@@ -63,6 +65,7 @@ export async function provisionStore(d: ProvisionInput) {
     data: {
       name: d.name,
       slug: d.slug,
+      staffLabel: d.staffLabel || "캐치걸",
       plan: d.plan,
       commitment: d.commitment,
       agentId: d.agentId,

@@ -9,6 +9,8 @@ import { Avatar, Button, Card, Chip, Field, Input, Select } from "@/components/u
 import { useToast } from "@/components/providers";
 import { cn, toLocalDate, SHIFTS, type Shift } from "@/lib/utils";
 import { adminAddTimeOff, adminDeleteTimeOff, clearDayAssignments, copyDayAssignments, setStaffAvailability } from "../../../actions";
+import { useStaffLabel } from "@/components/store-label";
+import { josa } from "@/lib/labels";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -34,6 +36,7 @@ export function ScheduleBoard({
   assignments: Assignment[];
   timeOffs: TimeOff[];
 }) {
+  const staffLabel = useStaffLabel();
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
@@ -234,11 +237,11 @@ export function ScheduleBoard({
       {/* 이 날 자리 비움 */}
       <Card className="mt-3 p-4">
         <div className="text-[13px] font-bold text-ink">이 날 자리 비움</div>
-        <div className="mt-0.5 text-[11px] text-mute">출근은 했지만 그 시간엔 예약을 받지 않아요. 캐치걸이 직접 넣은 것도 여기 보여요.</div>
+        <div className="mt-0.5 text-[11px] text-mute">출근은 했지만 그 시간엔 예약을 받지 않아요. {josa(staffLabel, "이")} 직접 넣은 것도 여기 보여요.</div>
 
         {/* 매장에서 직접 등록 — "얘 지금 나가 있음" 을 표시 */}
         <div className="mt-3 flex flex-wrap items-end gap-2 rounded-2xl bg-well p-3">
-          <Field label="캐치걸" className="min-w-[130px] flex-1">
+          <Field label={staffLabel} className="min-w-[130px] flex-1">
             <Select value={offForm.staffId} onChange={(e) => setOffForm({ ...offForm, staffId: e.target.value })} className="h-9 w-full text-[12px]">
               <option value="">선택…</option>
               {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -287,7 +290,7 @@ export function ScheduleBoard({
           <table className="w-full min-w-[620px] border-separate border-spacing-0 text-[11px]">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 bg-card px-1 pb-2 text-left font-semibold text-mute">캐치걸</th>
+                <th className="sticky left-0 z-10 bg-card px-1 pb-2 text-left font-semibold text-mute">{staffLabel}</th>
                 {WEEKDAYS.map((d, wd) => (
                   <th key={d} className={cn("px-1 pb-2 text-center font-semibold", wd === weekday ? "text-brand" : "text-mute")}>{d}</th>
                 ))}

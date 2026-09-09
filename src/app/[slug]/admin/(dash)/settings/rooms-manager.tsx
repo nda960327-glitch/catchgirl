@@ -6,11 +6,14 @@ import { useRouter } from "next/navigation";
 import { Button, Card, Chip, Eyebrow, Field, Input } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { deleteRoom, saveRoom } from "../../actions";
+import { useStaffLabel } from "@/components/store-label";
+import { josa } from "@/lib/labels";
 
 export type RoomItem = { id: string; name: string; isActive: boolean; assignedCount: number };
 
 /** 관리자 — 접객 룸 관리. 출근 배치는 여기서 만든 룸 위에서 이뤄진다. */
 export function RoomsManager({ slug, items }: { slug: string; items: RoomItem[] }) {
+  const staffLabel = useStaffLabel();
   const [rows, setRows] = useState(items);
   const [adding, setAdding] = useState("");
   const [pending, start] = useTransition();
@@ -51,7 +54,7 @@ export function RoomsManager({ slug, items }: { slug: string; items: RoomItem[] 
       <div className="mt-1 text-[14px] font-bold text-ink">접객 룸 {rows.length}개</div>
       <p className="mt-1 text-[12px] text-mute">
         <Link href={`/${slug}/admin/staff/schedule`} className="font-bold text-brand">출근 배치 ›</Link>
-        에서 이 룸에 캐치걸을 한 명씩 넣어요. 예약이 잡히면 손님에게 룸 번호가 안내돼요.
+        에서 이 룸에 {josa(staffLabel, "을")} 한 명씩 넣어요. 예약이 잡히면 손님에게 룸 번호가 안내돼요.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">

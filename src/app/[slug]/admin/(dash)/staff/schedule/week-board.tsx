@@ -6,6 +6,7 @@ import { Button, Card, Chip, Select } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { cn, SHIFTS, toLocalDate, type Shift } from "@/lib/utils";
 import { assignShift, copyDayAssignments } from "../../../actions";
+import { useStaffLabel } from "@/components/store-label";
 
 const TIMES = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`);
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -43,6 +44,7 @@ export function WeekBoard({
   assignments: Assignment[];
   presets: { DAY: { start: string; end: string }; NIGHT: { start: string; end: string } };
 }) {
+  const staffLabel = useStaffLabel();
   const router = useRouter();
   const { toast } = useToast();
   const [pending, start] = useTransition();
@@ -205,6 +207,7 @@ function CellEditor({
   onClose: () => void;
   onSave: (staffId: string, times?: { startTime: string; endTime: string; isStandby?: boolean }) => void;
 }) {
+  const staffLabel = useStaffLabel();
   const [staffId, setStaffId] = useState(current?.staffId ?? "");
   const [startTime, setStartTime] = useState(current?.startTime ?? preset.start);
   const [endTime, setEndTime] = useState(current?.endTime ?? preset.end);
@@ -240,7 +243,7 @@ function CellEditor({
 
         <div className="mt-4 flex flex-col gap-3">
           <label className="block text-[11px] font-semibold text-mute">
-            캐치걸
+            {staffLabel}
             <Select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="mt-1 h-11 w-full text-[13px]">
               <option value="">— 비우기 —</option>
               <optgroup label={`이 요일 ${label}조 가능`}>{staff.filter(canWork).map(option)}</optgroup>

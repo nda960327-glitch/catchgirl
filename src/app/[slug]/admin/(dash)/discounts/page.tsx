@@ -6,6 +6,7 @@ import { DEFAULT_GRADE_BENEFITS, GRADE_BENEFIT_GRADES } from "@/lib/discounts";
 import { Card, Eyebrow } from "@/components/ui";
 import { BenefitsForm } from "./benefits-form";
 import { PromotionsManager } from "./promotions-manager";
+import { staffLabelOf } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export default async function DiscountsPage({ params }: { params: Promise<{ slug
       <Eyebrow>Discounts</Eyebrow>
       <h1 className="mt-1 font-serif text-[22px] font-bold text-ink">할인 관리</h1>
       <p className="mt-1 text-[12px] leading-[1.8] text-mute">
-        할인은 매장이 부담해요. 캐치걸 몫은 정가 그대로 나가고, 깎아 드린 만큼은 매장 몫(수수료)에서 빠져요.
+        할인은 매장이 부담해요. {staffLabelOf(store)} 몫은 정가 그대로 나가고, 깎아 드린 만큼은 매장 몫(수수료)에서 빠져요.
         <br />
         등급 혜택과 기간 할인은 겹치지 않고 <b className="text-ink">큰 것 하나만</b> 붙어요. 쿠폰은 그 위에 한 장 더 쓰실 수 있어요.
       </p>

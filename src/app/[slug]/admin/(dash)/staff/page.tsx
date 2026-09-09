@@ -6,6 +6,7 @@ import { parseJsonArray } from "@/lib/utils";
 import { parseFieldOptions, type ProfileFieldDef } from "@/lib/profile";
 import { Eyebrow } from "@/components/ui";
 import { StaffManager, type StaffFull } from "./staff-manager";
+import { staffLabelOf } from "@/lib/labels";
 
 export default async function StaffPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ edit?: string }> }) {
   const { slug } = await params;
@@ -40,7 +41,7 @@ export default async function StaffPage({ params, searchParams }: { params: Prom
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <Eyebrow>Staff</Eyebrow>
-          <h1 className="mt-1 font-serif text-[22px] font-bold text-ink">직원(캐치걸) 관리</h1>
+          <h1 className="mt-1 font-serif text-[22px] font-bold text-ink">직원({staffLabelOf(store)}) 관리</h1>
         </div>
         <Link href={`/${slug}/admin/staff/schedule`} className="cta-grad rounded-2xl px-4 py-2.5 text-[13px] font-bold text-white shadow-cta">출근 · 룸 배치 ›</Link>
       </div>

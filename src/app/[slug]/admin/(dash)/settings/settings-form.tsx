@@ -9,7 +9,7 @@ import { cn, WEEKDAYS_KO } from "@/lib/utils";
 import { THEMES, themeStyle, type ThemeKey } from "@/lib/themes";
 import { saveStoreSettings, triggerReminders } from "../../actions";
 
-type Init = { name: string; tagline: string; heroTitle: string; logoUrl: string | null; coverUrl: string | null; themeColor: string; openTime: string; closeTime: string; shiftSplitTime: string; slotMinutes: number; closedDays: number[]; cancelDeadlineHours: number; maxAdvanceDays: number; noshowPolicy: string; contactPhone: string; contactTelegram: string; theme: ThemeKey };
+type Init = { name: string; staffLabel: string; tagline: string; heroTitle: string; logoUrl: string | null; coverUrl: string | null; themeColor: string; openTime: string; closeTime: string; shiftSplitTime: string; slotMinutes: number; closedDays: number[]; cancelDeadlineHours: number; maxAdvanceDays: number; noshowPolicy: string; contactPhone: string; contactTelegram: string; theme: ThemeKey };
 
 const PRESETS = ["#B4586A", "#C8A46A", "#5B6C8F", "#3E7C6A", "#8A5BB5", "#C4642F", "#1F1F24"];
 
@@ -45,8 +45,11 @@ export function SettingsForm({ slug, init }: { slug: string; init: Init }) {
           <div className="text-[14px] font-bold text-ink">브랜딩</div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <Field label="매장명"><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
-            <Field label="태그라인"><Input value={f.tagline} onChange={(e) => setF({ ...f, tagline: e.target.value })} placeholder="오늘 밤, 당신의 캐치걸" /></Field>
-            <Field label="홈 상단 문구" hint="{'{n}'} = 오늘 가능한 캐치걸 수 · 줄바꿈 그대로">
+            <Field label="직원 호칭" hint="캐치걸·매니저·바텐더… 앱 문구 전체가 이 말을 따라요">
+              <Input value={f.staffLabel} onChange={(e) => setF({ ...f, staffLabel: e.target.value })} maxLength={8} placeholder="캐치걸" />
+            </Field>
+            <Field label="태그라인"><Input value={f.tagline} onChange={(e) => setF({ ...f, tagline: e.target.value })} placeholder={`오늘 밤, 당신의 ${f.staffLabel || "캐치걸"}`} /></Field>
+            <Field label="홈 상단 문구" hint={`{n} = 오늘 가능한 ${f.staffLabel || "캐치걸"} 수 · 줄바꿈 그대로`}>
               <Textarea
                 rows={2}
                 value={f.heroTitle}

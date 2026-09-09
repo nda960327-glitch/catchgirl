@@ -14,7 +14,7 @@ import { signupStore } from "./actions";
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30);
 
 const BLANK = {
-  name: "", slug: "", adminEmail: "", adminPassword: "", adminPassword2: "",
+  name: "", slug: "", staffLabel: "캐치걸", adminEmail: "", adminPassword: "", adminPassword2: "",
   plan: "PRO" as "PRO" | "MAX", commitment: "TERM24" as Commitment, theme: "rose" as ThemeKey,
   openTime: "12:00", shiftSplitTime: "20:00", closeTime: "04:00", roomCount: 10,
   contactPhone: "", contactTelegram: "", ownerContact: "", agentCode: "",
@@ -94,6 +94,14 @@ export function SignupForm() {
         <div className="mt-3 flex flex-col gap-3">
           <Field label="매장 이름">
             <Input value={f.name} onChange={(e) => setName(e.target.value)} placeholder="예: 문라이트" maxLength={30} className="h-11" />
+          </Field>
+          <Field label="직원 호칭" hint="손님 화면 문구가 전부 이 말을 따라요 · 나중에 바꿀 수 있어요">
+            <div className="flex flex-wrap gap-2">
+              {["캐치걸", "매니저", "바텐더"].map((l) => (
+                <button key={l} type="button" onClick={() => setF({ ...f, staffLabel: l })} className={`rounded-full border px-3 py-1.5 text-[12px] font-bold ${f.staffLabel === l ? "border-brand bg-brand text-white" : "border-line bg-card text-mute hover:border-brand"}`}>{l}</button>
+              ))}
+              <Input value={f.staffLabel} onChange={(e) => setF({ ...f, staffLabel: e.target.value })} maxLength={8} placeholder="직접 입력" className="h-9 w-[120px] text-[12px]" />
+            </div>
           </Field>
           <Field label="주소 (영문)" hint={f.slug ? `${origin}/${f.slug}` : "손님·직원·관리자가 들어오는 주소예요"}>
             <Input value={f.slug} onChange={(e) => { setSlugTouched(true); setF({ ...f, slug: e.target.value.toLowerCase() }); }} placeholder="moonlight" maxLength={30} className="h-11 font-mono" />

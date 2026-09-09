@@ -7,6 +7,7 @@ import { cn, wonShort } from "@/lib/utils";
 import { Card, Chip, Eyebrow, GradeChip } from "@/components/ui";
 import { InviteButton } from "./invite-button";
 import { ImportButton } from "./import-button";
+import { staffLabelOf } from "@/lib/labels";
 
 type SP = { sort?: string; filter?: string; q?: string; page?: string };
 
@@ -91,7 +92,7 @@ export default async function CustomersPage({ params, searchParams }: { params: 
 
       <Card className="mt-3 overflow-hidden">
         <div className="hidden grid-cols-[1.3fr_130px_90px_100px_90px_110px_80px_80px_90px_1fr] gap-2 border-b border-line bg-well px-4 py-2.5 text-[11px] font-semibold text-mute md:grid">
-          <span>고객</span><span>연락처·텔레</span><span>등급</span><span className="text-right">누적 지출</span><span>방문 횟수</span><span>최근 방문일</span><span>취소</span><span>노쇼</span><span>재방문 수</span><span>주 지정 캐치걸</span>
+          <span>고객</span><span>연락처·텔레</span><span>등급</span><span className="text-right">누적 지출</span><span>방문 횟수</span><span>최근 방문일</span><span>취소</span><span>노쇼</span><span>재방문 수</span><span>주 지정 {staffLabelOf(store)}</span>
         </div>
         {rows.length === 0 && <div className="py-10 text-center text-[12px] text-mute">조건에 맞는 고객이 없어요</div>}
         {pageRows.map(({ c, s, spent }) => (

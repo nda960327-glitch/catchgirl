@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { getCustomer } from "@/lib/auth";
 import { Chip, Eyebrow, Sticker } from "@/components/ui";
 import { InstallApp } from "@/components/install-app";
+import { staffLabelOf } from "@/lib/labels";
 
 // 지금 자리가 있는지는 매 순간 달라지므로 캐시하지 않는다
 export const dynamic = "force-dynamic";
@@ -64,9 +65,9 @@ export default async function HomePage({ params }: { params: Promise<{ slug: str
         className="cta-grad mx-4 mt-5 flex items-center gap-3 rounded-[22px] px-[18px] py-4 shadow-cta"
       >
         <div className="flex-1">
-          <div className="text-[14px] font-bold text-white">캐치걸 보고 예약하기</div>
+          <div className="text-[14px] font-bold text-white">{staffLabelOf(store)} 보고 예약하기</div>
           <div className="mt-0.5 text-[11px] text-white/85">
-            {nowStaff.length > 0 ? `지금 바로 가능한 캐치걸 ${nowStaff.length}명` : `오늘 예약 가능한 캐치걸 ${openStaff.length}명`}
+            {nowStaff.length > 0 ? `지금 바로 가능한 ${staffLabelOf(store)} ${nowStaff.length}명` : `오늘 예약 가능한 ${staffLabelOf(store)} ${openStaff.length}명`}
           </div>
         </div>
         <span className="text-[18px] text-white/90">›</span>

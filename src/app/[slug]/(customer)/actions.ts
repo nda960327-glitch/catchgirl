@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { clearSession, getCustomer, requireCustomer, setSession } from "@/lib/auth";
 import { getStoreBySlug } from "@/lib/store";
 import { cancelReservation, createReservation, SlotConflictError } from "@/lib/reservations";
+import { josa, staffLabelOf } from "@/lib/labels";
 
 export type ActionResult<T = undefined> = { ok: true; data?: T } | { ok: false; error: string; conflict?: boolean };
 
@@ -162,7 +163,7 @@ export async function voteStaff(slug: string, staffId: string, value: "UP" | "DO
   const customer = await getCustomer(store.id);
   if (!customer) return { ok: false, error: "LOGIN_REQUIRED" };
   const staff = await prisma.staff.findUnique({ where: { id: staffId } });
-  if (!staff || staff.storeId !== store.id) return { ok: false, error: "캐치걸를 찾을 수 없어요." };
+  if (!staff || staff.storeId !== store.id) return { ok: false, error: `${josa(staffLabelOf(store), "을")} 찾을 수 없어요.` };
 
   const ex = await prisma.staffVote.findUnique({ where: { customerId_staffId: { customerId: customer.id, staffId } } });
   let my: "UP" | "DOWN" | null;
