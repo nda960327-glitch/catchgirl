@@ -111,6 +111,10 @@ const CHECKLIST = [
   "폰에 손님 실명·번호가 쌓여 있어 찜찜한 적이 있다",
 ];
 
+const NAV: [string, string][] = [
+  ["#why", "왜 앱인가"], ["#own-app", "전용 앱"], ["#revisit", "재방문"], ["#onboard", "찍으면 끝"], ["#pricing", "가격"], ["#install", "샘플"], ["#faq", "FAQ"],
+];
+
 const FAQ = [
   { q: "기존 손님한테 앱을 어떻게 깔게 해요?", a: "명함 한 장이에요. 관리자가 손님 닉네임을 붙여 넣으면 연결코드가 나오고, 직원이 카드 빈칸에 코드를 적어 방문 손님에게 건네요. 손님은 QR 찍고 코드만 넣으면 끝이고, 그 순간 환영 쿠폰이 들어가요. 앱스토어에서 받는 앱이 아니라 QR로 바로 열리는 웹앱이라 설치 부담이 없고, 홈 화면 추가는 선택이에요. 지갑에 카드를 넣고 다니다 QR만 찍어도 돼요. 실명·번호는 안 넣고, 안 깔아도 그 손님 기록은 관리자 화면에 이미 있어요. 카드를 잃어버리면 코드만 다시 알려 주면 돼요." },
   { q: "전화나 텔레그램으로 예약하는 손님은요?", a: "관리자 화면에서 3초면 대신 넣어요. 닉네임 몇 글자만 치면 기존 손님이 바로 뜨고, 전화·텔레그램·앱 어느 경로로 왔는지도 남아요. 앱을 안 쓰는 손님도 방문 기록은 똑같이 쌓여요." },
@@ -127,11 +131,11 @@ const FAQ = [
   { q: "해지하면요?", a: "무약정은 위약금 없이 언제든, 약정은 받은 할인만 돌려주고 해지해요. 손님 화면이 먼저 닫히고 관리자 화면은 90일 더 열려 있어서 기록을 내려받을 수 있어요. 그 뒤엔 데이터를 지워요." },
 ];
 
-function Phone({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
+function Phone({ src, alt, className = "", eager = false }: { src: string; alt: string; className?: string; eager?: boolean }) {
   return (
     <div className={`relative w-[220px] shrink-0 overflow-hidden rounded-[34px] border-[6px] border-ink/90 bg-ink shadow-pop ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} className="block w-full" loading="lazy" />
+      <img src={src} alt={alt} className="block w-full" style={{ aspectRatio: "780 / 1688" }} loading={eager ? "eager" : "lazy"} />
     </div>
   );
 }
@@ -144,7 +148,7 @@ function Desktop({ src, alt }: { src: string; alt: string }) {
         <span className="ml-2 rounded-md bg-card px-2 py-0.5 font-mono text-[9px] text-mute">secret-garden.catchgirl.kr/admin</span>
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} className="block w-full" loading="lazy" />
+      <img src={src} alt={alt} className="block w-full" style={{ aspectRatio: "2560 / 1600" }} loading="lazy" />
     </div>
   );
 }
@@ -154,7 +158,8 @@ export default async function Home() {
   // 명함 미리보기용 QR — 샘플 매장으로 간다
   const cardQr = await QRCode.toDataURL(DEMO.url, { margin: 1, width: 256, color: { dark: "#1a1216", light: "#FFFFFF" } });
   return (
-    <div className="min-h-dvh bg-frame text-ink">
+    <div className="min-h-dvh bg-frame text-ink [word-break:keep-all]">
+      <style>{`html{scroll-behavior:smooth}`}</style>
       {/* 상단 */}
       <header className="sticky top-0 z-20 border-b border-line/60 bg-frame/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-5 py-3">
@@ -163,20 +168,16 @@ export default async function Home() {
             <img src="/assets/icon-customer-192.png" alt="" className="h-8 w-8 rounded-lg object-cover" />
             <span className="font-serif text-[18px] font-bold">캐치걸</span>
           </Link>
-          <nav className="ml-auto hidden items-center gap-5 text-[12px] font-semibold text-mute md:flex">
-            <a href="#why" className="hover:text-ink">왜 앱인가</a>
-            <a href="#own-app" className="hover:text-ink">전용 앱</a>
-            <a href="#revisit" className="hover:text-ink">재방문</a>
-            <a href="#onboard" className="hover:text-ink">찍으면 끝</a>
-            <a href="#features" className="hover:text-ink">기능</a>
-            <a href="#privacy" className="hover:text-ink">손님 정보</a>
-            <a href="#legal" className="hover:text-ink">합법 운영</a>
-            <a href="#support" className="hover:text-ink">지원</a>
-            <a href="#pricing" className="hover:text-ink">가격</a>
-            <a href="#install" className="hover:text-ink">설치·샘플</a>
-            <a href="#faq" className="hover:text-ink">자주 묻는 질문</a>
+          <nav className="ml-auto hidden items-center gap-6 text-[13px] font-semibold text-mute md:flex">
+            {NAV.map(([h, l]) => <a key={h} href={h} className="transition-colors hover:text-ink">{l}</a>)}
           </nav>
-          <Link href="/signup" className="cta-grad rounded-xl px-4 py-2 text-[12px] font-bold text-white shadow-cta">가입 신청</Link>
+          <Link href="/signup" className="cta-grad ml-auto rounded-xl px-4 py-2 text-[12px] font-bold text-white shadow-cta md:ml-0">가입 신청</Link>
+          <details className="relative md:hidden">
+            <summary className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl border border-line bg-card text-[16px] text-ink">☰</summary>
+            <div className="absolute right-0 top-11 z-30 flex w-44 flex-col rounded-2xl border border-line bg-card p-2 shadow-pop">
+              {NAV.map(([h, l]) => <a key={h} href={h} className="rounded-xl px-3 py-2 text-[13px] font-semibold text-ink hover:bg-well">{l}</a>)}
+            </div>
+          </details>
         </div>
       </header>
 
@@ -184,8 +185,8 @@ export default async function Home() {
       <section className="mx-auto grid max-w-6xl items-center gap-10 px-5 pb-16 pt-14 md:grid-cols-[1.1fr_1fr] md:pt-20">
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Catchgirl · 매장 전용 전담 매니저 예약 앱</div>
-          <h1 className="mt-3 font-serif text-[34px] font-bold leading-[1.25] md:text-[46px]">
-            전화로 받던 예약,<br />이제 손님이 앱에서 직접 잡아요
+          <h1 className="mt-3 font-serif text-[32px] font-bold leading-[1.22] md:text-[46px]">
+            전화로 받던 예약,<br />이제 손님이 앱에서<br className="md:hidden" /> 직접 잡아요
           </h1>
           <p className="mt-5 max-w-xl text-[14px] leading-[1.9] text-mute">
             기존 손님만 초대해 쓰는 우리 매장 전용 앱이에요. 손님이 자리를 맡을 전담 매니저(바텐더)를 고르고 시간을 잡으면, 매장에는 알림이 오고 방문 기록이 쌓여요.
@@ -204,15 +205,15 @@ export default async function Home() {
         </div>
         <div className="flex justify-center gap-4 md:justify-end">
           <Phone src="/landing/c-list.png" alt="손님 앱 — 캐치걸 고르기" className="mt-10 hidden sm:block" />
-          <Phone src="/landing/c-home.png" alt="손님 앱 홈" />
+          <Phone src="/landing/c-home.png" alt="손님 앱 홈" eager />
         </div>
       </section>
 
       {/* 왜 앱인가 */}
-      <section id="why" className="border-y border-line/60 bg-card/60">
+      <section id="why" className="scroll-mt-16 border-y border-line/60 bg-card/60">
         <div className="mx-auto max-w-6xl px-5 py-16">
           <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Why an app</div>
-          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">솔직히, 요즘 누가 전화로 시켜요</h2>
+          <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">솔직히, 요즘 누가 전화로 시켜요</h2>
           <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">
             배달도 택시도 앱인데 예약만 전화면 손님이 먼저 지쳐요. 예약 서비스 업계에서 되풀이해 나오는 숫자들이에요. 업종과 매장마다 다르지만 방향은 같아요.
           </p>
@@ -226,23 +227,11 @@ export default async function Home() {
               </div>
             ))}
           </div>
-          <div className="mt-8 grid gap-3 md:grid-cols-3">
-            {[
-              ["계산 안 해도 돼요", "시간·옵션·할인·매장 몫·직원 몫이 자동으로 나뉘어요. 수금 시트를 들고 방마다 돌면 끝이에요."],
-              ["재방문이 늘어요", "방문 횟수로 신규·단골·VIP 등급이 붙고 혜택이 자동으로 적용돼요. 즐겨찾기한 사람이 오늘 출근했는지 손님이 먼저 봐요."],
-              ["누가 왔는지 남아요", "전화·텔레그램·앱 어느 경로로 왔는지, 누구 소개인지, 몇 번째 방문인지. 감이 아니라 기록으로 매장을 봐요."],
-            ].map(([t, d]) => (
-              <div key={t} className="rounded-[22px] border border-line bg-card p-5">
-                <div className="text-[14px] font-bold">{t}</div>
-                <p className="mt-1.5 text-[12px] leading-[1.8] text-mute">{d}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
       {/* 전용 앱 — 6,000만원 vs 10만원 */}
-      <section id="own-app" className="border-b border-line/60">
+      <section id="own-app" className="scroll-mt-16 border-b border-line/60">
         <div className="mx-auto max-w-6xl px-5 py-16">
           <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Your own app</div>
           <h2 className="mt-2 font-serif text-[28px] font-bold leading-[1.25] md:text-[36px]">
@@ -382,10 +371,10 @@ export default async function Home() {
       </section>
 
       {/* 재방문 */}
-      <section id="revisit" className="border-b border-line/60">
+      <section id="revisit" className="scroll-mt-16 border-b border-line/60 bg-card/60">
         <div className="mx-auto max-w-6xl px-5 py-16">
           <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Retention</div>
-          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">재방문이 곧 매출이에요</h2>
+          <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">재방문이 곧 매출이에요</h2>
           <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">
             새 손님을 데려오는 데는 돈이 들고, 다시 오는 손님은 돈이 안 들어요. 매장 매출은 결국 '한 번 온 손님이 몇 번 더 오느냐' 로 정해져요.
             캐치걸은 예약 앱이 아니라 <b className="text-ink">다시 오게 만드는 장치</b>를 손님 폰에 심는 앱이에요.
@@ -430,10 +419,10 @@ export default async function Home() {
       </section>
 
       {/* 손님은 찍으면 끝 */}
-      <section id="onboard" className="border-b border-line/60 bg-card/60">
+      <section id="onboard" className="scroll-mt-16 border-b border-line/60">
         <div className="mx-auto max-w-6xl px-5 py-16">
           <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Customer onboarding</div>
-          <h2 className="mt-2 font-serif text-[30px] font-bold leading-[1.2] md:text-[40px]">
+          <h2 className="mt-2 font-serif text-[28px] font-bold leading-[1.25] md:text-[36px]">
             손님은 <span className="text-brand">QR 찍으면 끝</span>이에요
           </h2>
           <p className="mt-4 max-w-2xl text-[14px] leading-[1.9] text-mute">
@@ -493,9 +482,10 @@ export default async function Home() {
       </section>
 
       {/* 전과 후 */}
-      <section id="before-after" className="mx-auto max-w-6xl px-5 py-16">
+      <section id="before-after" className="scroll-mt-16 border-b border-line/60 bg-card/60">
+        <div className="mx-auto max-w-6xl px-5 py-16">
         <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Before · After</div>
-        <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">관리자가 하던 일이 이렇게 바뀌어요</h2>
+        <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">관리자가 하던 일이 이렇게 바뀌어요</h2>
         <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">예약 앱 하나 더 까는 게 아니에요. 전화·수첩·단톡방·계산기·엑셀로 나뉘어 있던 일이 한 화면으로 들어와요.</p>
         <div className="mt-8 overflow-x-auto rounded-[22px] border border-line bg-card shadow-card">
           <table className="w-full min-w-[640px] text-left text-[12px]">
@@ -550,12 +540,13 @@ export default async function Home() {
             <Link href="/signup" className="mt-5 inline-block rounded-xl bg-gold-lt px-5 py-2.5 text-[12px] font-bold text-ink">가입 신청하기</Link>
           </div>
         </div>
+        </div>
       </section>
 
       {/* 기능 */}
-      <section id="features" className="mx-auto max-w-6xl px-5 py-16">
+      <section id="features" className="scroll-mt-16 mx-auto max-w-6xl px-5 py-16">
         <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Features</div>
-        <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">앱 세 개, 매장 하나</h2>
+        <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">앱 세 개, 매장 하나</h2>
         <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">손님·직원·관리자가 각자 자기 앱을 깔아요. 모두 같은 매장 데이터를 보고, 매장 로고와 색으로 꾸며져요.</p>
 
         {/* 손님 */}
@@ -622,7 +613,7 @@ export default async function Home() {
           <div className="grid items-center gap-8 md:grid-cols-[1.2fr_1fr]">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold-lt">Why install</div>
-              <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">손님 폰 홈 화면에 우리 매장 아이콘이 생겨요</h2>
+              <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">손님 폰 홈 화면에 우리 매장 아이콘이 생겨요</h2>
               <p className="mt-3 text-[13px] leading-[1.9] opacity-85">
                 전화번호를 안 받는 매장이 손님과 연결되는 유일한 통로예요. 브라우저 주소를 찾을 필요 없이 아이콘 한 번이면 오늘 누가 나왔는지, 지금 되는지가 보이고, 다음 예약은 두 번 탭이에요.
                 손님이 우리 매장을 '가끔 생각나는 곳'에서 '폰에 깔린 곳'으로 옮기는 거예요.
@@ -649,11 +640,11 @@ export default async function Home() {
       </section>
 
       {/* 손님 정보 */}
-      <section id="privacy" className="border-y border-line/60 bg-card/60">
+      <section id="privacy" className="scroll-mt-16 border-y border-line/60 bg-card/60">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 md:grid-cols-2">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Privacy by design</div>
-            <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">고객 DB를 만들지 않아요</h2>
+            <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">고객 DB를 만들지 않아요</h2>
             <p className="mt-3 text-[13px] leading-[1.9] text-mute">
               손님이 앱에 남기는 건 <b className="text-ink">닉네임과 PIN</b>뿐이에요. 실명·전화번호를 넣는 칸이 애초에 없어서, 모으고 싶어도 못 모아요.
               유출될 명단이 없다는 게 매장에도 손님에게도 가장 안전한 상태예요.
@@ -676,10 +667,10 @@ export default async function Home() {
       </section>
 
       {/* 합법 */}
-      <section id="legal" className="mx-auto max-w-6xl px-5 py-16">
+      <section id="legal" className="scroll-mt-16 mx-auto max-w-6xl px-5 py-16">
         <div className="rounded-[28px] border border-gold/40 bg-card p-6 shadow-card md:p-10">
           <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Compliance</div>
-          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">합법 매장만, 확인하고 엽니다</h2>
+          <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">합법 매장만, 확인하고 엽니다</h2>
           <p className="mt-3 max-w-3xl text-[13px] leading-[1.9] text-mute">
             캐치걸은 테이블을 맡아 응대할 전담 매니저(바텐더)를 미리 지정해 예약하는 앱이고, 매장 운영을 돕는 소프트웨어예요. 유흥이나 그 밖의 목적을 위한 서비스가 아니에요.
             같은 문장이 모든 매장의 손님 화면에 지울 수 없는 공지로 늘 걸려 있어요.
@@ -703,9 +694,10 @@ export default async function Home() {
       </section>
 
       {/* 지원 */}
-      <section id="support" className="mx-auto max-w-6xl px-5 py-16">
+      <section id="support" className="scroll-mt-16 border-y border-line/60 bg-card/60">
+        <div className="mx-auto max-w-6xl px-5 py-16">
         <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Support</div>
-        <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">앱만 주고 끝나지 않아요</h2>
+        <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">앱만 주고 끝나지 않아요</h2>
         <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">매장이 컴퓨터를 잘 몰라도 돼요. 세팅부터 첫 주까지 붙어서 하고, 그 뒤로도 같은 텔레그램으로 이어져요.</p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {SUPPORT.map(([t, d], i) => (
@@ -716,13 +708,14 @@ export default async function Home() {
             </div>
           ))}
         </div>
+        </div>
       </section>
 
       {/* 가격 */}
-      <section id="pricing" className="border-y border-line/60 bg-card/60">
+      <section id="pricing" className="scroll-mt-16">
         <div className="mx-auto max-w-6xl px-5 py-16">
           <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Pricing</div>
-          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">구축비 없이, 첫 달 무료로 시작해요</h2>
+          <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">구축비 없이, 첫 달 무료로 시작해요</h2>
           <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">월 13만원인데 {TERM_MONTHS / 12}년 쓰신다고 하면 10만원에 해드리고, 방문 세팅 30만원도 빼드려요. 무약정도 진짜로 있어요. 한도를 넘겨도 영업 중에 등록이 막히지 않아요.</p>
           <div className="mt-8"><PricingTable /></div>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
@@ -769,11 +762,12 @@ export default async function Home() {
       </section>
 
       {/* 설치·샘플 */}
-      <section id="install" className="mx-auto max-w-6xl px-5 py-16">
+      <section id="install" className="scroll-mt-16 border-y border-line/60 bg-card/60">
+        <div className="mx-auto max-w-6xl px-5 py-16">
         <div className="grid items-center gap-10 md:grid-cols-[1fr_1fr]">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Install · Demo</div>
-            <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">앱스토어 없이, 매장 주소에서 설치</h2>
+            <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">앱스토어 없이, 매장 주소에서 설치</h2>
             <p className="mt-3 text-[13px] leading-[1.9] text-mute">
               매장마다 <b className="text-ink">이름.catchgirl.kr</b> 주소가 생겨요. 손님은 그 주소에서, 직원은 <b className="text-ink">/staff</b>, 관리자는 <b className="text-ink">/admin</b>에서 '앱으로 설치'를 누르면 홈 화면에 매장 로고 아이콘으로 깔려요. 큐알 세 장을 콘솔이 만들어 줘요.
             </p>
@@ -791,13 +785,14 @@ export default async function Home() {
             <Phone src="/landing/s-home.png" alt="직원 앱" className="w-[180px]" />
           </div>
         </div>
+        </div>
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="border-t border-line/60 bg-card/60">
+      <section id="faq" className="scroll-mt-16">
         <div className="mx-auto max-w-3xl px-5 py-16">
           <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">FAQ</div>
-          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">자주 묻는 질문</h2>
+          <h2 className="mt-2 font-serif text-[28px] font-bold md:text-[36px]">자주 묻는 질문</h2>
           <div className="mt-6 flex flex-col gap-2">
             {FAQ.map((f) => (
               <details key={f.q} className="group rounded-2xl border border-line bg-card px-5 py-4">
@@ -845,6 +840,7 @@ export default async function Home() {
             <div className="mt-2 text-[10px] text-mute/80">해외 예약 서비스 업계 통계예요. 업종과 매장에 따라 결과는 달라요.</div>
           </div>
         </div>
+        <div className="border-t border-line/60 px-5 py-4 text-center text-[10px] text-mute/70">© 2026 캐치걸 · 매장 전용 전담 매니저 예약·운영 소프트웨어 · 손님의 실명과 전화번호를 받지 않아요</div>
       </footer>
     </div>
   );
