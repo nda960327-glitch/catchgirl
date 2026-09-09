@@ -152,7 +152,7 @@ export function NewStoreForm({ agents }: { agents: AgentLite[] }) {
             <Input value={f.contactPhone} onChange={(e) => setF({ ...f, contactPhone: e.target.value })} placeholder="010-0000-0000" className="h-11" />
           </Field>
           <Field label="텔레그램" hint="@ 없이">
-            <Input value={f.contactTelegram} onChange={(e) => setF({ ...f, contactTelegram: e.target.value.replace(/^@/, "") })} placeholder="BGT_OP" className="h-11" />
+            <Input value={f.contactTelegram} onChange={(e) => setF({ ...f, contactTelegram: e.target.value.replace(/^@/, "") })} placeholder="catch_girl_admin" className="h-11" />
           </Field>
         </div>
 
