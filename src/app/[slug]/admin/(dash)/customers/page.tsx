@@ -71,6 +71,7 @@ export default async function CustomersPage({ params, searchParams }: { params: 
           <h1 className="mt-1 font-serif text-[22px] font-bold text-ink">고객 관리</h1>
           <div className="mt-0.5 text-[11px] text-mute">새로 오신 분은 여기서 등록하시면 연결코드가 나와요. 손님이 그 코드로 앱을 시작해요.</div>
         </div>
+        <Link href={`/${slug}/admin/cards`} className="rounded-xl border border-line bg-card px-3 py-2 text-[12px] font-bold text-ink hover:border-brand">연결 카드 인쇄</Link>
         <ImportButton slug={slug} />
           <InviteButton slug={slug} />
       </div>

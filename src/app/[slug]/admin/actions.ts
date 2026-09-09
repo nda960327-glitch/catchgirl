@@ -949,6 +949,26 @@ const benefitSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+const signupCouponSchema = z.object({
+  amount: z.coerce.number().int().min(0).max(1_000_000),
+  name: z.string().trim().min(1, "쿠폰 이름을 적어 주세요").max(30),
+  days: z.coerce.number().int().min(0).max(365),
+});
+/** 앱 설치 환영 쿠폰 설정 */
+export async function saveSignupCoupon(slug: string, input: z.input<typeof signupCouponSchema>): Promise<R> {
+  try {
+    const store = await getStoreBySlug(slug);
+    await requireAdmin(store.id);
+    const p = signupCouponSchema.safeParse(input);
+    if (!p.success) return { ok: false, error: p.error.issues[0].message };
+    await prisma.store.update({ where: { id: store.id }, data: { signupCouponAmount: p.data.amount, signupCouponName: p.data.name, signupCouponDays: p.data.days } });
+    revalidatePath(`/${slug}`, "layout");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 /** 등급 혜택 저장 */
 export async function saveGradeBenefit(slug: string, input: z.input<typeof benefitSchema>): Promise<R> {
   try {

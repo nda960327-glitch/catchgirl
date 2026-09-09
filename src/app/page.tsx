@@ -4,6 +4,8 @@ import { DEBIT_DAY, ONSITE_SETUP_FEE, PLANS, TERM_MONTHS, termDiscountPercent, t
 import { PricingTable } from "@/components/pricing-table";
 import { RevisitCalculator } from "@/components/revisit-calculator";
 import { ThemeGallery } from "@/components/theme-gallery";
+import { InviteCard } from "@/components/invite-card";
+import QRCode from "qrcode";
 import { OPERATOR_CONTACT, TERMS_VERSION } from "@/lib/terms";
 import { won } from "@/lib/utils";
 
@@ -109,6 +111,7 @@ const CHECKLIST = [
 ];
 
 const FAQ = [
+  { q: "기존 손님한테 앱을 어떻게 깔게 해요?", a: "명함 한 장이에요. 관리자가 손님 닉네임을 붙여 넣으면 연결코드가 나오고, 직원이 카드 빈칸에 코드를 적어 방문 손님에게 건네요. 손님은 QR 찍고 코드만 넣으면 끝이고, 그 순간 환영 쿠폰이 들어가요. 앱스토어에서 받는 앱이 아니라 QR로 바로 열리는 웹앱이라 설치 부담이 없고, 홈 화면 추가는 선택이에요. 지갑에 카드를 넣고 다니다 QR만 찍어도 돼요. 실명·번호는 안 넣고, 안 깔아도 그 손님 기록은 관리자 화면에 이미 있어요. 카드를 잃어버리면 코드만 다시 알려 주면 돼요." },
   { q: "전화나 텔레그램으로 예약하는 손님은요?", a: "관리자 화면에서 3초면 대신 넣어요. 닉네임 몇 글자만 치면 기존 손님이 바로 뜨고, 전화·텔레그램·앱 어느 경로로 왔는지도 남아요. 앱을 안 쓰는 손님도 방문 기록은 똑같이 쌓여요." },
   { q: "우리 매장만의 앱인가요? 개발사에 맡긴 거랑 뭐가 달라요?", a: "받는 건 같아요. 매장 이름·로고·앱 아이콘·전용 주소·우리 매장만의 데이터로 된 손님·직원·관리자 앱 세 개. 손님 폰에는 우리 매장 로고로 깔려요. 다른 건 만드는 방식이에요. 엔진은 이미 만들어져 있고 매장 것(이름·로고·테마·손님·직원)만 새로 만들어서, 6,000만원과 3~6개월 대신 0원과 당일이 돼요. 그래서 큰 회사만 갖던 앱을 동네 매장도 초기 투자 없이 가져요." },
   { q: "정말 재방문이 늘어요?", a: "장치는 여섯 개예요. 홈 화면 아이콘, 즐겨찾기한 사람의 오늘 출근 표시, 5회·10회 자동 등급 혜택, 쿠폰·요일 프로모션, 후기·추천, 그리고 재방문율을 매달 숫자로 보는 관리자 화면. 업계 연구로는 재방문율 5%p가 이익 25~95%로 이어지고, 우리 앱에서는 관리자 화면에서 매달 직접 확인할 수 있어요. 안 늘면 어디서 막히는지가 보여요." },
@@ -145,8 +148,10 @@ function Desktop({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-export default function Home() {
+export default async function Home() {
   const plans = Object.keys(PLANS) as Plan[];
+  // 명함 미리보기용 QR — 샘플 매장으로 간다
+  const cardQr = await QRCode.toDataURL(DEMO.url, { margin: 1, width: 256, color: { dark: "#1a1216", light: "#FFFFFF" } });
   return (
     <div className="min-h-dvh bg-frame text-ink">
       {/* 상단 */}
@@ -161,6 +166,7 @@ export default function Home() {
             <a href="#why" className="hover:text-ink">왜 앱인가</a>
             <a href="#own-app" className="hover:text-ink">전용 앱</a>
             <a href="#revisit" className="hover:text-ink">재방문</a>
+            <a href="#onboard" className="hover:text-ink">손님 설치</a>
             <a href="#features" className="hover:text-ink">기능</a>
             <a href="#privacy" className="hover:text-ink">손님 정보</a>
             <a href="#legal" className="hover:text-ink">합법 운영</a>
@@ -419,6 +425,42 @@ export default function Home() {
             </div>
             <Desktop src="/landing/a-revenue.png" alt="매출·재방문 분석 화면" />
           </div>
+        </div>
+      </section>
+
+      {/* 기존 손님 폰에 깔기 */}
+      <section id="onboard" className="border-b border-line/60 bg-card/60">
+        <div className="mx-auto max-w-6xl px-5 py-16">
+          <div className="text-[10px] font-semibold uppercase tracking-[.22em] text-gold">Onboarding</div>
+          <h2 className="mt-2 font-serif text-[26px] font-bold md:text-[32px]">기존 손님 폰에는 이렇게 깔려요</h2>
+          <p className="mt-3 max-w-2xl text-[13px] leading-[1.9] text-mute">
+            앱은 손님 폰에 들어가야 의미가 있어요. 그래서 <b className="text-ink">명함 한 장</b>으로 끝나게 만들었어요. 앱스토어에서 받는 앱이 아니라 <b className="text-ink">QR 찍으면 바로 열리는 웹앱</b>이라 설치 부담이 없어요. 홈 화면에 추가하면 아이콘이 생기고, 안 해도 지갑 속 카드로 QR만 찍으면 돼요. 손님 번호는 묻지 않고, 자리에서 30초.
+          </p>
+
+          <div className="mt-8 grid items-center gap-8 md:grid-cols-[1fr_1fr]">
+            <div className="flex flex-col items-center gap-3">
+              <InviteCard storeName="우리 매장" amount={30000} qr={cardQr} url={DEMO.url} code="A3K9" width="min(100%, 420px)" />
+              <div className="text-[11px] text-mute">실제 인쇄되는 카드예요 · 명함 크기 · 관리자 화면에서 바로 인쇄</div>
+            </div>
+            <ol className="flex flex-col gap-3">
+              {[
+                ["관리자가 손님 목록을 붙여 넣어요", "닉네임 한 줄에 한 명. 연결코드가 손님마다 하나씩 나와요. 앱을 안 깔아도 그 손님 기록은 이미 관리자 화면에 있어요."],
+                ["직원이 카드에 코드를 적어 건네요", "코드는 텔레그램으로 직원에게 알려 주고, 직원이 명함 빈칸에 네임펜으로 적어요. 방문한 손님, 아는 손님에게만 줘요."],
+                ["손님은 QR 찍고 코드만 넣으면 끝", "앱스토어 없이 바로 열려요. 실명도 번호도 안 넣고 닉네임과 PIN만. 홈 화면에 추가하면 아이콘이 생기고, 안 해도 카드를 지갑에 넣고 QR만 찍으면 돼요."],
+                ["환영 쿠폰이 바로 들어가요", "앱을 시작한 순간 쿠폰이 자동으로 들어가서 다음 예약에 써요. 깔 이유가 손님 쪽에도 생겨요."],
+                ["카드를 잃어버리면 코드만 다시", "코드는 손님마다 늘 있어요. 고객 관리에서 보고 말로 알려 주면 돼요. 카드를 다시 만들 필요도 없어요."],
+              ].map(([t, d], i) => (
+                <li key={t} className="flex gap-3 rounded-[20px] border border-line bg-card p-4">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand font-mono text-[12px] font-bold text-white">{i + 1}</span>
+                  <div>
+                    <div className="text-[13px] font-bold">{t}</div>
+                    <p className="mt-1 text-[12px] leading-[1.8] text-mute">{d}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="mt-6 text-[11px] text-mute">카드는 관리자 화면 › 고객 관리 › 연결 카드 인쇄에서 A4 한 장에 열 장씩 나와요. 빈칸 카드도 되고, 아직 앱을 안 깐 손님 코드를 미리 찍어 나올 수도 있어요. 환영 쿠폰 금액은 할인 관리에서 정해요.</div>
         </div>
       </section>
 

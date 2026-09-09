@@ -28,6 +28,7 @@ export async function SetupChecklist({ slug, storeId, logoUrl, createdAt, staffL
     { done: schedules > 0, label: "출근 요일 잡기", hint: "요일별로 나올 수 있는 사람을 정해야 손님 화면에 떠요", href: `/${slug}/admin/staff/schedule` },
     { done: rooms > 0, label: "룸 이름 바꾸기", hint: "'1번 룸' 대신 매장에서 부르는 이름으로", href: `/${slug}/admin/settings` },
     { done: customers > 0, label: "기존 손님 옮기기", hint: "닉네임 목록을 붙여 넣으면 연결코드가 한꺼번에 나와요", href: `/${slug}/admin/customers` },
+    { done: false, label: "손님 연결 카드 인쇄하기", hint: "명함 크기 카드에 코드를 적어 방문 손님에게 건네요", href: `/${slug}/admin/cards`, optional: true },
     { done: false, label: "큐알 인쇄해서 붙이기", hint: "손님·직원용 주소와 큐알은 매장 설정 맨 아래에 있어요", href: `/${slug}/admin/settings#links`, optional: true },
   ];
   const left = items.filter((i) => !i.done && !i.optional).length;
@@ -37,7 +38,7 @@ export async function SetupChecklist({ slug, storeId, logoUrl, createdAt, staffL
     <Card className="mt-4 border-gold/40 p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="text-[13px] font-bold text-ink">문 열기 전에 채워 두세요</div>
-        <div className="text-[11px] text-mute">{items.length - left - 1}/{items.length - 1} 완료 · 30분이면 끝나요</div>
+        <div className="text-[11px] text-mute">{items.filter((i) => i.done).length}/{items.filter((i) => !i.optional).length} 완료 · 30분이면 끝나요</div>
       </div>
       <ul className="mt-3 grid gap-2 md:grid-cols-2">
         {items.map((i) => (

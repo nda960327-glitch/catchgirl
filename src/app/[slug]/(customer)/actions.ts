@@ -60,6 +60,19 @@ export async function loginCustomer(slug: string, form: FormData, next?: string)
     where: { id: invited.id },
     data: { nickname, passwordHash: await bcrypt.hash(pin, 10) },
   });
+  // 앱을 처음 시작한 순간 환영 쿠폰 한 장 — 카드에 적힌 약속을 여기서 지킨다
+  if (store.signupCouponAmount > 0) {
+    await prisma.coupon.create({
+      data: {
+        storeId: store.id,
+        customerId: claimed.id,
+        name: store.signupCouponName || "앱 설치 환영 쿠폰",
+        amount: store.signupCouponAmount,
+        memo: "연결코드로 앱 시작 · 자동 발급",
+        expiresAt: store.signupCouponDays > 0 ? new Date(Date.now() + store.signupCouponDays * 86_400_000) : null,
+      },
+    });
+  }
   await setSession({ role: "customer", id: claimed.id, storeId: store.id, name: claimed.nickname });
   redirect(next && next.startsWith(`/${slug}`) ? next : `/${slug}/me`);
 }

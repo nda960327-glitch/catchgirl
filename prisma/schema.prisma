@@ -67,6 +67,10 @@ model Store {
   agentId             String?
   agentDidOnsite      Boolean   @default(false) // 방문 세팅을 담당직원이 직접 했는지 (+커미션)
   commissionPaidAt    DateTime? // 운영사가 커미션을 지급한 날
+  // 앱 설치 환영 쿠폰 — 연결코드로 앱을 처음 시작한 손님에게 자동으로 한 장. 0 이면 안 준다.
+  signupCouponAmount  Int      @default(30000)
+  signupCouponName    String   @default("앱 설치 환영 쿠폰")
+  signupCouponDays    Int      @default(60) // 발급 뒤 며칠 안에 써야 하는지 (0 = 기한 없음)
   noshowPolicy        String   @default("노쇼 3회 누적 시 예약이 제한될 수 있어요.")
   createdAt           DateTime @default(now())
 

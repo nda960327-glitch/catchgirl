@@ -6,6 +6,7 @@ import { DEFAULT_GRADE_BENEFITS, GRADE_BENEFIT_GRADES } from "@/lib/discounts";
 import { Card, Eyebrow } from "@/components/ui";
 import { BenefitsForm } from "./benefits-form";
 import { PromotionsManager } from "./promotions-manager";
+import { SignupCouponForm } from "./signup-coupon-form";
 import { staffLabelOf } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
@@ -61,6 +62,7 @@ export default async function DiscountsPage({ params }: { params: Promise<{ slug
         ))}
       </div>
 
+      <SignupCouponForm slug={slug} init={{ amount: store.signupCouponAmount, name: store.signupCouponName, days: store.signupCouponDays }} />
       <BenefitsForm slug={slug} benefits={benefits} />
       <PromotionsManager slug={slug} today={today} items={promos} />
 
