@@ -49,7 +49,7 @@ export function InviteCard({
             <li>② 옆의 <b>연결코드</b> 넣고 닉네임·PIN 정하기</li>
             <li>③ 끝. 설치 없이 열려요{amount > 0 ? " · 쿠폰이 바로 들어와요" : ""}</li>
           </ol>
-          <div style={{ fontSize: "2.3cqw", opacity: 0.55, marginTop: "1.2cqw", lineHeight: 1.4 }}>개인정보를 안 받으니 앱이 털려도 새어 나갈 게 없어요 · 지갑에 넣어 두고 QR만 찍어도 돼요 · 잃어버리면 매장에서 코드를 다시 알려 드려요</div>
+          <div style={{ fontSize: "2.3cqw", opacity: 0.55, marginTop: "1.2cqw", lineHeight: 1.4 }}>개인정보를 안 받으니 앱이 털려도 새어 나갈 게 없어요 · 지갑에 넣어 두고 QR만 찍어도 돼요 · 잃어버리면 매장에서 코드를 다시 알려 드려요 · 만 19세 이상만</div>
         </div>
         <div className="flex shrink-0 flex-col items-center" style={{ width: "30cqw" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}

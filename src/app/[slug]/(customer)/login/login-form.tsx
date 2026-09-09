@@ -63,6 +63,12 @@ export function LoginForm({ slug, next }: { slug: string; next?: string }) {
         </div>
       )}
 
+      {/* 주류를 파는 곳이라 성인만 — 처음이든 다시든 들어올 때마다 본인이 확인한다 */}
+      <label className="flex items-start gap-2.5 rounded-2xl border border-line bg-card px-4 py-3 text-[11px] leading-[1.6] text-mute">
+        <input type="checkbox" name="adult" required className="mt-0.5 h-4 w-4 shrink-0 accent-brand" />
+        <span><b className="text-ink">만 19세 이상</b>이에요. 주류를 파는 곳이라 성인만 이용할 수 있어요.</span>
+      </label>
+
       <Button size="lg" type="submit" loading={pending} className="mt-2">{mode === "first" ? "시작하기" : "들어가기"}</Button>
     </form>
   );

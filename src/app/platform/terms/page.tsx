@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { TERMS, TERMS_TITLE, TERMS_VERSION } from "@/lib/terms";
 
 /**
@@ -31,6 +32,7 @@ export default function TermsPage() {
 
         <div className="mt-6 text-[11px] leading-[1.8] text-mute">
           동의는 매장을 여는 콘솔에서 운영사가 대표자 이름과 함께 기록해요. 어느 판에 언제 동의했는지는 매장 관리자 화면의 '요금제' 에서 볼 수 있어요.
+          <br />개인정보를 어떻게 다루는지는 <Link href="/platform/privacy" className="font-bold text-brand underline-offset-2 hover:underline">개인정보처리방침</Link>에 따로 적어 두었어요.
         </div>
       </div>
     </div>

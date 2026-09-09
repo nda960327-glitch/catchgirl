@@ -7,7 +7,7 @@ import type { MetadataRoute } from "next";
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      { userAgent: "*", allow: ["/", "/signup", "/demo", "/agent/join", "/platform/terms"], disallow: ["/api/", "/platform/", "/agent/", "/secret-garden/", "/*/admin", "/*/staff", "/*/login"] },
+      { userAgent: "*", allow: ["/", "/signup", "/demo", "/agent/join", "/platform/terms", "/platform/privacy"], disallow: ["/api/", "/platform/", "/agent/", "/secret-garden/", "/*/admin", "/*/staff", "/*/login"] },
     ],
     sitemap: "https://www.catchgirl.kr/sitemap.xml",
     host: "https://www.catchgirl.kr",

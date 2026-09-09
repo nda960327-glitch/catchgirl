@@ -407,6 +407,21 @@ export async function suspendStore(slug: string, reason: string): Promise<R> {
   return { ok: true };
 }
 
+/* ─── 신고 — 운영사가 직접 닫는다. 매장은 이걸 다시 열 수 없다 ─── */
+export async function resolveReportByPlatform(id: string, status: "RESOLVED" | "DISMISSED" | "OPEN", note: string): Promise<R> {
+  if (!(await isPlatform())) return denied();
+  const row = await prisma.report.findUnique({ where: { id }, include: { store: { select: { slug: true } } } });
+  if (!row) return { ok: false, error: "신고를 찾을 수 없어요." };
+  await prisma.report.update({
+    where: { id },
+    data: { status, adminNote: note.trim().slice(0, 300), handledBy: status === "OPEN" ? "" : "PLATFORM", resolvedAt: status === "OPEN" ? null : new Date() },
+  });
+  if (status !== "OPEN") await logPlatform("REPORT_CLOSED", `${status === "RESOLVED" ? "조치 완료" : "문제 없음"}${note.trim() ? ` · ${note.trim().slice(0, 100)}` : ""}`, row.storeId);
+  revalidatePath("/platform", "layout");
+  revalidatePath(`/${row.store.slug}/admin/reports`);
+  return { ok: true };
+}
+
 export async function resumeStore(slug: string): Promise<R> {
   if (!(await isPlatform())) return denied();
   const store = await storeBySlug(slug);

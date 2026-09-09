@@ -7,6 +7,7 @@ import { Button, Card, Chip, Empty, Stars, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { staffReplyComment, staffReplyReview } from "../../actions";
+import { ReportButton } from "@/components/report-button";
 
 export type SReview = { id: string; customerName: string; rating: number; content: string; reply: string | null; createdAt: string };
 export type SComment = { id: string; authorName: string; authorType: string; content: string; createdAt: string; replies: SComment[] };
@@ -55,6 +56,7 @@ export function StaffReviews({ slug, reviews, comments, stats }: { slug: string;
                   <span className="font-bold text-ink">{r.customerName}</span>
                   <Stars value={r.rating} size={11} />
                   <span className="ml-auto text-[10px] text-mute">{format(new Date(r.createdAt), "yyyy.MM.dd")}</span>
+                  <ReportButton slug={slug} role="staff" target={{ type: "REVIEW", id: r.id, name: `${r.customerName}님의 후기` }} />
                 </div>
                 <p className="mt-2 text-[13px] leading-[1.7] text-ink">{r.content}</p>
                 {r.reply && replyFor !== r.id && <div className="mt-2 rounded-xl bg-blush-lt px-3 py-2 text-[12px]"><b className="text-brand">내 답글</b> <span className="text-ink">{r.reply}</span></div>}
@@ -80,6 +82,7 @@ export function StaffReviews({ slug, reviews, comments, stats }: { slug: string;
               <div className="flex items-center gap-2 text-[12px]">
                 <span className="font-bold text-ink">{c.authorName}</span>
                 <span className="ml-auto text-[10px] text-mute">{format(new Date(c.createdAt), "MM.dd HH:mm")}</span>
+                <ReportButton slug={slug} role="staff" target={{ type: "COMMENT", id: c.id, name: `${c.authorName}님의 댓글` }} />
               </div>
               <p className="mt-1 text-[13px] text-ink">{c.content}</p>
               {c.replies.map((x) => (

@@ -66,7 +66,7 @@ export function InstallPoster({
 
         {/* 안심 */}
         <div className="font-bold" style={{ fontSize: "2.9cqw", marginTop: "3cqw", padding: "1.4cqw 3.5cqw", borderRadius: "99px", background: "#E8F6EE", color: "#2E8B57", lineHeight: 1.3 }}>
-          실명·전화번호 안 받아요 · 닉네임과 PIN만 · 털릴 개인정보가 없어요
+          실명·전화번호 안 받아요 · 닉네임과 PIN만 · 털릴 개인정보가 없어요 · 만 19세 이상만
         </div>
       </div>
     </div>

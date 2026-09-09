@@ -34,6 +34,8 @@ export async function loginCustomer(slug: string, form: FormData, next?: string)
   const { nickname, pin, inviteCode } = parsed.data;
   const dirty = cleanCheck(nickname);
   if (!dirty.ok) return dirty;
+  // 성인 확인 — 화면의 체크만 믿지 않고 서버에서 다시 본다. 안 하면 문을 안 연다.
+  if (form.get("adult") !== "on") return { ok: false, error: "만 19세 이상만 이용할 수 있어요. 확인란에 체크해 주세요." };
 
   const byNickname = await prisma.customer.findUnique({ where: { storeId_nickname: { storeId: store.id, nickname } } });
 
@@ -45,6 +47,7 @@ export async function loginCustomer(slug: string, form: FormData, next?: string)
     if (!(await bcrypt.compare(pin, byNickname.passwordHash))) {
       return { ok: false, error: "닉네임 또는 PIN이 맞지 않아요." };
     }
+    if (!byNickname.adultConfirmedAt) await prisma.customer.update({ where: { id: byNickname.id }, data: { adultConfirmedAt: new Date() } });
     await setSession({ role: "customer", id: byNickname.id, storeId: store.id, name: byNickname.nickname });
     redirect(next && next.startsWith(`/${slug}`) ? next : `/${slug}/me`);
   }
@@ -61,7 +64,7 @@ export async function loginCustomer(slug: string, form: FormData, next?: string)
   }
   const claimed = await prisma.customer.update({
     where: { id: invited.id },
-    data: { nickname, passwordHash: await bcrypt.hash(pin, 10) },
+    data: { nickname, passwordHash: await bcrypt.hash(pin, 10), adultConfirmedAt: new Date() },
   });
   // 앱을 처음 시작한 순간 환영 쿠폰 한 장 — 카드에 적힌 약속을 여기서 지킨다
   if (store.signupCouponAmount > 0) {

@@ -34,7 +34,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
         <div className="mt-6 rounded-2xl bg-card p-4 text-[11px] leading-[1.8] text-mute shadow-card">
           <b className="text-ink">궁금한 게 있으면</b> 텔레그램 <a href={`https://t.me/${OPERATOR_CONTACT.telegram}`} target="_blank" rel="noreferrer" className="font-bold text-brand">@{OPERATOR_CONTACT.telegram}</a> 또는 전화 <a href={`tel:${OPERATOR_CONTACT.phone.replace(/[^0-9+]/g, "")}`} className="font-bold text-brand">{OPERATOR_CONTACT.phone}</a>
           <br />
-          약관 전문은 <Link href="/platform/terms" target="_blank" className="font-bold text-brand underline-offset-2 hover:underline">여기</Link>에서 볼 수 있어요 ({TERMS_VERSION} 판).
+          약관 전문은 <Link href="/platform/terms" target="_blank" className="font-bold text-brand underline-offset-2 hover:underline">여기</Link>에서 볼 수 있어요 ({TERMS_VERSION} 판). 개인정보는 <Link href="/platform/privacy" target="_blank" className="font-bold text-brand underline-offset-2 hover:underline">개인정보처리방침</Link>대로 다뤄요.
         </div>
       </div>
     </div>

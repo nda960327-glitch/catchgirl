@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getStoreBySlug } from "@/lib/store";
 import { TopBar, Sticker } from "@/components/ui";
 import { LoginForm } from "./login-form";
@@ -25,6 +26,7 @@ export default async function CustomerLoginPage({ params, searchParams }: { para
       </div>
       <div className="mt-auto px-6 pb-8 pt-6 text-center text-[10px] leading-[1.7] text-mute/80">
         데모 계정 — 서준 / PIN 1234 · 연결코드 데모 A3K9
+        <br />만 19세 이상만 이용할 수 있어요 · <Link href="/platform/privacy" target="_blank" className="underline-offset-2 hover:underline">개인정보처리방침</Link>
       </div>
     </div>
   );

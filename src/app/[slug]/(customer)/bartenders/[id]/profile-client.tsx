@@ -6,7 +6,8 @@ import { format } from "date-fns";
 import { Avatar, Button, Card, Chip, Empty, GradeChip, Stars, Textarea } from "@/components/ui";
 import { useToast } from "@/components/providers";
 import { cn } from "@/lib/utils";
-import { addComment, reportReview, toggleFavorite, voteStaff } from "../../actions";
+import { addComment, toggleFavorite, voteStaff } from "../../actions";
+import { ReportButton } from "@/components/report-button";
 import { useStaffLabel } from "@/components/store-label";
 import { josa } from "@/lib/labels";
 
@@ -89,14 +90,18 @@ export function ProfileClient({
               {staff.hourlyPrice.toLocaleString("ko-KR")}원<span className="text-[11px] font-medium text-mute"> / 1시간</span>
             </div>
           </div>
-          <button
-            onClick={onFav}
-            disabled={pending}
-            aria-label="찜하기"
-            className={cn("flex h-10 w-10 items-center justify-center rounded-full border text-[18px] transition-all active:scale-90", fav ? "border-brand bg-blush-lt text-brand" : "border-line bg-card text-blush")}
-          >
-            {fav ? "♥" : "♡"}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* 신고 — 성적인 요구·욕설·불법 의심은 여기서 바로. 매장과 운영사에 같이 간다 */}
+            <ReportButton slug={slug} role="customer" variant="icon" target={{ type: "STAFF", id: staff.id, name: staff.nickname }} onRequireLogin={loggedIn ? undefined : requireLogin} />
+            <button
+              onClick={onFav}
+              disabled={pending}
+              aria-label="찜하기"
+              className={cn("flex h-10 w-10 items-center justify-center rounded-full border text-[18px] transition-all active:scale-90", fav ? "border-brand bg-blush-lt text-brand" : "border-line bg-card text-blush")}
+            >
+              {fav ? "♥" : "♡"}
+            </button>
+          </div>
         </div>
         <p className="mt-2 text-[13px] leading-[1.85] text-mute">{staff.bio}</p>
 
@@ -177,7 +182,6 @@ export function ProfileClient({
 
 function ReviewsTab({ slug, reviews, loggedIn, requireLogin }: { slug: string; reviews: ReviewItem[]; loggedIn: boolean; requireLogin: () => void }) {
   const staffLabel = useStaffLabel();
-  const { toast } = useToast();
   if (!reviews.length) return <Empty sticker="p6" title="아직 후기가 없어요" desc="방문을 완료한 분만 후기를 남길 수 있어요" />;
   return (
     <div className="mt-1">
@@ -206,16 +210,7 @@ function ReviewsTab({ slug, reviews, loggedIn, requireLogin }: { slug: string; r
           <div className="mt-2.5 flex items-center justify-between text-[10px] text-mute/80">
             <span>{format(new Date(r.createdAt), "yyyy.MM.dd")}</span>
             {!r.mine && (
-              <button
-                className="underline-offset-2 hover:underline"
-                onClick={async () => {
-                  if (!loggedIn) return requireLogin();
-                  const res = await reportReview(slug, r.id, "부적절한 내용");
-                  toast(res.ok ? "신고가 접수됐어요. 관리자가 검토할게요." : res.error, res.ok ? "success" : "error");
-                }}
-              >
-                신고
-              </button>
+              <ReportButton slug={slug} role="customer" target={{ type: "REVIEW", id: r.id, name: `${r.nickname}님의 후기` }} onRequireLogin={loggedIn ? undefined : requireLogin} />
             )}
           </div>
         </Card>
@@ -264,10 +259,10 @@ function CommentsTab({ slug, staffId, staffName, comments, loggedIn, requireLogi
         <div className="mt-4 flex flex-col gap-3">
           {comments.map((c) => (
             <div key={c.id}>
-              <CommentRow c={c} onReply={() => setReplyTo(c.id)} />
+              <CommentRow c={c} onReply={() => setReplyTo(c.id)} slug={slug} loggedIn={loggedIn} requireLogin={requireLogin} />
               {c.replies.map((r) => (
                 <div key={r.id} className="ml-8 mt-2">
-                  <CommentRow c={r} />
+                  <CommentRow c={r} slug={slug} loggedIn={loggedIn} requireLogin={requireLogin} />
                 </div>
               ))}
             </div>
@@ -278,7 +273,7 @@ function CommentsTab({ slug, staffId, staffName, comments, loggedIn, requireLogi
   );
 }
 
-function CommentRow({ c, onReply }: { c: CommentItem; onReply?: () => void }) {
+function CommentRow({ c, onReply, slug, loggedIn, requireLogin }: { c: CommentItem; onReply?: () => void; slug: string; loggedIn: boolean; requireLogin: () => void }) {
   const staffLabel = useStaffLabel();
   const isStaff = c.authorType !== "CUSTOMER";
   return (
@@ -291,9 +286,10 @@ function CommentRow({ c, onReply }: { c: CommentItem; onReply?: () => void }) {
           <span className="ml-auto text-[10px] text-mute/80">{format(new Date(c.createdAt), "MM.dd HH:mm")}</span>
         </div>
         <p className="mt-1 text-[12px] leading-[1.7] text-ink/90">{c.content}</p>
-        {onReply && (
-          <button onClick={onReply} className="mt-1 text-[10px] font-semibold text-mute">답글 달기</button>
-        )}
+        <div className="mt-1 flex items-center gap-3">
+          {onReply && <button onClick={onReply} className="text-[10px] font-semibold text-mute">답글 달기</button>}
+          <ReportButton slug={slug} role="customer" target={{ type: "COMMENT", id: c.id, name: `${c.authorName}님의 댓글` }} onRequireLogin={loggedIn ? undefined : requireLogin} />
+        </div>
       </div>
     </div>
   );

@@ -735,9 +735,21 @@ export default async function Home() {
                 성매매 알선·청소년 고용·성적 서비스 광고·허가 범위 밖 영업이 확인되면 약관 4항에 따라 즉시 정지하고, 낸 요금은 돌려주지 않아요. 수사기관 요청이 있으면 기록을 제공해요. 같은 안내가 모든 매장의 손님 화면에 지울 수 없는 공지로 늘 걸려 있어요.
               </p>
             </div>
+            <div className="rounded-2xl border border-line bg-well p-5">
+              <div className="text-[13px] font-bold">신고 버튼이 모든 화면에 있어요</div>
+              <p className="mt-1.5 text-[12px] leading-[1.8] text-mute">
+                손님은 바텐더 프로필·후기·댓글·매장 자체를, 직원은 손님·후기·댓글을 한 번에 신고할 수 있어요. 신고는 매장 관리자를 거치지 않고 <b className="text-ink">운영사에도 그대로</b> 올라가요. 매장이 지우거나 막을 수 없고, 누가 신고했는지는 상대에게 보이지 않아요.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-line bg-well p-5">
+              <div className="text-[13px] font-bold">성인만 들어와요</div>
+              <p className="mt-1.5 text-[12px] leading-[1.8] text-mute">
+                손님은 앱을 시작할 때마다 <b className="text-ink">만 19세 이상</b>임을 직접 확인해야 들어와요. 명함과 포스터에도 같은 문구가 적혀 있어요. 매장의 신분증 확인 의무는 그대로이고, 앱은 그 위에 한 겹을 더 얹는 거예요.
+              </p>
+            </div>
           </div>
           <div className="mt-5 text-[12px] text-mute">
-            전문은 <Link href="/platform/terms" className="font-bold text-brand underline-offset-2 hover:underline">서비스 이용 약관 ({TERMS_VERSION} 판)</Link>에서 볼 수 있어요.
+            전문은 <Link href="/platform/terms" className="font-bold text-brand underline-offset-2 hover:underline">서비스 이용 약관 ({TERMS_VERSION} 판)</Link>과 <Link href="/platform/privacy" className="font-bold text-brand underline-offset-2 hover:underline">개인정보처리방침</Link>에서 볼 수 있어요.
           </div>
         </div>
       </section>
@@ -877,6 +889,7 @@ export default async function Home() {
           <div className="flex flex-col gap-1">
             <Link href="/signup" className="hover:text-ink">가입 신청</Link>
             <Link href="/platform/terms" className="hover:text-ink">이용 약관</Link>
+            <Link href="/platform/privacy" className="hover:text-ink">개인정보처리방침</Link>
             <Link href="/agent/join" className="hover:text-ink">영업 파트너 모집 · 로그인</Link>
             <Link href="/platform" className="hover:text-ink">운영사 콘솔</Link>
           </div>

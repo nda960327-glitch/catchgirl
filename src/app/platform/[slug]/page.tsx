@@ -21,6 +21,8 @@ import { DeleteBox, PaymentsTable, SuspendBox, type PaymentRow } from "./store-f
 export const dynamic = "force-dynamic";
 
 const ACTION_LABEL: Record<string, string> = {
+  REPORTED: "신고 접수",
+  REPORT_CLOSED: "신고 처리",
   STORE_CREATED: "매장 생성",
   PLAN_CHANGED: "요금제 변경",
   CONTRACT_UPDATED: "계약 정보 수정",

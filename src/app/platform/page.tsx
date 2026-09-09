@@ -20,7 +20,7 @@ const DEMO_SLUG = "secret-garden";
 const ACTION_LABEL: Record<string, string> = {
   STORE_CREATED: "매장 생성", PLAN_CHANGED: "요금제 변경", CONTRACT_UPDATED: "계약 정보", ADMIN_RESET: "관리자 계정",
   ENTERED_AS_ADMIN: "관리자로 들어감", SUSPENDED: "이용 중지", RESUMED: "이용 재개", PAID: "입금", UNPAID: "입금 취소",
-  BROADCAST: "전체 공지", STORE_DELETED: "매장 삭제", SIGNUP: "가입 신청", APPROVED: "가입 승인", BIZ_VERIFIED: "사업자 확인", CMS_UPDATED: "자동이체 정보", AGENT_SIGNUP: "담당직원 가입", AGENT_CREATED: "담당직원 생성",
+  BROADCAST: "전체 공지", STORE_DELETED: "매장 삭제", SIGNUP: "가입 신청", APPROVED: "가입 승인", BIZ_VERIFIED: "사업자 확인", CMS_UPDATED: "자동이체 정보", AGENT_SIGNUP: "담당직원 가입", AGENT_CREATED: "담당직원 생성", REPORTED: "신고 접수", REPORT_CLOSED: "신고 처리",
 };
 
 /**
@@ -35,7 +35,7 @@ export default async function PlatformPage() {
   const [stores, logs, agents] = await Promise.all([
     prisma.store.findMany({
       orderBy: { createdAt: "desc" },
-      include: { admins: { select: { email: true }, take: 1 }, payments: { select: { month: true } } },
+      include: { admins: { select: { email: true }, take: 1 }, payments: { select: { month: true } }, _count: { select: { reports: { where: { status: "OPEN" } } } } },
     }),
     prisma.platformLog.findMany({ orderBy: { createdAt: "desc" }, take: 20, include: { store: { select: { name: true, slug: true } } } }),
     prisma.agent.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, code: true } }),
@@ -54,6 +54,7 @@ export default async function PlatformPage() {
   const unpaidStores = rows.filter((r) => r.billing.unpaid.length > 0);
   const unpaidAmount = unpaidStores.reduce((a, r) => a + r.billing.unpaidAmount, 0);
   const reservations30d = rows.reduce((a, r) => a + r.health.reservations30d, 0);
+  const openReports = rows.reduce((a, r) => a + r.s._count.reports, 0);
 
   return (
     <div className="min-h-dvh bg-frame">
@@ -64,6 +65,7 @@ export default async function PlatformPage() {
             <h1 className="mt-1 font-serif text-[24px] font-bold text-ink">매장 콘솔</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/platform/reports" className={cn("rounded-xl border px-3.5 py-2 text-[12px] font-bold", openReports > 0 ? "border-bad/40 bg-bad-bg text-bad" : "border-line bg-card text-ink")}>신고{openReports > 0 ? ` ${openReports}건` : ""}</Link>
             <Link href="/platform/agents" className="rounded-xl border border-line bg-card px-3.5 py-2 text-[12px] font-bold text-ink">담당직원</Link>
             <Link href="/platform/billing" className="cta-grad rounded-xl px-3.5 py-2 text-[12px] font-bold text-white shadow-cta">이번 달 출금 명단</Link>
             <form action={logoutPlatform}>
@@ -108,6 +110,7 @@ export default async function PlatformPage() {
                         {billing.unpaid.length > 0 && !s.isSuspended && <Chip tone="red">미납 {billing.unpaid.length}개월</Chip>}
                         {!s.bizVerifiedAt && !s.isSuspended && <Chip tone="red">사업자 미확인</Chip>}
                         {!s.cmsMemberNo && !s.isSuspended && <Chip tone="red">자동이체 미등록</Chip>}
+                        {s._count.reports > 0 && <Chip tone="red">신고 {s._count.reports}건</Chip>}
                       </div>
                       <div className="mt-0.5 text-[11px] text-mute">
                         /{s.slug} · {s.admins[0]?.email ?? "관리자 없음"} · {format(s.createdAt, "yyyy.MM.dd")} 등록 · 구독 {billing.months}개월째

@@ -98,6 +98,7 @@ model Store {
   profileFields StoreProfileField[]
   payments      Payment[]
   platformLogs  PlatformLog[]
+  reports       Report[]
   agent         Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
 }
 
@@ -136,6 +137,32 @@ model Payment {
 }
 
 /** 플랫폼 콘솔에서 한 일의 기록 — 누가 언제 어느 업체에 무엇을 했는지 */
+/// 신고 — 손님·직원이 앱 안에서 누른 신고. 매장 관리자와 운영사 콘솔 양쪽에서 본다.
+/// 운영사가 보는 이유: 약관 4항(즉시 정지)은 매장 스스로 지키기 어려운 조항이라
+/// 신고는 매장을 건너뛰고 파는 쪽에도 그대로 올라간다.
+model Report {
+  id           String    @id @default(cuid())
+  storeId      String
+  reporterType String // CUSTOMER | STAFF
+  reporterId   String
+  reporterName String    @default("")
+  targetType   String // STAFF | CUSTOMER | REVIEW | COMMENT | STORE
+  targetId     String?
+  targetName   String    @default("")
+  category     String // SEXUAL | ABUSE | ILLEGAL | PRIVACY | OTHER
+  detail       String    @default("")
+  status       String    @default("OPEN") // OPEN | RESOLVED | DISMISSED
+  handledBy    String    @default("") // STORE | PLATFORM
+  adminNote    String    @default("")
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, status])
+  @@index([status, createdAt])
+}
+
 model PlatformLog {
   id        String   @id @default(cuid())
   storeId   String?
@@ -264,6 +291,8 @@ model Customer {
   sourceId      String?
   adminMemo     String   @default("") // 상단 고정 메모 (한눈에 보는 핵심)
   isBlacklisted Boolean  @default(false)
+  // 만 19세 이상이라고 손님이 직접 확인한 시각. 주류를 파는 곳이라 앱을 시작할 때 반드시 확인받는다.
+  adultConfirmedAt DateTime?
   createdAt     DateTime @default(now())
 
   store        Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)

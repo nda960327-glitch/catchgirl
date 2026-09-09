@@ -8,6 +8,7 @@ import { businessDayOf, businessDayRange, getSlotsFor } from "@/lib/slots";
 import { cn, startOfDayLocal, STORE_FEE_PER_HOUR, toLocalDate, won, WEEKDAYS_KO, ymd } from "@/lib/utils";
 import { Card, Chip, Empty, StatusChip } from "@/components/ui";
 import { InstallApp } from "@/components/install-app";
+import { ReportButton } from "@/components/report-button";
 
 export default async function StaffHome({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ date?: string }> }) {
   const { slug } = await params;
@@ -121,6 +122,7 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
                   <div className="flex items-center gap-2 text-[13px]">
                     <span className="font-bold text-ink">{r.customer.nickname}</span>
                     {r.customer.adminMemo && <span className="truncate text-[11px] text-mute" title={r.customer.adminMemo}>{r.customer.adminMemo}</span>}
+                    {r.status !== "CANCELLED" && <ReportButton slug={slug} role="staff" target={{ type: "CUSTOMER", id: r.customer.id, name: r.customer.nickname }} />}
                   </div>
                   {r.options.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1">

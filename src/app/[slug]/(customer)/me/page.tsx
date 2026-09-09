@@ -13,6 +13,7 @@ import { HistoryTabs, type HistoryItem } from "./history-tabs";
 import { ProfileForm } from "./profile-form";
 import { logoutCustomer } from "../actions";
 import { josa, staffLabelOf } from "@/lib/labels";
+import { ReportButton } from "@/components/report-button";
 
 export default async function MyPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -167,6 +168,20 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
             ))}
           </div>
         )}
+      </section>
+
+      {/* 문제가 있으면 — 매장 자체를 운영사에 알리는 길. 매장이 지우거나 막을 수 없다 */}
+      <section className="px-4 pb-10">
+        <div className="rounded-[20px] border border-line bg-card p-4">
+          <div className="text-[12px] font-bold text-ink">문제가 있었나요?</div>
+          <p className="mt-1 text-[11px] leading-[1.7] text-mute">
+            성적인 요구, 욕설, 불법으로 보이는 일, 개인정보 요구가 있었다면 알려 주세요. 매장 관리자와 운영사에 같이 전달되고, 누가 알렸는지는 매장 직원에게 보이지 않아요.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <ReportButton slug={slug} role="customer" variant="pill" label="이 매장 신고하기" target={{ type: "STORE", id: store.id, name: store.name }} />
+            <Link href="/platform/privacy" target="_blank" className="text-[10px] text-mute underline-offset-2 hover:underline">개인정보처리방침</Link>
+          </div>
+        </div>
       </section>
     </div>
   );
