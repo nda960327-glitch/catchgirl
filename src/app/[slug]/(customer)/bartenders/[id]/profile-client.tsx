@@ -105,7 +105,7 @@ export function ProfileClient({
         </div>
         <p className="mt-2 text-[13px] leading-[1.85] text-mute">{staff.bio}</p>
 
-        {/* 프로필 — 흡연·문신은 미리 알고 고르고 싶어 하는 분들이 있어 함께 적어요 */}
+        {/* 프로필 — 매장이 만든 항목(외국어 등)만. 신체 정보는 받지 않는다 */}
         {staff.facts.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {staff.facts.map((f) => (

@@ -170,7 +170,7 @@ async function main() {
     { nickname: "지연", loginId: "jiyeon", bio: "재치 있는 입담으로 자리를 즐겁게 만들어요.", tags: ["재치있음", "입담좋음", "분위기메이커"], hourlyPrice: 280000, memo: "" },
     { nickname: "진아", loginId: "jina", bio: "단아한 분위기를 좋아하는 분들과 잘 맞아요.", tags: ["단아함", "조용조용", "여운있음"], hourlyPrice: 320000, memo: "" },
     { nickname: "채원", loginId: "chaewon", bio: "상큼하고 긍정적인 에너지로 맞아드려요.", tags: ["상큼함", "발랄함", "긍정에너지"], hourlyPrice: 250000, memo: "" },
-    { nickname: "하영", loginId: "hayoung", bio: "귀여운 외모에 마음씨도 착해요. 기념일이면 작은 이벤트도 직접 챙겨드려요.", tags: ["외모귀여움", "착함", "기념일"], hourlyPrice: 420000, memo: "기념일 응대 잘함" },
+    { nickname: "하영", loginId: "hayoung", bio: "마음씨가 착하고 세심해요. 기념일이면 작은 이벤트도 직접 챙겨드려요.", tags: ["세심함", "착함", "기념일"], hourlyPrice: 420000, memo: "기념일 응대 잘함" },
     { nickname: "해린", loginId: "haerin", bio: "당당하고 쿨한 매력으로 대화를 이끌어가요.", tags: ["당당함", "자신감", "쿨한매력"], hourlyPrice: 380000, memo: "" },
   ];
 

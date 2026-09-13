@@ -24,8 +24,6 @@ export default async function StaffPage({ params, searchParams }: { params: Prom
       return {
         id: s.id, nickname: s.nickname, bio: s.bio, tags: parseJsonArray(s.tags), photos: parseJsonArray(s.photos),
         isActive: s.isActive, capacityPerSlot: s.capacityPerSlot, hourlyPrice: s.hourlyPrice, adminMemo: s.adminMemo, loginId: s.loginId ?? "",
-        heightCm: s.heightCm, weightKg: s.weightKg,
-        smoker: s.smoker, tattoo: s.tattoo, tattooNote: s.tattooNote,
         optionIds: s.options.map((o) => o.id),
         profileValues: Object.fromEntries(s.profileValues.map((v) => [v.fieldId, v.value])),
         stats: {

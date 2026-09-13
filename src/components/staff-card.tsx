@@ -21,11 +21,6 @@ export function StaffCard({ s, href, showFacts = true }: { s: StaffSummary; href
           {/* 고를 때 실제로 보는 값들 — 목록에서도 바로 비교할 수 있게 한 줄로. 매장이 끄면 통째로 안 보인다 */}
           {showFacts && (
           <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px]">
-            {s.heightCm && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{s.heightCm}cm</span>}
-            {s.weightKg && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{s.weightKg}kg</span>}
-            {!s.smoker && <span className="rounded-md bg-ok-bg px-1.5 py-0.5 font-semibold text-ok">비흡연</span>}
-            {!s.tattoo && <span className="rounded-md bg-ok-bg px-1.5 py-0.5 font-semibold text-ok">문신 없음</span>}
-            {s.tattoo && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-mute">문신 {s.tattooNote || "있음"}</span>}
             {s.custom.map((c) => (
               <span key={c.fieldId} className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{c.label} {c.value}</span>
             ))}

@@ -12,7 +12,7 @@ import { cn, STAFF_SORTS } from "@/lib/utils";
  * 마지막 하나만 남는다. 주소에 남기는 건 뒤로 가기와 링크 공유 때문이다.
  */
 export function FilterBar({
-  slug, sort, now, filters, active, counts, bodySorts = true,
+  slug, sort, now, filters, active, counts,
 }: {
   slug: string;
   sort: string;
@@ -21,8 +21,6 @@ export function FilterBar({
   filters: { key: string; label: string }[];
   active: string[];
   counts: Record<string, number>;
-  /** 키·몸무게 정렬을 보일지 — 매장이 프로필 칩을 끄면 같이 숨긴다 */
-  bodySorts?: boolean;
 }) {
   const router = useRouter();
   const [picked, setPicked] = useState(active);
@@ -90,7 +88,7 @@ export function FilterBar({
           onChange={(e) => setOrder(e.target.value)}
           className="h-10 flex-1 rounded-xl border border-line bg-card px-3 text-[12px] font-semibold text-ink outline-none focus:border-brand"
         >
-          {STAFF_SORTS.filter(([k]) => bodySorts || !/^(height|weight)/.test(k)).map(([k, l]) => (
+          {STAFF_SORTS.map(([k, l]) => (
             <option key={k} value={k}>{l}</option>
           ))}
         </select>

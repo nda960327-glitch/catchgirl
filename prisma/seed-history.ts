@@ -129,8 +129,6 @@ async function main() {
       hourlyPrice: f.hourlyPrice,
       sortOrder: 100 + i,
       createdAt: f.join,
-      heightCm: 158 + intBetween(0, 14),
-      weightKg: 44 + intBetween(0, 11),
     })),
   });
   for (const f of formerRows) tenures.push({ staffId: f.id, hourlyPrice: f.hourlyPrice, opts: [optionByName.get("옵션1")?.id ?? ""].filter(Boolean), join: f.join, leave: f.leave });

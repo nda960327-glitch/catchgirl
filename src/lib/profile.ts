@@ -1,31 +1,18 @@
 /**
- * 캐치걸 프로필의 신체·습관 항목.
+ * 직원 프로필 항목.
  *
- * 앱이 정해 둔 공통 항목은 키·몸무게·흡연·문신뿐이다. 흡연은 자리에서 대화 거리가
- * 가까워 미리 알고 고르고 싶어 하고, 문신은 싫어하는 손님이 있어 밝혀 둔다.
- * 그 밖에 매장이 더 보여주고 싶은 것(외국어, 성형 여부 등)은 매장이 스스로 항목을
- * 만든다 — StoreProfileField. 빈 값은 화면에 아예 내보내지 않는다.
+ * 앱이 정해 둔 신체·습관 항목(키·몸무게·흡연·문신)은 없다. 직원을 몸으로 비교해 고르는
+ * 화면은 만들지 않는다. 매장이 보여주고 싶은 것(외국어, 잘 만드는 칵테일 등)만 매장이
+ * 스스로 항목을 만든다 — StoreProfileField. 신체 항목은 profanity.ts 의 bodyCheck 가 막는다.
+ * 빈 값은 화면에 아예 내보내지 않는다.
  */
-export type ProfileFacts = {
-  heightCm: number | null;
-  weightKg: number | null;
-  smoker: boolean;
-  tattoo: boolean;
-  tattooNote: string;
-};
 
-/** 매장이 만든 항목 하나 (설명용 이름 + 이 캐치걸의 값) */
+/** 매장이 만든 항목 하나 (설명용 이름 + 이 직원의 값) */
 export type CustomFact = { fieldId: string; label: string; value: string };
 
 /** 손님 화면에 줄 세워 보여줄 항목만 골라 만든다 */
-export function profileChips(p: ProfileFacts, custom: CustomFact[] = []): { label: string; value: string }[] {
-  const out: { label: string; value: string }[] = [];
-  if (p.heightCm) out.push({ label: "키", value: `${p.heightCm}cm` });
-  if (p.weightKg) out.push({ label: "몸무게", value: `${p.weightKg}kg` });
-  out.push({ label: "흡연", value: p.smoker ? "함" : "안 함" });
-  out.push({ label: "문신", value: p.tattoo ? p.tattooNote || "있음" : "없음" });
-  for (const c of custom) if (c.value.trim()) out.push({ label: c.label, value: c.value });
-  return out;
+export function profileChips(custom: CustomFact[] = []): { label: string; value: string }[] {
+  return custom.filter((c) => c.value.trim()).map((c) => ({ label: c.label, value: c.value }));
 }
 
 /** 매장 항목 정의 — DB 행을 화면·검색에서 쓰기 좋은 모양으로 */

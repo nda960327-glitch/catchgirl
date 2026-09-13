@@ -63,7 +63,7 @@ export default async function BartenderDetail({ params }: { params: Promise<{ sl
       <TopBar title={staff.nickname} back={`/${slug}/bartenders`} />
       <ProfileClient
         slug={slug}
-        staff={{ id: staff.id, nickname: staff.nickname, bio: staff.bio, tags: parseJsonArray(staff.tags), photos: parseJsonArray(staff.photos), hourlyPrice: staff.hourlyPrice, facts: !store.showProfileFacts ? [] : profileChips(staff, staff.profileValues.sort((a, b) => a.field.sortOrder - b.field.sortOrder).map((v) => ({ fieldId: v.fieldId, label: v.field.label, value: v.value }))) }}
+        staff={{ id: staff.id, nickname: staff.nickname, bio: staff.bio, tags: parseJsonArray(staff.tags), photos: parseJsonArray(staff.photos), hourlyPrice: staff.hourlyPrice, facts: !store.showProfileFacts ? [] : profileChips(staff.profileValues.sort((a, b) => a.field.sortOrder - b.field.sortOrder).map((v) => ({ fieldId: v.fieldId, label: v.field.label, value: v.value }))) }}
         stats={{ rating: stats.rating, reviewCount: stats.reviewCount, revisitRate: Math.round(stats.revisitRate * 100) }}
         reviews={reviewItems}
         comments={commentItems}

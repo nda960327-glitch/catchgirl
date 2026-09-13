@@ -20,11 +20,10 @@ export default async function BartenderListPage({
   searchParams: Promise<{ sort?: string; now?: string; f?: string }>;
 }) {
   const { slug } = await params;
-  const { sort: rawSort = "", now, f } = await searchParams;
+  const { sort = "", now, f } = await searchParams;
   const store = await getStoreBySlug(slug);
-  // 매장이 프로필 칩을 꺼 두면 조건 검색과 키·몸무게 정렬도 같이 뺀다 — 주소로 넣어도 안 먹는다
+  // 매장이 프로필 칩을 꺼 두면 매장 항목·옵션으로 거는 조건 검색도 같이 뺀다
   const showFacts = store.showProfileFacts;
-  const sort = !showFacts && /^(height|weight)/.test(rawSort) ? "" : rawSort;
   const [all, fields] = await Promise.all([
     listStaffSummaries(store).then((l) => sortStaffSummaries(l, sort)),
     showFacts
@@ -43,8 +42,6 @@ export default async function BartenderListPage({
   ];
   const active = (f ?? "").split(",").filter((k) => filters.some((x) => x.key === k));
   const match: Record<string, (s: StaffSummary) => boolean> = {
-    nosmoke: (s) => !s.smoker,
-    notattoo: (s) => !s.tattoo,
     opt1: (s) => s.optionNames.some((n) => n.includes("1")),
     opt2: (s) => s.optionNames.some((n) => n.includes("2")),
   };
@@ -102,7 +99,7 @@ export default async function BartenderListPage({
         </Link>
       </div>
 
-      <FilterBar slug={slug} sort={sort} now={onlyNow} filters={filters} active={active} counts={counts} bodySorts={showFacts} />
+      <FilterBar slug={slug} sort={sort} now={onlyNow} filters={filters} active={active} counts={counts} />
 
       <div className="flex flex-col gap-3.5 px-4 pt-4">
         {staff.length === 0 ? (

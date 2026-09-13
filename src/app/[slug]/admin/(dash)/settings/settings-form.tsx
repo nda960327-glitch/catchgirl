@@ -139,7 +139,7 @@ export function SettingsForm({ slug, init }: { slug: string; init: Init }) {
             <div className="min-w-0 flex-1">
               <div className="text-[14px] font-bold text-ink">손님 화면에 프로필 보이기</div>
               <div className="mt-1 text-[11px] leading-[1.7] text-mute">
-                키·몸무게·흡연·문신, 매장이 만든 프로필 항목(외국어 등), 옵션 칩과 그걸로 거는 조건 검색·키/몸무게 정렬이에요.
+                매장이 만든 프로필 항목(외국어 등)과 옵션 칩, 그걸로 거는 조건 검색이에요.
                 끄면 손님 목록과 프로필에서 통째로 빠지고, 적어 둔 값은 지워지지 않고 관리자 화면에만 남아요.
               </div>
             </div>

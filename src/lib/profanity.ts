@@ -47,3 +47,28 @@ export function cleanCheck(...texts: (string | null | undefined)[]): { ok: true 
   for (const t of texts) if (findBanned(t)) return { ok: false, error: BANNED_MESSAGE };
   return { ok: true };
 }
+
+/**
+ * 신체 정보 — 직원을 키·몸무게·외모로 비교해 고르는 화면은 이 앱에 없다.
+ * 앱이 정해 둔 항목에서 뺐으니, 매장이 항목 이름·보기·태그·소개로 다시 만들어 넣는 것도 막는다.
+ *
+ *  - "label" 모드: 프로필 항목 이름·보기, 태그처럼 짧은 이름표. 낱말이 들어 있기만 해도 막는다.
+ *  - "text" 모드: 소개·항목 값처럼 문장. 일상어와 겹치므로 숫자로 적은 키·몸무게·컵만 막는다.
+ */
+const BODY_EXACT = ["키", "몸", "나이", "얼굴", "신체", "비율"];
+const BODY_WORDS = [
+  "몸무게", "체중", "신장", "몸매", "체형", "가슴", "컵사이즈", "쓰리사이즈", "사이즈", "성형", "외모", "얼굴형", "각선미", "글래머", "볼륨감", "몸짱",
+  "흡연", "담배", "문신", "타투",
+];
+const BODY_NUMERIC = [/\d{2,3}(cm|kg|센치|센티|키로|킬로)/i, /(^|[^a-z])[a-h]컵/i, /(^|[^스쿠])키\d{3}/, /(몸무게|체중)\d{2}/];
+export const BODY_MESSAGE = "키·몸무게·외모 같은 신체 정보는 앱에 적을 수 없어요. 말투나 응대 스타일로 소개해 주세요.";
+
+export function bodyCheck(mode: "label" | "text", ...texts: (string | null | undefined)[]): { ok: true } | { ok: false; error: string } {
+  for (const raw of texts) {
+    if (!raw) continue;
+    const t = raw.toLowerCase().replace(/[\s#·.,_~!?()[\]'"-]/g, "");
+    if (BODY_NUMERIC.some((r) => r.test(t))) return { ok: false, error: BODY_MESSAGE };
+    if (mode === "label" && (BODY_EXACT.includes(t) || BODY_WORDS.some((w) => t.includes(w)))) return { ok: false, error: BODY_MESSAGE };
+  }
+  return { ok: true };
+}

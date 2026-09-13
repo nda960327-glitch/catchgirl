@@ -22,8 +22,8 @@ export type ProfileFieldItem = {
 /**
  * 관리자 — 프로필 항목을 매장이 직접 만든다.
  *
- * 앱은 키·몸무게·흡연·문신만 정해 두고, 그 밖의 것(외국어, 성형 여부 같은)은
- * 매장이 이름과 보기를 정한다. 보기 항목은 손님 화면 조건 검색 칩으로도 붙는다.
+ * 앱이 정해 둔 신체 항목은 없다. 매장이 보여주고 싶은 것(외국어, 잘 만드는 칵테일 같은)만
+ * 매장이 이름과 보기를 정한다. 신체 항목은 저장 단계에서 막힌다. 보기 항목은 손님 화면 조건 검색 칩으로도 붙는다.
  */
 export function ProfileFieldsManager({ slug, items }: { slug: string; items: ProfileFieldItem[] }) {
   const staffLabel = useStaffLabel();
@@ -62,7 +62,9 @@ export function ProfileFieldsManager({ slug, items }: { slug: string; items: Pro
       <Eyebrow>Profile Fields</Eyebrow>
       <div className="mt-1 text-[14px] font-bold text-ink">프로필 항목</div>
       <p className="mt-1 text-[12px] leading-[1.7] text-mute">
-        키·몸무게·흡연·문신 말고 더 보여주고 싶은 게 있으면 여기서 항목을 만드세요. 예: 외국어(영어·일본어·중국어), 성형 여부(자연·있음).
+        손님에게 더 보여주고 싶은 게 있으면 여기서 항목을 만드세요. 예: 외국어(영어·일본어·중국어), 잘 만드는 칵테일, 주력 주종.
+        <br />
+        키·몸무게·외모·흡연·문신 같은 신체 항목은 만들 수 없어요.
         <br />
         <b className="text-ink">보기</b>로 만든 항목은 손님 화면의 조건 검색 칩으로도 붙어요. 값은 직원 관리에서 {staffLabel}마다 적어요.
       </p>

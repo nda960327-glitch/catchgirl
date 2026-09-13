@@ -11,7 +11,7 @@ import { cancelReservation, createReservation, sendDueReminders, SlotConflictErr
 import { ymd } from "@/lib/utils";
 import { ensureInviteCode, freshInviteCode } from "@/lib/invite";
 import { josa, staffLabelOf } from "@/lib/labels";
-import { cleanCheck } from "@/lib/profanity";
+import { BODY_MESSAGE, bodyCheck, cleanCheck } from "@/lib/profanity";
 
 export type R<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 const fail = (e: unknown, fallback = "처리에 실패했어요."): R<never> => ({ ok: false, error: e instanceof Error && e.message !== "UNAUTHORIZED" ? e.message : e instanceof Error ? "권한이 없어요." : fallback });
@@ -132,12 +132,6 @@ const staffSchema = z.object({
   capacityPerSlot: z.coerce.number().int().min(1).max(10).default(1),
   hourlyPrice: z.coerce.number().int().min(0).max(100_000_000).default(300_000),
   adminMemo: z.string().max(500).optional().default(""),
-  // 프로필 — 손님이 고를 때 보는 값. 모르는 항목은 비워 두고 화면에도 안 띄운다.
-  heightCm: z.coerce.number().int().min(120).max(220).nullable().optional().default(null),
-  weightKg: z.coerce.number().int().min(30).max(200).nullable().optional().default(null),
-  smoker: z.boolean().optional().default(false),
-  tattoo: z.boolean().optional().default(false),
-  tattooNote: z.string().trim().max(60).optional().default(""),
   optionIds: z.array(z.string()).max(20).optional().default([]),
   // 매장이 직접 만든 프로필 항목의 값 (fieldId → 값). 빈 값은 저장하지 않는다.
   profileValues: z.array(z.object({ fieldId: z.string(), value: z.string().trim().max(60) })).max(30).optional().default([]),
@@ -153,12 +147,13 @@ export async function saveStaff(slug: string, input: z.input<typeof staffSchema>
     const p = staffSchema.safeParse(input);
     if (!p.success) return { ok: false, error: p.error.issues[0].message };
     const d = p.data;
-    { const dirty = cleanCheck(d.nickname, d.bio, d.tags.join(" "), d.tattooNote, ...d.profileValues.map((v) => v.value)); if (!dirty.ok) return dirty; }
+    { const dirty = cleanCheck(d.nickname, d.bio, d.tags.join(" "), ...d.profileValues.map((v) => v.value)); if (!dirty.ok) return dirty; }
+    // 신체 정보는 어느 칸으로도 못 들어온다 — 태그는 낱말까지, 닉네임·소개·항목 값은 숫자로 적은 키·몸무게까지 막는다
+    { const body = bodyCheck("label", ...d.tags); if (!body.ok) return body; }
+    { const body = bodyCheck("text", d.nickname, d.bio, ...d.profileValues.map((v) => v.value)); if (!body.ok) return body; }
     const base = {
       nickname: d.nickname, bio: d.bio, tags: JSON.stringify(d.tags), photos: JSON.stringify(d.photos),
       isActive: d.isActive, capacityPerSlot: d.capacityPerSlot, hourlyPrice: d.hourlyPrice, adminMemo: d.adminMemo, loginId: d.loginId || null,
-      heightCm: d.heightCm, weightKg: d.weightKg,
-      smoker: d.smoker, tattoo: d.tattoo, tattooNote: d.tattoo ? d.tattooNote : "",
       ...(d.password ? { passwordHash: await bcrypt.hash(d.password, 10) } : {}),
     };
     const optionIds = d.optionIds.map((oid) => ({ id: oid }));
@@ -544,13 +539,13 @@ export async function deleteStoreOption(slug: string, optionId: string): Promise
 }
 
 /* ─── 매장 프로필 항목 ───
- * 앱이 정한 공통 항목(키·몸무게·흡연·문신) 밖에 매장이 더 보여주고 싶은 것을 스스로 만든다.
+ * 매장이 보여주고 싶은 항목(외국어 등)을 스스로 만든다. 키·몸무게·외모 같은 신체 항목은 만들 수 없다.
  * 보기(CHOICE)면 손님 화면의 조건 검색 칩으로도 쓸 수 있다. */
 const profileFieldSchema = z.object({
   id: z.string().optional(),
-  label: z.string().trim().min(1, "항목 이름을 입력해 주세요").max(12, "항목 이름은 12자까지예요").refine((v) => cleanCheck(v).ok, "쓸 수 없는 표현이 들어 있어요."),
+  label: z.string().trim().min(1, "항목 이름을 입력해 주세요").max(12, "항목 이름은 12자까지예요").refine((v) => cleanCheck(v).ok, "쓸 수 없는 표현이 들어 있어요.").refine((v) => bodyCheck("label", v).ok, BODY_MESSAGE),
   kind: z.enum(["CHOICE", "TEXT"]).default("CHOICE"),
-  options: z.array(z.string().trim().min(1).max(12).refine((v) => cleanCheck(v).ok, "쓸 수 없는 표현이 들어 있어요.")).max(12).default([]),
+  options: z.array(z.string().trim().min(1).max(12).refine((v) => cleanCheck(v).ok, "쓸 수 없는 표현이 들어 있어요.").refine((v) => bodyCheck("label", v).ok, BODY_MESSAGE)).max(12).default([]),
   showInFilter: z.boolean().default(true),
   isActive: z.boolean().default(true),
 });

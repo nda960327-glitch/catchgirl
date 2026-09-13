@@ -14,7 +14,6 @@ import { josa } from "@/lib/labels";
 
 export type StaffFull = {
   id: string; nickname: string; bio: string; tags: string[]; photos: string[]; isActive: boolean; capacityPerSlot: number; hourlyPrice: number; adminMemo: string; loginId: string;
-  heightCm: number | null; weightKg: number | null; smoker: boolean; tattoo: boolean; tattooNote: string;
   optionIds: string[];
   /** 매장이 만든 항목의 값 — fieldId → 값 */
   profileValues: Record<string, string>;
@@ -27,7 +26,7 @@ export type StoreOptionLite = { id: string; name: string; price: number };
 
 const EMPTY: StaffFull = {
   id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, hourlyPrice: 300000, adminMemo: "", loginId: "",
-  heightCm: null, weightKg: null, smoker: false, tattoo: false, tattooNote: "", optionIds: [], profileValues: {},
+  optionIds: [], profileValues: {},
   stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0, upCount: 0, downCount: 0, customerCount: 0, repeatCustomers: 0, newCustomers30d: 0 },
 };
 
@@ -54,14 +53,6 @@ export function StaffManager({ slug, items, storeOptions, profileFields, initial
                 <div className="mt-1 truncate text-[11px] text-mute">{s.tags.map((t) => `#${t}`).join(" ") || "태그 없음"}</div>
                 {/* 손님이 보는 값들 — 여기서도 한눈에 확인하고 바로 고칠 수 있게 */}
                 <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
-                  {s.heightCm && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{s.heightCm}cm</span>}
-                  {s.weightKg && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{s.weightKg}kg</span>}
-                  <span className={cn("rounded-md px-1.5 py-0.5 font-semibold", s.smoker ? "bg-bad-bg text-bad" : "bg-ok-bg text-ok")}>
-                    {s.smoker ? "흡연" : "비흡연"}
-                  </span>
-                  <span className={cn("rounded-md px-1.5 py-0.5 font-semibold", s.tattoo ? "bg-well-2 text-mute" : "bg-ok-bg text-ok")}>
-                    {s.tattoo ? `문신 ${s.tattooNote || "있음"}` : "문신 없음"}
-                  </span>
                   {profileFields.filter((pf) => s.profileValues[pf.id]).map((pf) => (
                     <span key={pf.id} className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{pf.label} {s.profileValues[pf.id]}</span>
                   ))}
@@ -126,8 +117,6 @@ function StaffEditor({ slug, init, storeOptions, profileFields, onClose }: { slu
       const r = await saveStaff(slug, {
         id: f.id || undefined, nickname: f.nickname, bio: f.bio, tags: f.tags, photos: f.photos, isActive: f.isActive,
         capacityPerSlot: f.capacityPerSlot, hourlyPrice: f.hourlyPrice, adminMemo: f.adminMemo, optionIds: f.optionIds,
-        heightCm: f.heightCm, weightKg: f.weightKg,
-        smoker: f.smoker, tattoo: f.tattoo, tattooNote: f.tattooNote,
         profileValues: Object.entries(f.profileValues).map(([fieldId, value]) => ({ fieldId, value })),
         loginId: f.loginId, password: f.password,
       });
@@ -175,32 +164,14 @@ function StaffEditor({ slug, init, storeOptions, profileFields, onClose }: { slu
         {/* 프로필 — 손님이 고를 때 실제로 보는 값들. 모르는 건 비워 두면 화면에 안 나온다. */}
         <div className="rounded-2xl border border-line bg-card p-3.5">
           <div className="text-[12px] font-bold text-ink">프로필</div>
-          <div className="mt-0.5 text-[10px] leading-[1.7] text-mute">손님이 고를 때 보는 값이에요. 비워 두면 그 항목은 화면에 안 나와요.</div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <Field label="키" hint="cm">
-              <Input type="number" min={120} max={220} value={f.heightCm ?? ""} onChange={(e) => setF({ ...f, heightCm: e.target.value ? Number(e.target.value) : null })} className="h-11" />
-            </Field>
-            <Field label="몸무게" hint="kg">
-              <Input type="number" min={30} max={200} value={f.weightKg ?? ""} onChange={(e) => setF({ ...f, weightKg: e.target.value ? Number(e.target.value) : null })} className="h-11" />
-            </Field>
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-4">
-            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
-              <input type="checkbox" checked={f.smoker} onChange={(e) => setF({ ...f, smoker: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
-              흡연
-            </label>
-            <label className="flex items-center gap-1.5 text-[12px] font-semibold text-mute">
-              <input type="checkbox" checked={f.tattoo} onChange={(e) => setF({ ...f, tattoo: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />
-              문신
-            </label>
-            {f.tattoo && (
-              <Input value={f.tattooNote} onChange={(e) => setF({ ...f, tattooNote: e.target.value })} placeholder="위치·크기 (예: 손목 작게)" maxLength={60} className="h-10 w-[220px] text-[12px]" />
-            )}
+          <div className="mt-0.5 text-[10px] leading-[1.7] text-mute">
+            매장 설정 › 프로필 항목에서 만든 항목(외국어 등)을 적어요. 비워 두면 화면에 안 나와요.
+            키·몸무게·외모 같은 신체 정보는 받지 않아요.
           </div>
 
           {/* 매장이 만든 항목 — 매장 설정 › 프로필 항목에서 만든다 */}
           {profileFields.length > 0 && (
-            <div className="mt-3 flex flex-col gap-3 border-t border-line pt-3">
+            <div className="mt-3 flex flex-col gap-3">
               {profileFields.map((pf) => {
                 const v = f.profileValues[pf.id] ?? "";
                 const setV = (value: string) => setF({ ...f, profileValues: { ...f.profileValues, [pf.id]: value } });
