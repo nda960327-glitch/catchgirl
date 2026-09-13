@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Avatar, Card } from "@/components/ui";
 import type { StaffSummary } from "@/lib/queries";
 
-export function StaffCard({ s, href }: { s: StaffSummary; href: string }) {
+export function StaffCard({ s, href, showFacts = true }: { s: StaffSummary; href: string; showFacts?: boolean }) {
   const low = s.remainingHoursToday <= 2;
   return (
     <Link href={href} className="block">
@@ -18,7 +18,8 @@ export function StaffCard({ s, href }: { s: StaffSummary; href: string }) {
           </div>
           <div className="mt-1.5 truncate text-[12px] text-mute">{s.tags.slice(0, 3).map((t) => `#${t}`).join(" ")}</div>
 
-          {/* 고를 때 실제로 보는 값들 — 목록에서도 바로 비교할 수 있게 한 줄로 */}
+          {/* 고를 때 실제로 보는 값들 — 목록에서도 바로 비교할 수 있게 한 줄로. 매장이 끄면 통째로 안 보인다 */}
+          {showFacts && (
           <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px]">
             {s.heightCm && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{s.heightCm}cm</span>}
             {s.weightKg && <span className="rounded-md bg-well-2 px-1.5 py-0.5 font-semibold text-ink">{s.weightKg}kg</span>}
@@ -32,6 +33,7 @@ export function StaffCard({ s, href }: { s: StaffSummary; href: string }) {
               <span key={n} className="rounded-md bg-blush-lt px-1.5 py-0.5 font-semibold text-brand">{n}</span>
             ))}
           </div>
+          )}
 
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-semibold">
             <span className={s.upCount > 0 ? "text-brand" : "text-mute"}>👍 {s.upCount}</span>

@@ -33,7 +33,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ slug:
           name: store.name, staffLabel: store.staffLabel, tagline: store.tagline, heroTitle: store.heroTitle, logoUrl: store.logoUrl, coverUrl: store.coverUrl, themeColor: store.themeColor,
           openTime: store.openTime, closeTime: store.closeTime, shiftSplitTime: store.shiftSplitTime, slotMinutes: store.slotMinutes,
           contactPhone: store.contactPhone, contactTelegram: store.contactTelegram, theme: themeOf(store.theme), closedDays: parseJsonArray<number>(store.closedDays),
-          cancelDeadlineHours: store.cancelDeadlineHours, maxAdvanceDays: store.maxAdvanceDays, noshowPolicy: store.noshowPolicy,
+          cancelDeadlineHours: store.cancelDeadlineHours, maxAdvanceDays: store.maxAdvanceDays, noshowPolicy: store.noshowPolicy, showProfileFacts: store.showProfileFacts,
         }}
       />
       <RoomsManager slug={slug} items={rooms.map((r) => ({ id: r.id, name: r.name, isActive: r.isActive, assignedCount: r._count.assignments }))} />

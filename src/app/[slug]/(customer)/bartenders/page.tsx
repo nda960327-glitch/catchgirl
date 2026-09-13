@@ -20,11 +20,16 @@ export default async function BartenderListPage({
   searchParams: Promise<{ sort?: string; now?: string; f?: string }>;
 }) {
   const { slug } = await params;
-  const { sort = "", now, f } = await searchParams;
+  const { sort: rawSort = "", now, f } = await searchParams;
   const store = await getStoreBySlug(slug);
+  // 매장이 프로필 칩을 꺼 두면 조건 검색과 키·몸무게 정렬도 같이 뺀다 — 주소로 넣어도 안 먹는다
+  const showFacts = store.showProfileFacts;
+  const sort = !showFacts && /^(height|weight)/.test(rawSort) ? "" : rawSort;
   const [all, fields] = await Promise.all([
     listStaffSummaries(store).then((l) => sortStaffSummaries(l, sort)),
-    prisma.storeProfileField.findMany({ where: { storeId: store.id, isActive: true, showInFilter: true, kind: "CHOICE" }, orderBy: { sortOrder: "asc" } }),
+    showFacts
+      ? prisma.storeProfileField.findMany({ where: { storeId: store.id, isActive: true, showInFilter: true, kind: "CHOICE" }, orderBy: { sortOrder: "asc" } })
+      : Promise.resolve([]),
   ]);
   const onlyNow = now === "1";
   const nowCount = all.filter((s) => s.availableNow).length;
@@ -32,7 +37,7 @@ export default async function BartenderListPage({
   // 조건 검색 — 값이 비어 있는 캐치걸은 그 조건에서 빠진다.
   // 안 적어 둔 걸 "아니오" 로 치면 없는 사실을 만들어 내게 된다.
   // 매장이 만든 보기 항목은 "<fieldId>:<보기>" 키로 칩이 하나씩 붙는다 (예: 외국어 영어 / 외국어 일본어)
-  const filters: { key: string; label: string }[] = [
+  const filters: { key: string; label: string }[] = !showFacts ? [] : [
     ...STAFF_FILTERS,
     ...fields.flatMap((fd) => parseFieldOptions(fd.options).map((o) => ({ key: customFilterKey(fd.id, o), label: `${fd.label} ${o}` }))),
   ];
@@ -97,7 +102,7 @@ export default async function BartenderListPage({
         </Link>
       </div>
 
-      <FilterBar slug={slug} sort={sort} now={onlyNow} filters={filters} active={active} counts={counts} />
+      <FilterBar slug={slug} sort={sort} now={onlyNow} filters={filters} active={active} counts={counts} bodySorts={showFacts} />
 
       <div className="flex flex-col gap-3.5 px-4 pt-4">
         {staff.length === 0 ? (
@@ -108,7 +113,7 @@ export default async function BartenderListPage({
             <Link href={href({ now: false })} className="mt-2 text-[11px] font-semibold text-brand">전체 {staffLabelOf(store)} 보기 ›</Link>
           </div>
         ) : (
-          staff.map((s) => <StaffCard key={s.id} s={s} href={`/${slug}/bartenders/${s.id}`} />)
+          staff.map((s) => <StaffCard key={s.id} s={s} href={`/${slug}/bartenders/${s.id}`} showFacts={showFacts} />)
         )}
       </div>
     </div>

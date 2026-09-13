@@ -9,7 +9,7 @@ import { cn, WEEKDAYS_KO } from "@/lib/utils";
 import { THEMES, themeStyle, type ThemeKey } from "@/lib/themes";
 import { saveStoreSettings, triggerReminders } from "../../actions";
 
-type Init = { name: string; staffLabel: string; tagline: string; heroTitle: string; logoUrl: string | null; coverUrl: string | null; themeColor: string; openTime: string; closeTime: string; shiftSplitTime: string; slotMinutes: number; closedDays: number[]; cancelDeadlineHours: number; maxAdvanceDays: number; noshowPolicy: string; contactPhone: string; contactTelegram: string; theme: ThemeKey };
+type Init = { name: string; staffLabel: string; tagline: string; heroTitle: string; logoUrl: string | null; coverUrl: string | null; themeColor: string; openTime: string; closeTime: string; shiftSplitTime: string; slotMinutes: number; closedDays: number[]; cancelDeadlineHours: number; maxAdvanceDays: number; noshowPolicy: string; showProfileFacts: boolean; contactPhone: string; contactTelegram: string; theme: ThemeKey };
 
 const PRESETS = ["#B4586A", "#C8A46A", "#5B6C8F", "#3E7C6A", "#8A5BB5", "#C4642F", "#1F1F24"];
 
@@ -132,6 +132,29 @@ export function SettingsForm({ slug, init }: { slug: string; init: Init }) {
           <div className="mt-4">
             <Field label="노쇼 정책 문구 (고객 화면 노출)"><Textarea rows={2} value={f.noshowPolicy} onChange={(e) => setF({ ...f, noshowPolicy: e.target.value })} /></Field>
           </div>
+        </Card>
+
+        <Card className="p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="text-[14px] font-bold text-ink">손님 화면에 프로필 보이기</div>
+              <div className="mt-1 text-[11px] leading-[1.7] text-mute">
+                키·몸무게·흡연·문신, 매장이 만든 프로필 항목(외국어 등), 옵션 칩과 그걸로 거는 조건 검색·키/몸무게 정렬이에요.
+                끄면 손님 목록과 프로필에서 통째로 빠지고, 적어 둔 값은 지워지지 않고 관리자 화면에만 남아요.
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={f.showProfileFacts}
+              aria-label="손님 화면에 프로필 보이기"
+              onClick={() => setF({ ...f, showProfileFacts: !f.showProfileFacts })}
+              className={cn("relative mt-0.5 h-7 w-12 shrink-0 rounded-full transition-colors", f.showProfileFacts ? "bg-brand" : "bg-well-2")}
+            >
+              <span className={cn("absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all", f.showProfileFacts ? "left-6" : "left-1")} />
+            </button>
+          </div>
+          <div className="mt-2 text-[11px] font-bold text-ink">{f.showProfileFacts ? "켜짐 · 손님이 칩과 조건 검색을 봐요" : "꺼짐 · 손님은 이름·소개·평점만 봐요"}</div>
         </Card>
 
         <Card className="p-5">
