@@ -20,7 +20,7 @@ export default async function CardsPage({ params }: { params: Promise<{ slug: st
   const [qr, pending] = await Promise.all([
     QRCode.toDataURL(url, { margin: 1, width: 512, color: { dark: "#1a1216", light: "#FFFFFF" } }),
     prisma.customer.findMany({
-      where: { storeId: store.id, passwordHash: null, NOT: { inviteCode: null } },
+      where: { storeId: store.id, deletedAt: null, passwordHash: null, NOT: { inviteCode: null } },
       orderBy: { createdAt: "desc" },
       select: { id: true, nickname: true, inviteCode: true },
     }),

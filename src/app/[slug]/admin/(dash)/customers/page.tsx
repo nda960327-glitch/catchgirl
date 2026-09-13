@@ -21,6 +21,7 @@ export default async function CustomersPage({ params, searchParams }: { params: 
     prisma.customer.findMany({
       where: {
         storeId: store.id,
+        deletedAt: null,
         // 닉네임뿐 아니라 매장이 적어 둔 연락처로도 찾을 수 있게
         ...(sp.q ? { OR: [{ nickname: { contains: sp.q } }, { adminContact: { contains: sp.q } }] } : {}),
       },

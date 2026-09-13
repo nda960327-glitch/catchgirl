@@ -24,7 +24,7 @@ export default async function PlanPage({ params }: { params: Promise<{ slug: str
   const commitment = commitmentOf(store.commitment);
 
   const [customerCount, staffCount, roomCount] = await Promise.all([
-    prisma.customer.count({ where: { storeId: store.id } }),
+    prisma.customer.count({ where: { storeId: store.id, deletedAt: null } }),
     prisma.staff.count({ where: { storeId: store.id, isActive: true } }),
     prisma.room.count({ where: { storeId: store.id, isActive: true } }),
   ]);

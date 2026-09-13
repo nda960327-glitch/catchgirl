@@ -9,12 +9,14 @@ import { cn, startOfDayLocal, STORE_FEE_PER_HOUR, toLocalDate, won, WEEKDAYS_KO,
 import { Card, Chip, Empty, StatusChip } from "@/components/ui";
 import { InstallApp } from "@/components/install-app";
 import { ReportButton } from "@/components/report-button";
+import { BlockButton } from "@/components/block-button";
 
 export default async function StaffHome({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ date?: string }> }) {
   const { slug } = await params;
   const sp = await searchParams;
   const store = await getStoreBySlug(slug);
   const me = await requireStaff(store.id);
+  const blockedIds = new Set((await prisma.block.findMany({ where: { blockerType: "STAFF", blockerId: me.id }, select: { blockedId: true } })).map((b) => b.blockedId));
   const staff = await prisma.staff.findUniqueOrThrow({ where: { id: me.id }, include: { schedules: true, offs: true } });
 
   const today = startOfDayLocal(new Date());
@@ -122,6 +124,8 @@ export default async function StaffHome({ params, searchParams }: { params: Prom
                   <div className="flex items-center gap-2 text-[13px]">
                     <span className="font-bold text-ink">{r.customer.nickname}</span>
                     {r.customer.adminMemo && <span className="truncate text-[11px] text-mute" title={r.customer.adminMemo}>{r.customer.adminMemo}</span>}
+                    {blockedIds.has(r.customer.id) && <span className="rounded-md bg-bad-bg px-1.5 py-0.5 text-[10px] font-bold text-bad">차단한 손님</span>}
+                    {r.status !== "CANCELLED" && !blockedIds.has(r.customer.id) && <BlockButton slug={slug} role="staff" target={{ kind: "CUSTOMER", id: r.customer.id }} name={r.customer.nickname} />}
                     {r.status !== "CANCELLED" && <ReportButton slug={slug} role="staff" target={{ type: "CUSTOMER", id: r.customer.id, name: r.customer.nickname }} />}
                   </div>
                   {r.options.length > 0 && (

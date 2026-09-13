@@ -736,9 +736,9 @@ export default async function Home() {
               </p>
             </div>
             <div className="rounded-2xl border border-line bg-well p-5">
-              <div className="text-[13px] font-bold">신고 버튼이 모든 화면에 있어요</div>
+              <div className="text-[13px] font-bold">신고·차단 버튼이 모든 화면에 있어요</div>
               <p className="mt-1.5 text-[12px] leading-[1.8] text-mute">
-                손님은 바텐더 프로필·후기·댓글·매장 자체를, 직원은 손님·후기·댓글을 한 번에 신고할 수 있어요. 신고는 매장 관리자를 거치지 않고 <b className="text-ink">운영사에도 그대로</b> 올라가요. 매장이 지우거나 막을 수 없고, 누가 신고했는지는 상대에게 보이지 않아요.
+                손님은 바텐더 프로필·후기·댓글·매장 자체를, 직원은 손님·후기·댓글을 한 번에 신고할 수 있어요. 불편한 상대는 그 자리에서 바로 차단해요. 신고는 매장 관리자를 거치지 않고 <b className="text-ink">운영사에도 그대로</b> 올라가요. 매장이 지우거나 막을 수 없고, 누가 신고했는지는 상대에게 보이지 않아요.
               </p>
             </div>
             <div className="rounded-2xl border border-line bg-well p-5">
@@ -890,6 +890,7 @@ export default async function Home() {
             <Link href="/signup" className="hover:text-ink">가입 신청</Link>
             <Link href="/platform/terms" className="hover:text-ink">이용 약관</Link>
             <Link href="/platform/privacy" className="hover:text-ink">개인정보처리방침</Link>
+            <Link href="/platform/account-deletion" className="hover:text-ink">계정 삭제</Link>
             <Link href="/agent/join" className="hover:text-ink">영업 파트너 모집 · 로그인</Link>
             <Link href="/platform" className="hover:text-ink">운영사 콘솔</Link>
           </div>

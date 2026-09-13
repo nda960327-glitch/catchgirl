@@ -21,7 +21,7 @@ export default async function ReservationsPage({ params, searchParams }: { param
   // 전화 받으면서 고르는 목록이라 연락처와 방문 횟수까지 같이 보여 준다
   const [customerRows, sources] = await Promise.all([
     prisma.customer.findMany({
-      where: { storeId: store.id },
+      where: { storeId: store.id, deletedAt: null },
       select: { id: true, nickname: true, adminContact: true, _count: { select: { reservations: true } } },
       orderBy: { nickname: "asc" },
     }),

@@ -63,6 +63,70 @@ export async function reportFromStaff(slug: string, input: ReportInput): Promise
   return { ok: true };
 }
 
+/* ─── 차단 ───
+ * 대상은 손님뿐이다. 글(후기·댓글)에서 누르면 서버가 그 글의 작성자를 찾아 차단한다 —
+ * 화면에 손님 id 를 내려보내지 않아도 된다. */
+export type BlockTarget = { kind: "REVIEW" | "COMMENT" | "CUSTOMER"; id: string };
+
+async function authorOf(storeId: string, t: BlockTarget): Promise<{ id: string; name: string; staffId: string | null } | null> {
+  if (t.kind === "REVIEW") {
+    const r = await prisma.review.findFirst({ where: { id: t.id, storeId }, select: { staffId: true, customer: { select: { id: true, nickname: true } } } });
+    return r ? { id: r.customer.id, name: r.customer.nickname, staffId: r.staffId } : null;
+  }
+  if (t.kind === "COMMENT") {
+    const c = await prisma.comment.findFirst({ where: { id: t.id, storeId, authorType: "CUSTOMER" }, select: { staffId: true, customer: { select: { id: true, nickname: true } } } });
+    return c?.customer ? { id: c.customer.id, name: c.customer.nickname, staffId: c.staffId } : null;
+  }
+  const cu = await prisma.customer.findFirst({ where: { id: t.id, storeId, deletedAt: null }, select: { id: true, nickname: true } });
+  return cu ? { id: cu.id, name: cu.nickname, staffId: null } : null;
+}
+
+async function saveBlock(storeId: string, blockerType: "CUSTOMER" | "STAFF", blockerId: string, blocked: { id: string; name: string }) {
+  await prisma.block.upsert({
+    where: { blockerType_blockerId_blockedType_blockedId: { blockerType, blockerId, blockedType: "CUSTOMER", blockedId: blocked.id } },
+    create: { storeId, blockerType, blockerId, blockedType: "CUSTOMER", blockedId: blocked.id, blockedName: blocked.name },
+    update: { blockedName: blocked.name },
+  });
+}
+
+/** 손님이 다른 손님을 차단 — 그 손님의 후기·댓글이 내 화면에서 사라진다 */
+export async function blockFromCustomer(slug: string, target: BlockTarget): Promise<R> {
+  const store = await getStoreBySlug(slug);
+  const me = await getCustomer(store.id);
+  if (!me) return { ok: false, error: "LOGIN_REQUIRED" };
+  if (target.kind === "CUSTOMER") return { ok: false, error: "후기나 댓글에서 차단해 주세요." };
+  const a = await authorOf(store.id, target);
+  if (!a) return { ok: false, error: "직원·매장이 쓴 글은 차단 대신 신고해 주세요." };
+  if (a.id === me.id) return { ok: false, error: "내 글은 차단할 수 없어요." };
+  await saveBlock(store.id, "CUSTOMER", me.id, a);
+  revalidatePath(`/${slug}`, "layout");
+  return { ok: true };
+}
+
+/** 직원이 손님을 차단 — 그 손님은 이 직원을 예약하거나 이 직원 프로필에 댓글을 달 수 없다 */
+export async function blockFromStaff(slug: string, target: BlockTarget): Promise<R> {
+  const store = await getStoreBySlug(slug);
+  const me = await getStaffUser(store.id);
+  if (!me) return { ok: false, error: "LOGIN_REQUIRED" };
+  const a = await authorOf(store.id, target);
+  if (!a) return { ok: false, error: "손님을 찾을 수 없어요." };
+  if (a.staffId && a.staffId !== me.id) return { ok: false, error: "내 프로필에 달린 글만 차단할 수 있어요." };
+  await saveBlock(store.id, "STAFF", me.id, a);
+  revalidatePath(`/${slug}`, "layout");
+  return { ok: true };
+}
+
+/** 차단 풀기 — 내가 한 차단만 풀 수 있다 */
+export async function unblock(slug: string, role: "customer" | "staff", blockId: string): Promise<R> {
+  const store = await getStoreBySlug(slug);
+  const me = role === "customer" ? await getCustomer(store.id) : await getStaffUser(store.id);
+  if (!me) return { ok: false, error: "LOGIN_REQUIRED" };
+  const r = await prisma.block.deleteMany({ where: { id: blockId, storeId: store.id, blockerType: role === "customer" ? "CUSTOMER" : "STAFF", blockerId: me.id } });
+  if (!r.count) return { ok: false, error: "차단 기록을 찾을 수 없어요." };
+  revalidatePath(`/${slug}`, "layout");
+  return { ok: true };
+}
+
 /** 매장 관리자가 신고를 닫는다 — 조치 완료 또는 문제 없음. 메모는 콘솔에서도 보인다. */
 export async function resolveReportByStore(slug: string, id: string, status: "RESOLVED" | "DISMISSED" | "OPEN", note: string): Promise<R> {
   const store = await getStoreBySlug(slug);

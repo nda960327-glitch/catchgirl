@@ -22,6 +22,7 @@ export const dynamic = "force-dynamic";
 
 const ACTION_LABEL: Record<string, string> = {
   REPORTED: "신고 접수",
+  ACCOUNT_DELETED: "손님 계정 삭제",
   REPORT_CLOSED: "신고 처리",
   STORE_CREATED: "매장 생성",
   PLAN_CHANGED: "요금제 변경",

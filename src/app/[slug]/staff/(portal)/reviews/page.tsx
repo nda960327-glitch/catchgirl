@@ -8,12 +8,15 @@ export default async function StaffReviewsPage({ params }: { params: Promise<{ s
   const { slug } = await params;
   const store = await getStoreBySlug(slug);
   const me = await requireStaff(store.id);
+  // 내가 차단한 손님의 글은 내 화면에서 뺀다
+  const blocked = new Set((await prisma.block.findMany({ where: { blockerType: "STAFF", blockerId: me.id }, select: { blockedId: true } })).map((b) => b.blockedId));
+  const hidden = (customerId: string | null) => !!customerId && blocked.has(customerId);
   const [reviews, comments, stats] = await Promise.all([
     prisma.review.findMany({ where: { staffId: me.id, isHidden: false }, orderBy: { createdAt: "desc" }, include: { customer: true } }),
     prisma.comment.findMany({ where: { staffId: me.id, isHidden: false, parentId: null }, orderBy: { createdAt: "desc" }, include: { replies: { where: { isHidden: false }, orderBy: { createdAt: "asc" } } } }),
     staffStats(me.id),
   ]);
-  const rv: SReview[] = reviews.map((r) => ({ id: r.id, customerName: r.customer.nickname, rating: r.rating, content: r.content, reply: r.reply, createdAt: r.createdAt.toISOString() }));
-  const cm: SComment[] = comments.map((c) => ({ id: c.id, authorName: c.authorName, authorType: c.authorType, content: c.content, createdAt: c.createdAt.toISOString(), replies: c.replies.map((x) => ({ id: x.id, authorName: x.authorName, authorType: x.authorType, content: x.content, createdAt: x.createdAt.toISOString(), replies: [] })) }));
+  const rv: SReview[] = reviews.filter((r) => !hidden(r.customerId)).map((r) => ({ id: r.id, customerName: r.customer.nickname, rating: r.rating, content: r.content, reply: r.reply, createdAt: r.createdAt.toISOString() }));
+  const cm: SComment[] = comments.filter((c) => !hidden(c.customerId)).map((c) => ({ id: c.id, authorName: c.authorName, authorType: c.authorType, content: c.content, createdAt: c.createdAt.toISOString(), replies: c.replies.filter((x) => !hidden(x.customerId)).map((x) => ({ id: x.id, authorName: x.authorName, authorType: x.authorType, content: x.content, createdAt: x.createdAt.toISOString(), replies: [] })) }));
   return <StaffReviews slug={slug} reviews={rv} comments={cm} stats={{ rating: stats.rating, reviewCount: stats.reviewCount, revisitRate: Math.round(stats.revisitRate * 100) }} />;
 }

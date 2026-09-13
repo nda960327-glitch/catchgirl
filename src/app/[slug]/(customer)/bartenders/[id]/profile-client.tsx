@@ -8,11 +8,12 @@ import { useToast } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { addComment, toggleFavorite, voteStaff } from "../../actions";
 import { ReportButton } from "@/components/report-button";
+import { BlockButton } from "@/components/block-button";
 import { useStaffLabel } from "@/components/store-label";
 import { josa } from "@/lib/labels";
 
 export type ReviewItem = { id: string; nickname: string; grade: string; rating: number; content: string; photos: string[]; reply: string | null; createdAt: string; mine: boolean };
-export type CommentItem = { id: string; authorName: string; authorType: string; content: string; createdAt: string; replies: CommentItem[] };
+export type CommentItem = { id: string; authorName: string; authorType: string; content: string; createdAt: string; mine?: boolean; replies: CommentItem[] };
 
 export function ProfileClient({
   slug, staff, stats, reviews, comments, loggedIn, favorited, votes,
@@ -210,7 +211,10 @@ function ReviewsTab({ slug, reviews, loggedIn, requireLogin }: { slug: string; r
           <div className="mt-2.5 flex items-center justify-between text-[10px] text-mute/80">
             <span>{format(new Date(r.createdAt), "yyyy.MM.dd")}</span>
             {!r.mine && (
-              <ReportButton slug={slug} role="customer" target={{ type: "REVIEW", id: r.id, name: `${r.nickname}님의 후기` }} onRequireLogin={loggedIn ? undefined : requireLogin} />
+              <span className="flex items-center gap-3">
+                <BlockButton slug={slug} role="customer" target={{ kind: "REVIEW", id: r.id }} name={r.nickname} onRequireLogin={loggedIn ? undefined : requireLogin} />
+                <ReportButton slug={slug} role="customer" target={{ type: "REVIEW", id: r.id, name: `${r.nickname}님의 후기` }} onRequireLogin={loggedIn ? undefined : requireLogin} />
+              </span>
             )}
           </div>
         </Card>
@@ -288,7 +292,8 @@ function CommentRow({ c, onReply, slug, loggedIn, requireLogin }: { c: CommentIt
         <p className="mt-1 text-[12px] leading-[1.7] text-ink/90">{c.content}</p>
         <div className="mt-1 flex items-center gap-3">
           {onReply && <button onClick={onReply} className="text-[10px] font-semibold text-mute">답글 달기</button>}
-          <ReportButton slug={slug} role="customer" target={{ type: "COMMENT", id: c.id, name: `${c.authorName}님의 댓글` }} onRequireLogin={loggedIn ? undefined : requireLogin} />
+          {!isStaff && !c.mine && <BlockButton slug={slug} role="customer" target={{ kind: "COMMENT", id: c.id }} name={c.authorName} onRequireLogin={loggedIn ? undefined : requireLogin} />}
+          {!c.mine && <ReportButton slug={slug} role="customer" target={{ type: "COMMENT", id: c.id, name: `${c.authorName}님의 댓글` }} onRequireLogin={loggedIn ? undefined : requireLogin} />}
         </div>
       </div>
     </div>

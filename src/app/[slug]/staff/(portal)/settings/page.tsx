@@ -5,6 +5,7 @@ import { getStaffUser } from "@/lib/auth";
 import { businessDayOf } from "@/lib/slots";
 import { Eyebrow } from "@/components/ui";
 import { StaffSettings } from "./staff-settings";
+import { BlockedList } from "@/components/blocked-list";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ export default async function StaffSettingsPage({ params }: { params: Promise<{ 
   if (!me) redirect(`/${slug}/staff/login`);
 
   const today = businessDayOf(store);
+  const blocks = await prisma.block.findMany({ where: { blockerType: "STAFF", blockerId: me.id }, orderBy: { createdAt: "desc" } });
   const [options, mine, timeOffs, availability] = await Promise.all([
     prisma.storeOption.findMany({ where: { storeId: store.id, isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.staff.findUnique({ where: { id: me.id }, select: { options: { select: { id: true } } } }),
@@ -37,6 +39,15 @@ export default async function StaffSettingsPage({ params }: { params: Promise<{ 
         myOptionIds={(mine?.options ?? []).map((o) => o.id)}
         availability={availability.map((a) => ({ weekday: a.weekday, shift: a.shift as "DAY" | "NIGHT" }))}
         timeOffs={timeOffs.map((t) => ({ id: t.id, date: t.date, startTime: t.startTime, endTime: t.endTime, reason: t.reason, createdBy: t.createdBy }))}
+      />
+
+      <BlockedList
+        slug={slug}
+        role="staff"
+        className="mt-6"
+        title="차단한 손님"
+        desc="차단한 손님은 나를 예약하거나 내 프로필에 댓글을 달 수 없고, 그분의 글도 내 화면에 안 보여요. 매장 관리자는 이 목록을 볼 수 있어요."
+        items={blocks.map((b) => ({ id: b.id, name: b.blockedName || "손님", createdAt: b.createdAt.toISOString() }))}
       />
     </div>
   );

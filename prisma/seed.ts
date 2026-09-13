@@ -142,8 +142,8 @@ async function main() {
   await prisma.adminUser.create({ data: { storeId: store.id, email: "admin@catchgirl.app", passwordHash: pw, name: "매니저" } });
 
   console.log("➕ 추가 옵션...");
-  const opt1 = await prisma.storeOption.create({ data: { storeId: store.id, name: "옵션1", price: 50000, sortOrder: 0 } });
-  const opt2 = await prisma.storeOption.create({ data: { storeId: store.id, name: "옵션2", price: 50000, sortOrder: 1 } });
+  const opt1 = await prisma.storeOption.create({ data: { storeId: store.id, name: "옵션1 (과자)", price: 50000, sortOrder: 0 } });
+  const opt2 = await prisma.storeOption.create({ data: { storeId: store.id, name: "옵션2 (우유)", price: 50000, sortOrder: 1 } });
 
   console.log("🚪 룸 10개...");
   const rooms = [];
@@ -316,7 +316,7 @@ async function main() {
 
         // 캐치걸이 제공하는 옵션 중에서만 고른다
         const chosen = st.opts.filter(() => chance(0.22));
-        const optRows = chosen.map((id) => ({ optionId: id, name: id === opt1.id ? "옵션1" : "옵션2", price: 50000 }));
+        const optRows = chosen.map((id) => ({ optionId: id, name: id === opt1.id ? "옵션1 (과자)" : "옵션2 (우유)", price: 50000 }));
         const optionsPrice = optRows.length * 50000;
 
         const r = await prisma.reservation.create({

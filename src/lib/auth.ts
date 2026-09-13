@@ -67,7 +67,7 @@ export async function getCustomer(storeId: string) {
   const s = await getSession("customer", storeId);
   if (!s) return null;
   const c = await prisma.customer.findUnique({ where: { id: s.id } });
-  if (!c || c.storeId !== storeId) return null;
+  if (!c || c.storeId !== storeId || c.deletedAt) return null;
   return c;
 }
 

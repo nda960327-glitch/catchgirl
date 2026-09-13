@@ -10,6 +10,7 @@ import { getStoreBySlug } from "@/lib/store";
 import { cancelReservation, createReservation, SlotConflictError } from "@/lib/reservations";
 import { josa, staffLabelOf } from "@/lib/labels";
 import { cleanCheck } from "@/lib/profanity";
+import { deleteCustomerAccount, isProtectedDemo, PROTECTED_MESSAGE, verifyPin } from "@/lib/account";
 
 export type ActionResult<T = undefined> = { ok: true; data?: T } | { ok: false; error: string; conflict?: boolean };
 
@@ -44,9 +45,8 @@ export async function loginCustomer(slug: string, form: FormData, next?: string)
     if (!byNickname?.passwordHash) {
       return { ok: false, error: "처음이시라면 매장에서 받은 연결코드를 입력해 주세요." };
     }
-    if (!(await bcrypt.compare(pin, byNickname.passwordHash))) {
-      return { ok: false, error: "닉네임 또는 PIN이 맞지 않아요." };
-    }
+    // 여러 번 틀리면 잠근다 — 네 자리 PIN 을 대입해 남의 계정에 들어가지 못하게
+    { const v = await verifyPin(store, byNickname, pin); if (!v.ok) return v; }
     if (!byNickname.adultConfirmedAt) await prisma.customer.update({ where: { id: byNickname.id }, data: { adultConfirmedAt: new Date() } });
     await setSession({ role: "customer", id: byNickname.id, storeId: store.id, name: byNickname.nickname });
     redirect(next && next.startsWith(`/${slug}`) ? next : `/${slug}/me`);
@@ -95,6 +95,7 @@ export async function updateMyProfile(slug: string, form: FormData): Promise<Act
   const d = parsed.data;
   const dirty = cleanCheck(d.nickname);
   if (!dirty.ok) return dirty;
+  if (isProtectedDemo(store, me) && d.nickname !== me.nickname) return { ok: false, error: PROTECTED_MESSAGE };
   try {
     await prisma.customer.update({ where: { id: me.id }, data: { nickname: d.nickname } });
   } catch (e) {
@@ -111,7 +112,11 @@ export async function changeMyPin(slug: string, currentPin: string, newPin: stri
   const me = await getCustomer(store.id);
   if (!me) return { ok: false, error: "LOGIN_REQUIRED" };
   if (!/^\d{4,6}$/.test(newPin)) return { ok: false, error: "새 PIN은 숫자 4~6자리예요" };
-  if (me.passwordHash && !(await bcrypt.compare(currentPin, me.passwordHash))) return { ok: false, error: "현재 PIN이 맞지 않아요." };
+  if (isProtectedDemo(store, me)) return { ok: false, error: PROTECTED_MESSAGE };
+  if (me.passwordHash) {
+    const v = await verifyPin(store, me, currentPin);
+    if (!v.ok) return { ok: false, error: v.error.replace("닉네임 또는 PIN이", "현재 PIN이") };
+  }
   await prisma.customer.update({ where: { id: me.id }, data: { passwordHash: await bcrypt.hash(newPin, 10) } });
   return { ok: true };
 }
@@ -141,6 +146,10 @@ export async function bookReservation(slug: string, input: z.input<typeof bookSc
   const parsed = bookSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "입력값을 확인해 주세요." };
   { const dirty = cleanCheck(parsed.data.requestNote, parsed.data.purposeTag); if (!dirty.ok) return dirty; }
+  // 직원이 차단한 손님은 그 직원을 예약할 수 없다. 차단됐다는 사실 자체는 알리지 않는다.
+  if (await prisma.block.findFirst({ where: { storeId: store.id, blockerType: "STAFF", blockerId: parsed.data.staffId, blockedType: "CUSTOMER", blockedId: customer.id }, select: { id: true } })) {
+    return { ok: false, error: `지금은 이 ${staffLabelOf(store)} 예약을 받을 수 없어요. 매장에 문의해 주세요.` };
+  }
   try {
     const r = await createReservation({ ...parsed.data, storeId: store.id, customerId: customer.id, createdBy: "CUSTOMER" });
     revalidatePath(`/${slug}`);
@@ -213,6 +222,9 @@ export async function addComment(slug: string, staffId: string, content: string,
   if (!text || text.length > 300) return { ok: false, error: "댓글은 1~300자" };
   const dirty = cleanCheck(text);
   if (!dirty.ok) return dirty;
+  if (await prisma.block.findFirst({ where: { storeId: store.id, blockerType: "STAFF", blockerId: staffId, blockedType: "CUSTOMER", blockedId: customer.id }, select: { id: true } })) {
+    return { ok: false, error: "이 프로필에는 댓글을 남길 수 없어요." };
+  }
   await prisma.comment.create({
     data: { storeId: store.id, staffId, customerId: customer.id, authorType: "CUSTOMER", authorName: customer.nickname, content: text, parentId: parentId ?? null },
   });
@@ -261,4 +273,18 @@ export async function reportReview(slug: string, reviewId: string, reason: strin
   if (!customer) return { ok: false, error: "LOGIN_REQUIRED" };
   await prisma.review.update({ where: { id: reviewId }, data: { isReported: true, reportReason: reason.slice(0, 100) || "신고" } });
   return { ok: true };
+}
+
+/* ─── 계정 삭제 — 앱에서 만든 계정은 앱 안에서 직접 지울 수 있어야 한다 ─── */
+export async function deleteMyAccount(slug: string, pin: string, confirmText: string): Promise<ActionResult> {
+  const store = await getStoreBySlug(slug);
+  const me = await getCustomer(store.id);
+  if (!me) return { ok: false, error: "LOGIN_REQUIRED" };
+  if (confirmText.trim() !== "삭제") return { ok: false, error: "확인 칸에 삭제라고 적어 주세요." };
+  if (isProtectedDemo(store, me)) return { ok: false, error: PROTECTED_MESSAGE };
+  const v = await verifyPin(store, me, pin);
+  if (!v.ok) return { ok: false, error: v.error.replace("닉네임 또는 PIN이", "PIN이") };
+  await deleteCustomerAccount(store, me, "APP");
+  await clearSession("customer");
+  redirect(`/${slug}/login?deleted=1`);
 }

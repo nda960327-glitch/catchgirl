@@ -3,13 +3,18 @@ import { getStoreBySlug } from "@/lib/store";
 import { TopBar, Sticker } from "@/components/ui";
 import { LoginForm } from "./login-form";
 
-export default async function CustomerLoginPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ next?: string }> }) {
+export default async function CustomerLoginPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ next?: string; deleted?: string }> }) {
   const { slug } = await params;
-  const { next } = await searchParams;
+  const { next, deleted } = await searchParams;
   const store = await getStoreBySlug(slug);
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <TopBar title="시작하기" back={`/${slug}`} />
+      {deleted === "1" && (
+        <div className="mx-6 mt-4 rounded-2xl bg-ok-bg px-4 py-3 text-center text-[12px] font-bold text-ok" role="status">
+          계정을 삭제했어요. 그동안 이용해 주셔서 감사해요.
+        </div>
+      )}
       <div className="flex flex-col items-center px-6 pt-8 text-center">
         <Sticker k="p7" size={110} />
         <div className="mt-2 font-serif text-[21px] font-bold text-ink">초대받은 분만 들어와요</div>

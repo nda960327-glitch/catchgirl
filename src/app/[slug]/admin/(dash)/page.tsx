@@ -35,7 +35,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ slug
     prisma.reservation.findMany({ where: { storeId: store.id, startTime: { gte: monthAgo, lt: tomorrow0 } }, select: { status: true, startTime: true, staffId: true } }),
     prisma.customer.count({ where: { storeId: store.id, createdAt: { gte: weekAgo } } }),
     prisma.staff.findMany({ where: { storeId: store.id, isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.customer.count({ where: { storeId: store.id } }),
+    prisma.customer.count({ where: { storeId: store.id, deletedAt: null } }),
     prisma.reservation.findMany({ where: { storeId: store.id, startTime: { gte: monthStart, lt: tomorrow0 } }, select: { status: true, hours: true } }),
   ]);
 

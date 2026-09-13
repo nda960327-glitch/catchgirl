@@ -8,6 +8,7 @@ import { useToast } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { staffReplyComment, staffReplyReview } from "../../actions";
 import { ReportButton } from "@/components/report-button";
+import { BlockButton } from "@/components/block-button";
 
 export type SReview = { id: string; customerName: string; rating: number; content: string; reply: string | null; createdAt: string };
 export type SComment = { id: string; authorName: string; authorType: string; content: string; createdAt: string; replies: SComment[] };
@@ -56,6 +57,7 @@ export function StaffReviews({ slug, reviews, comments, stats }: { slug: string;
                   <span className="font-bold text-ink">{r.customerName}</span>
                   <Stars value={r.rating} size={11} />
                   <span className="ml-auto text-[10px] text-mute">{format(new Date(r.createdAt), "yyyy.MM.dd")}</span>
+                  <BlockButton slug={slug} role="staff" target={{ kind: "REVIEW", id: r.id }} name={r.customerName} />
                   <ReportButton slug={slug} role="staff" target={{ type: "REVIEW", id: r.id, name: `${r.customerName}님의 후기` }} />
                 </div>
                 <p className="mt-2 text-[13px] leading-[1.7] text-ink">{r.content}</p>
@@ -82,6 +84,7 @@ export function StaffReviews({ slug, reviews, comments, stats }: { slug: string;
               <div className="flex items-center gap-2 text-[12px]">
                 <span className="font-bold text-ink">{c.authorName}</span>
                 <span className="ml-auto text-[10px] text-mute">{format(new Date(c.createdAt), "MM.dd HH:mm")}</span>
+                {c.authorType === "CUSTOMER" && <BlockButton slug={slug} role="staff" target={{ kind: "COMMENT", id: c.id }} name={c.authorName} />}
                 <ReportButton slug={slug} role="staff" target={{ type: "COMMENT", id: c.id, name: `${c.authorName}님의 댓글` }} />
               </div>
               <p className="mt-1 text-[13px] text-ink">{c.content}</p>

@@ -19,6 +19,10 @@ export default async function BartenderDetail({ params }: { params: Promise<{ sl
   });
   if (!staff || staff.storeId !== store.id) notFound();
   const me = await getCustomer(store.id);
+  // 내가 차단한 손님의 글은 내 화면에서 뺀다
+  const blockedIds = new Set(
+    me ? (await prisma.block.findMany({ where: { blockerType: "CUSTOMER", blockerId: me.id, blockedType: "CUSTOMER" }, select: { blockedId: true } })).map((b) => b.blockedId) : [],
+  );
 
   const [stats, reviews, comments, fav, votes, myVote] = await Promise.all([
     staffStats(staff.id),
@@ -38,7 +42,7 @@ export default async function BartenderDetail({ params }: { params: Promise<{ sl
   ]);
   const countOf = (v: string) => votes.find((x) => x.value === v)?._count.value ?? 0;
 
-  const reviewItems: ReviewItem[] = reviews.map((r) => ({
+  const reviewItems: ReviewItem[] = reviews.filter((r) => !blockedIds.has(r.customer.id)).map((r) => ({
     id: r.id,
     nickname: r.customer.nickname,
     grade: computeCustomerStats(r.customer.reservations).grade,
@@ -49,13 +53,15 @@ export default async function BartenderDetail({ params }: { params: Promise<{ sl
     createdAt: r.createdAt.toISOString(),
     mine: me?.id === r.customer.id,
   }));
-  const commentItems: CommentItem[] = comments.map((c) => ({
+  const hidden = (customerId: string | null) => !!customerId && blockedIds.has(customerId);
+  const commentItems: CommentItem[] = comments.filter((c) => !hidden(c.customerId)).map((c) => ({
     id: c.id,
     authorName: c.authorName,
     authorType: c.authorType,
     content: c.content,
     createdAt: c.createdAt.toISOString(),
-    replies: c.replies.map((x) => ({ id: x.id, authorName: x.authorName, authorType: x.authorType, content: x.content, createdAt: x.createdAt.toISOString(), replies: [] })),
+    mine: !!me && c.customerId === me.id,
+    replies: c.replies.filter((x) => !hidden(x.customerId)).map((x) => ({ id: x.id, authorName: x.authorName, authorType: x.authorType, content: x.content, createdAt: x.createdAt.toISOString(), mine: !!me && x.customerId === me.id, replies: [] })),
   }));
 
   return (

@@ -18,7 +18,7 @@ export async function SetupChecklist({ slug, storeId, logoUrl, createdAt, staffL
     prisma.staff.count({ where: { storeId, isActive: true } }),
     prisma.staff.count({ where: { storeId, isActive: true, NOT: { photos: "[]" } } }),
     prisma.staffSchedule.count({ where: { staff: { storeId } } }),
-    prisma.customer.count({ where: { storeId } }),
+    prisma.customer.count({ where: { storeId, deletedAt: null } }),
     prisma.room.count({ where: { storeId, isActive: true, NOT: { name: { endsWith: "번 룸" } } } }),
   ]);
 

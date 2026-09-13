@@ -110,7 +110,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     asciiName = `staff-settlement_${month}`;
   } else if (type === "customers") {
     const rows = await prisma.customer.findMany({
-      where: { storeId: store.id },
+      where: { storeId: store.id, deletedAt: null },
       include: { reservations: { select: { status: true, startTime: true, totalPrice: true } } },
       orderBy: { nickname: "asc" },
     });

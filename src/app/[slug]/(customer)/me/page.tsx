@@ -14,6 +14,9 @@ import { ProfileForm } from "./profile-form";
 import { logoutCustomer } from "../actions";
 import { josa, staffLabelOf } from "@/lib/labels";
 import { ReportButton } from "@/components/report-button";
+import { BlockedList } from "@/components/blocked-list";
+import { isProtectedDemo } from "@/lib/account";
+import { DeleteAccount } from "./delete-account";
 
 export default async function MyPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -51,6 +54,7 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
     stats.grade === "신규" ? null : prisma.gradeBenefit.findUnique({ where: { storeId_grade: { storeId: store.id, grade: stats.grade } } }),
   ]);
   const benefit = benefitRow && benefitRow.isActive && benefitRow.amount > 0 ? benefitRow : null;
+  const blocks = await prisma.block.findMany({ where: { blockerType: "CUSTOMER", blockerId: me.id }, orderBy: { createdAt: "desc" } });
 
   return (
     <div className="animate-fade">
@@ -171,7 +175,7 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
       </section>
 
       {/* 문제가 있으면 — 매장 자체를 운영사에 알리는 길. 매장이 지우거나 막을 수 없다 */}
-      <section className="px-4 pb-10">
+      <section className="px-4 pb-3">
         <div className="rounded-[20px] border border-line bg-card p-4">
           <div className="text-[12px] font-bold text-ink">문제가 있었나요?</div>
           <p className="mt-1 text-[11px] leading-[1.7] text-mute">
@@ -182,6 +186,21 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
             <Link href="/platform/privacy" target="_blank" className="text-[10px] text-mute underline-offset-2 hover:underline">개인정보처리방침</Link>
           </div>
         </div>
+      </section>
+
+      <section className="px-4 pb-3">
+        <BlockedList
+          slug={slug}
+          role="customer"
+          title="차단한 손님"
+          desc="후기·댓글에서 차단한 손님이에요. 이분들의 글은 내 화면에 안 보여요. 상대에게는 알리지 않아요."
+          items={blocks.map((b) => ({ id: b.id, name: b.blockedName || "손님", createdAt: b.createdAt.toISOString() }))}
+        />
+      </section>
+
+      {/* 계정 삭제 — 앱에서 만든 계정은 앱 안에서 직접 지울 수 있어야 한다 */}
+      <section className="px-4 pb-10">
+        <DeleteAccount slug={slug} protectedDemo={isProtectedDemo(store, me)} />
       </section>
     </div>
   );
