@@ -113,7 +113,7 @@ async function main() {
       name,
       join: join < HISTORY_START ? HISTORY_START : join,
       leave: leave > HISTORY_END ? addDays(HISTORY_END, -intBetween(30, 200)) : leave,
-      hourlyPrice: pick([250_000, 280_000, 300_000, 320_000, 350_000, 400_000]),
+      hourlyPrice: pick([25_000, 28_000, 30_000, 32_000, 35_000, 40_000]),
       tags: pick(FORMER_TAGS),
     };
   });
@@ -217,9 +217,9 @@ async function main() {
 
       const start = startAt(day, slot);
       const end = new Date(start.getTime() + hours * 3600_000);
-      const hourly = Math.round((st.hourlyPrice * yearFactor) / 10_000) * 10_000;
+      const hourly = Math.round((st.hourlyPrice * yearFactor) / 1_000) * 1_000;
       const chosenOpts = st.opts.filter(() => chance(0.2));
-      const optionsPrice = chosenOpts.length * 50_000;
+      const optionsPrice = chosenOpts.length * 5_000;
       const list = hourly * hours + optionsPrice;
       const r = rand();
       const status = r < 0.88 ? "COMPLETED" : r < 0.93 ? "NOSHOW" : "CANCELLED";
@@ -243,7 +243,7 @@ async function main() {
       });
       for (const oid of chosenOpts) {
         const o = options.find((x) => x.id === oid);
-        if (o) optRows.push({ reservationId: rid, optionId: oid, name: o.name, price: 50_000 });
+        if (o) optRows.push({ reservationId: rid, optionId: oid, name: o.name, price: 5_000 });
       }
       if (status === "COMPLETED" && chance(0.3)) {
         const low = chance(0.12);

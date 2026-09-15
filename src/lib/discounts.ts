@@ -23,8 +23,8 @@ export const GRADE_BENEFIT_GRADES: Grade[] = ["단골", "VIP"];
 
 /** 매장이 아무것도 설정하지 않았을 때 시작점이 되는 값 */
 export const DEFAULT_GRADE_BENEFITS: { grade: Grade; amount: number; note: string }[] = [
-  { grade: "단골", amount: 20_000, note: "다섯 번째 방문부터 예약마다 2만원 빼 드려요." },
-  { grade: "VIP", amount: 50_000, note: "열 번째 방문부터 예약마다 5만원 빼 드리고, 원하시는 자리를 먼저 잡아 드려요." },
+  { grade: "단골", amount: 2_000, note: "다섯 번째 방문부터 예약마다 2천원 빼 드려요." },
+  { grade: "VIP", amount: 5_000, note: "열 번째 방문부터 예약마다 5천원 빼 드리고, 원하시는 자리를 먼저 잡아 드려요." },
 ];
 
 /** 방문 완료 횟수로 등급을 구한다 — 고객 목록에서 쓰는 기준과 같다 */

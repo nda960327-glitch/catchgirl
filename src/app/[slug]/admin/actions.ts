@@ -130,7 +130,7 @@ const staffSchema = z.object({
   photos: z.array(z.string()).max(10).default([]),
   isActive: z.boolean().default(true),
   capacityPerSlot: z.coerce.number().int().min(1).max(10).default(1),
-  hourlyPrice: z.coerce.number().int().min(0).max(100_000_000).default(300_000),
+  hourlyPrice: z.coerce.number().int().min(0).max(100_000_000).default(30_000),
   adminMemo: z.string().max(500).optional().default(""),
   optionIds: z.array(z.string()).max(20).optional().default([]),
   // 매장이 직접 만든 프로필 항목의 값 (fieldId → 값). 빈 값은 저장하지 않는다.

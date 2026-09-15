@@ -19,14 +19,14 @@ export type CouponRow = {
 
 /** 자주 주는 쿠폰은 눌러서 채운다 — 매번 이름을 지어내지 않게 */
 const PRESETS = [
-  { name: "감사 쿠폰", amount: 30_000, memo: "" },
-  { name: "사과 쿠폰", amount: 50_000, memo: "대기 오래 하심" },
-  { name: "생일 축하 쿠폰", amount: 50_000, memo: "" },
-  { name: "재방문 쿠폰", amount: 20_000, memo: "" },
+  { name: "감사 쿠폰", amount: 3_000, memo: "" },
+  { name: "사과 쿠폰", amount: 5_000, memo: "대기 오래 하심" },
+  { name: "생일 축하 쿠폰", amount: 5_000, memo: "" },
+  { name: "재방문 쿠폰", amount: 2_000, memo: "" },
 ];
 
 export function Coupons({ slug, customerId, coupons }: { slug: string; customerId: string; coupons: CouponRow[] }) {
-  const [form, setForm] = useState({ name: "", amount: 30_000, memo: "", validDays: 30 });
+  const [form, setForm] = useState({ name: "", amount: 3_000, memo: "", validDays: 30 });
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const router = useRouter();
@@ -37,7 +37,7 @@ export function Coupons({ slug, customerId, coupons }: { slug: string; customerI
       const r = await issueCoupon(slug, { ...form, customerId });
       if (!r.ok) return toast(r.error, "error");
       toast("쿠폰을 드렸어요", "success");
-      setForm({ name: "", amount: 30_000, memo: "", validDays: 30 });
+      setForm({ name: "", amount: 3_000, memo: "", validDays: 30 });
       setOpen(false);
       router.refresh();
     });
@@ -78,7 +78,7 @@ export function Coupons({ slug, customerId, coupons }: { slug: string; customerI
           </Field>
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="할인 금액" hint={won(form.amount)}>
-              <Input type="number" min={1000} step={10000} value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} className="h-11" />
+              <Input type="number" min={1000} step={1000} value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} className="h-11" />
             </Field>
             <Field label="사용 기한">
               <Select value={String(form.validDays)} onChange={(e) => setForm({ ...form, validDays: Number(e.target.value) })} className="w-full">

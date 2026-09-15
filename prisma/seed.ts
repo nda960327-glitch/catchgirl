@@ -142,8 +142,8 @@ async function main() {
   await prisma.adminUser.create({ data: { storeId: store.id, email: "admin@catchgirl.app", passwordHash: pw, name: "매니저" } });
 
   console.log("➕ 추가 옵션...");
-  const opt1 = await prisma.storeOption.create({ data: { storeId: store.id, name: "옵션1 (과자)", price: 50000, sortOrder: 0 } });
-  const opt2 = await prisma.storeOption.create({ data: { storeId: store.id, name: "옵션2 (우유)", price: 50000, sortOrder: 1 } });
+  const opt1 = await prisma.storeOption.create({ data: { storeId: store.id, name: "옵션1 (과자)", price: 5000, sortOrder: 0 } });
+  const opt2 = await prisma.storeOption.create({ data: { storeId: store.id, name: "옵션2 (우유)", price: 5000, sortOrder: 1 } });
 
   console.log("🚪 룸 10개...");
   const rooms = [];
@@ -153,25 +153,25 @@ async function main() {
 
   console.log("🍸 캐치걸 19명...");
   const staffDefs = [
-    { nickname: "루나", loginId: "luna", bio: "차분하게 분위기를 맞춰드려요. 조용히 한잔하고 싶은 날 편하게 찾아주세요.", tags: ["조용한매력", "눈빛좋음", "분위기있음"], hourlyPrice: 350000, memo: "" },
-    { nickname: "민서", loginId: "minseo", bio: "밝은 텐션으로 자리를 채워요. 웃을 일이 필요한 날 찾아주세요.", tags: ["애교많음", "밝은텐션", "노래잘함"], hourlyPrice: 300000, memo: "노래 잘해서 단체석에 강함" },
-    { nickname: "선미", loginId: "seonmi", bio: "말수는 적어도 이야기는 끝까지 들어드려요.", tags: ["차분함", "경청잘함", "단정함"], hourlyPrice: 350000, memo: "" },
-    { nickname: "수아", loginId: "sua", bio: "리액션이 좋아서 이야기할 맛이 나요.", tags: ["활발함", "텐션업", "리액션좋음"], hourlyPrice: 300000, memo: "" },
-    { nickname: "시연", loginId: "siyeon", bio: "말투가 부드러워서 편하게 대화할 수 있어요.", tags: ["다정함", "배려심", "말투부드러움"], hourlyPrice: 320000, memo: "" },
-    { nickname: "아리", loginId: "ari", bio: "유머 코드가 잘 맞는다는 얘기를 자주 들어요.", tags: ["센스있음", "유머있음", "대화잘통함"], hourlyPrice: 280000, memo: "" },
-    { nickname: "예리", loginId: "yeri", bio: "말을 정말 잘하고 리액션이 좋아요. 오늘 있었던 이야기를 들려주시면 끝까지 들어드릴게요.", tags: ["말잘함", "수다환영", "서비스좋음"], hourlyPrice: 400000, memo: "지명 많음. 주말 야간 고정 선호" },
-    { nickname: "준희", loginId: "junhee", bio: "처음 오신 분께도 먼저 다가가 편하게 말을 건네요. 조용히 있고 싶은 날엔 옆에서 다정하게 자리를 지켜드려요.", tags: ["상냥함", "청순함", "조용한대화"], hourlyPrice: 450000, memo: "에이스. 단골 재방문율 가장 높음" },
-    { nickname: "지유", loginId: "jiyu", bio: "털털하고 편하게 대해드려서 부담 없어요.", tags: ["털털함", "친근함", "편안함"], hourlyPrice: 300000, memo: "" },
-    { nickname: "지혜", loginId: "jihye", bio: "차분한 대화를 좋아하신다면 잘 맞으실 거예요.", tags: ["지적임", "차분한매력", "깊은대화"], hourlyPrice: 330000, memo: "" },
-    { nickname: "유빈", loginId: "yubin", bio: "애교 많고 잘 웃어서 자리가 늘 밝아져요.", tags: ["귀여움", "애교", "웃음많음"], hourlyPrice: 280000, memo: "" },
-    { nickname: "유이", loginId: "yui", bio: "시크해 보여도 대화하다 보면 편해지실 거예요.", tags: ["세련됨", "도시적매력", "시크함"], hourlyPrice: 350000, memo: "" },
-    { nickname: "이슬", loginId: "iseul", bio: "맑고 순수한 느낌으로 편안하게 맞아드려요.", tags: ["청량함", "맑은느낌", "순수함"], hourlyPrice: 250000, memo: "신입. 주간조 위주로 배치 중" },
-    { nickname: "지수", loginId: "jisu", bio: "눈을 맞추고 이야기 들어드리는 걸 좋아해요.", tags: ["다정다감", "눈맞춤좋음", "포근함"], hourlyPrice: 300000, memo: "" },
-    { nickname: "지연", loginId: "jiyeon", bio: "재치 있는 입담으로 자리를 즐겁게 만들어요.", tags: ["재치있음", "입담좋음", "분위기메이커"], hourlyPrice: 280000, memo: "" },
-    { nickname: "진아", loginId: "jina", bio: "단아한 분위기를 좋아하는 분들과 잘 맞아요.", tags: ["단아함", "조용조용", "여운있음"], hourlyPrice: 320000, memo: "" },
-    { nickname: "채원", loginId: "chaewon", bio: "상큼하고 긍정적인 에너지로 맞아드려요.", tags: ["상큼함", "발랄함", "긍정에너지"], hourlyPrice: 250000, memo: "" },
-    { nickname: "하영", loginId: "hayoung", bio: "마음씨가 착하고 세심해요. 기념일이면 작은 이벤트도 직접 챙겨드려요.", tags: ["세심함", "착함", "기념일"], hourlyPrice: 420000, memo: "기념일 응대 잘함" },
-    { nickname: "해린", loginId: "haerin", bio: "당당하고 쿨한 매력으로 대화를 이끌어가요.", tags: ["당당함", "자신감", "쿨한매력"], hourlyPrice: 380000, memo: "" },
+    { nickname: "루나", loginId: "luna", bio: "차분하게 분위기를 맞춰드려요. 조용히 한잔하고 싶은 날 편하게 찾아주세요.", tags: ["조용한매력", "눈빛좋음", "분위기있음"], hourlyPrice: 35000, memo: "" },
+    { nickname: "민서", loginId: "minseo", bio: "밝은 텐션으로 자리를 채워요. 웃을 일이 필요한 날 찾아주세요.", tags: ["애교많음", "밝은텐션", "노래잘함"], hourlyPrice: 30000, memo: "노래 잘해서 단체석에 강함" },
+    { nickname: "선미", loginId: "seonmi", bio: "말수는 적어도 이야기는 끝까지 들어드려요.", tags: ["차분함", "경청잘함", "단정함"], hourlyPrice: 35000, memo: "" },
+    { nickname: "수아", loginId: "sua", bio: "리액션이 좋아서 이야기할 맛이 나요.", tags: ["활발함", "텐션업", "리액션좋음"], hourlyPrice: 30000, memo: "" },
+    { nickname: "시연", loginId: "siyeon", bio: "말투가 부드러워서 편하게 대화할 수 있어요.", tags: ["다정함", "배려심", "말투부드러움"], hourlyPrice: 32000, memo: "" },
+    { nickname: "아리", loginId: "ari", bio: "유머 코드가 잘 맞는다는 얘기를 자주 들어요.", tags: ["센스있음", "유머있음", "대화잘통함"], hourlyPrice: 28000, memo: "" },
+    { nickname: "예리", loginId: "yeri", bio: "말을 정말 잘하고 리액션이 좋아요. 오늘 있었던 이야기를 들려주시면 끝까지 들어드릴게요.", tags: ["말잘함", "수다환영", "서비스좋음"], hourlyPrice: 40000, memo: "지명 많음. 주말 야간 고정 선호" },
+    { nickname: "준희", loginId: "junhee", bio: "처음 오신 분께도 먼저 다가가 편하게 말을 건네요. 조용히 있고 싶은 날엔 옆에서 다정하게 자리를 지켜드려요.", tags: ["상냥함", "청순함", "조용한대화"], hourlyPrice: 45000, memo: "에이스. 단골 재방문율 가장 높음" },
+    { nickname: "지유", loginId: "jiyu", bio: "털털하고 편하게 대해드려서 부담 없어요.", tags: ["털털함", "친근함", "편안함"], hourlyPrice: 30000, memo: "" },
+    { nickname: "지혜", loginId: "jihye", bio: "차분한 대화를 좋아하신다면 잘 맞으실 거예요.", tags: ["지적임", "차분한매력", "깊은대화"], hourlyPrice: 33000, memo: "" },
+    { nickname: "유빈", loginId: "yubin", bio: "애교 많고 잘 웃어서 자리가 늘 밝아져요.", tags: ["귀여움", "애교", "웃음많음"], hourlyPrice: 28000, memo: "" },
+    { nickname: "유이", loginId: "yui", bio: "시크해 보여도 대화하다 보면 편해지실 거예요.", tags: ["세련됨", "도시적매력", "시크함"], hourlyPrice: 35000, memo: "" },
+    { nickname: "이슬", loginId: "iseul", bio: "맑고 순수한 느낌으로 편안하게 맞아드려요.", tags: ["청량함", "맑은느낌", "순수함"], hourlyPrice: 25000, memo: "신입. 주간조 위주로 배치 중" },
+    { nickname: "지수", loginId: "jisu", bio: "눈을 맞추고 이야기 들어드리는 걸 좋아해요.", tags: ["다정다감", "눈맞춤좋음", "포근함"], hourlyPrice: 30000, memo: "" },
+    { nickname: "지연", loginId: "jiyeon", bio: "재치 있는 입담으로 자리를 즐겁게 만들어요.", tags: ["재치있음", "입담좋음", "분위기메이커"], hourlyPrice: 28000, memo: "" },
+    { nickname: "진아", loginId: "jina", bio: "단아한 분위기를 좋아하는 분들과 잘 맞아요.", tags: ["단아함", "조용조용", "여운있음"], hourlyPrice: 32000, memo: "" },
+    { nickname: "채원", loginId: "chaewon", bio: "상큼하고 긍정적인 에너지로 맞아드려요.", tags: ["상큼함", "발랄함", "긍정에너지"], hourlyPrice: 25000, memo: "" },
+    { nickname: "하영", loginId: "hayoung", bio: "마음씨가 착하고 세심해요. 기념일이면 작은 이벤트도 직접 챙겨드려요.", tags: ["세심함", "착함", "기념일"], hourlyPrice: 42000, memo: "기념일 응대 잘함" },
+    { nickname: "해린", loginId: "haerin", bio: "당당하고 쿨한 매력으로 대화를 이끌어가요.", tags: ["당당함", "자신감", "쿨한매력"], hourlyPrice: 38000, memo: "" },
   ];
 
   const staff: { id: string; nickname: string; hourlyPrice: number; opts: string[] }[] = [];
@@ -316,8 +316,8 @@ async function main() {
 
         // 캐치걸이 제공하는 옵션 중에서만 고른다
         const chosen = st.opts.filter(() => chance(0.22));
-        const optRows = chosen.map((id) => ({ optionId: id, name: id === opt1.id ? "옵션1 (과자)" : "옵션2 (우유)", price: 50000 }));
-        const optionsPrice = optRows.length * 50000;
+        const optRows = chosen.map((id) => ({ optionId: id, name: id === opt1.id ? "옵션1 (과자)" : "옵션2 (우유)", price: 5000 }));
+        const optionsPrice = optRows.length * 5000;
 
         const r = await prisma.reservation.create({
           data: {
@@ -491,24 +491,24 @@ async function main() {
   console.log("🎟 할인 (등급 혜택 · 기간 할인 · 쿠폰)...");
   await prisma.gradeBenefit.createMany({
     data: [
-      { storeId: store.id, grade: "단골", amount: 20_000, note: "다섯 번째 방문부터 예약마다 2만원 빼 드려요." },
-      { storeId: store.id, grade: "VIP", amount: 50_000, note: "열 번째 방문부터 예약마다 5만원 빼 드리고, 원하시는 자리를 먼저 잡아 드려요." },
+      { storeId: store.id, grade: "단골", amount: 2_000, note: "다섯 번째 방문부터 예약마다 2천원 빼 드려요." },
+      { storeId: store.id, grade: "VIP", amount: 5_000, note: "열 번째 방문부터 예약마다 5천원 빼 드리고, 원하시는 자리를 먼저 잡아 드려요." },
     ],
   });
   await prisma.dayPromotion.createMany({
     data: [
       // 비 오던 날 걸어 뒀던 할인 (지난 기록)
-      { storeId: store.id, name: "비 오는 날 할인", amount: 30_000, startDate: ymd(addDays(today, -9)), endDate: ymd(addDays(today, -9)) },
+      { storeId: store.id, name: "비 오는 날 할인", amount: 3_000, startDate: ymd(addDays(today, -9)), endDate: ymd(addDays(today, -9)) },
       // 이번 주말 할인 — 지금 화면에서 "진행 중" 으로 보인다
-      { storeId: store.id, name: "평일 낮 할인", amount: 20_000, startDate: ymd(addDays(today, -1)), endDate: ymd(addDays(today, 5)) },
+      { storeId: store.id, name: "평일 낮 할인", amount: 2_000, startDate: ymd(addDays(today, -1)), endDate: ymd(addDays(today, 5)) },
     ],
   });
   // 매장이 그냥 챙겨 드린 쿠폰 몇 장
   const couponDefs = [
-    { name: "감사 쿠폰", amount: 30_000, memo: "오래 찾아주셔서 드림" },
-    { name: "사과 쿠폰", amount: 50_000, memo: "대기 오래 하심" },
-    { name: "생일 축하 쿠폰", amount: 50_000, memo: "" },
-    { name: "재방문 쿠폰", amount: 20_000, memo: "" },
+    { name: "감사 쿠폰", amount: 3_000, memo: "오래 찾아주셔서 드림" },
+    { name: "사과 쿠폰", amount: 5_000, memo: "대기 오래 하심" },
+    { name: "생일 축하 쿠폰", amount: 5_000, memo: "" },
+    { name: "재방문 쿠폰", amount: 2_000, memo: "" },
   ];
   await prisma.coupon.createMany({
     data: regulars.slice(0, 8).map((c, i) => ({

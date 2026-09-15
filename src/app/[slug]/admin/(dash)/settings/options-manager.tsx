@@ -28,7 +28,7 @@ export function OptionsManager({ slug, items }: { slug: string; items: OptionIte
 
   const add = () =>
     start(async () => {
-      const r = await saveStoreOption(slug, { name: `옵션${rows.length + 1}`, price: 50000, isActive: true });
+      const r = await saveStoreOption(slug, { name: `옵션${rows.length + 1}`, price: 5000, isActive: true });
       toast(r.ok ? "옵션을 추가했어요" : r.error, r.ok ? "success" : "error");
       if (r.ok) router.refresh();
     });
@@ -55,7 +55,7 @@ export function OptionsManager({ slug, items }: { slug: string; items: OptionIte
               <Input value={o.name} onChange={(e) => set(o.id, { name: e.target.value })} className="h-10 text-[13px]" />
             </Field>
             <Field label="추가 요금" hint={won(o.price)} className="w-[150px]">
-              <Input type="number" min={0} step={10000} value={o.price} onChange={(e) => set(o.id, { price: Number(e.target.value) })} className="h-10 text-[13px]" />
+              <Input type="number" min={0} step={1000} value={o.price} onChange={(e) => set(o.id, { price: Number(e.target.value) })} className="h-10 text-[13px]" />
             </Field>
             <label className="mb-2.5 flex items-center gap-1.5 text-[12px] font-semibold text-mute">
               <input type="checkbox" checked={o.isActive} onChange={(e) => set(o.id, { isActive: e.target.checked })} className="h-4 w-4 accent-[#B4586A]" />

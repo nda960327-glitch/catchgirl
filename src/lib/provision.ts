@@ -109,8 +109,8 @@ export async function provisionStore(d: ProvisionInput) {
   // 옵션은 매장마다 이름이 다르지만, 두 칸 있는 형태는 공통이라 틀만 준다
   await prisma.storeOption.createMany({
     data: [
-      { storeId: store.id, name: "옵션1", price: 50_000, sortOrder: 0 },
-      { storeId: store.id, name: "옵션2", price: 50_000, sortOrder: 1 },
+      { storeId: store.id, name: "옵션1", price: 5_000, sortOrder: 0 },
+      { storeId: store.id, name: "옵션2", price: 5_000, sortOrder: 1 },
     ],
   });
   await prisma.gradeBenefit.createMany({

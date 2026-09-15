@@ -59,7 +59,7 @@ const RETENTION_HOOKS = [
   ["홈 화면에 우리 매장 아이콘", "설치한 순간부터 손님 폰에 자리가 생겨요. 다음 예약은 두 번 탭이고, 전화번호 없이도 손님과 연결된 유일한 통로예요."],
   ["즐겨찾기한 사람이 오늘 나왔는지", "손님이 홈을 열면 지명하던 캐치걸의 오늘 출근·남은 시간이 먼저 보여요. '오늘 있네' 가 그대로 예약이 돼요."],
   ["5번째부터 단골, 10번째부터 VIP", "방문 횟수로 등급이 자동으로 붙고 혜택이 예약할 때 바로 적용돼요. 손님은 '몇 번 더 오면 VIP' 를 마이 화면에서 봐요."],
-  ["쿠폰과 요일 프로모션", "비 오는 날 3만원, 착한 손님 쿠폰, 조용한 요일 혜택. 문자 없이 손님 앱에 떠요. 할인은 매장 몫에서만 빠지고 직원 몫은 그대로예요."],
+  ["쿠폰과 요일 프로모션", "비 오는 날 3천원, 착한 손님 쿠폰, 조용한 요일 혜택. 문자 없이 손님 앱에 떠요. 할인은 매장 몫에서만 빠지고 직원 몫은 그대로예요."],
   ["후기·추천이 쌓여요", "손님이 남긴 후기와 추천에 매장이 답글을 달아요. 다음에 올 이유가 앱 안에 기록으로 남아요."],
   ["재방문율이 매달 숫자로", "관리자 화면에 재방문율·재방문 손님 수·오래 안 온 손님이 그대로 떠요. 감이 아니라 숫자로 보고, 안 오는 단골에게 먼저 연락해요."],
 ];
@@ -470,7 +470,7 @@ export default async function Home() {
               <h3 className="font-serif text-[22px] font-bold">직원이 건네는 명함</h3>
               <p className="mt-2 text-[13px] leading-[1.8] text-mute">코드 칸에 네임펜으로 네 글자 적어서 방문한 손님에게. 관리자 화면에서 A4 한 장에 열 장씩 뽑아요.</p>
               <div className="mt-5 flex flex-col items-center gap-2">
-                <InviteCard storeName="우리 매장" amount={30000} qr={cardQr} url={DEMO.url} code="A3K9" width="min(100%, 440px)" />
+                <InviteCard storeName="우리 매장" amount={3000} qr={cardQr} url={DEMO.url} code="A3K9" width="min(100%, 440px)" />
                 <div className="text-[11px] text-mute">실제 인쇄되는 카드예요 · 명함 크기</div>
               </div>
             </div>
@@ -478,7 +478,7 @@ export default async function Home() {
               <h3 className="font-serif text-[22px] font-bold">테이블·카운터에 붙이는 포스터</h3>
               <p className="mt-2 text-[13px] leading-[1.8] text-mute">한 줄이에요. 찍으면 끝. 쿠폰 금액이 크게 박혀요. 같은 화면에서 A4로 뽑아요.</p>
               <div className="mt-5 flex flex-col items-center gap-2">
-                <InstallPoster storeName="우리 매장" amount={30000} qr={cardQr} width="min(100%, 340px)" />
+                <InstallPoster storeName="우리 매장" amount={3000} qr={cardQr} width="min(100%, 340px)" />
                 <div className="text-[11px] text-mute">실제 인쇄되는 포스터예요 · A4</div>
               </div>
             </div>

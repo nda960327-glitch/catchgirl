@@ -25,7 +25,7 @@ export function shiftHours(store: { openTime: string; closeTime: string; shiftSp
 }
 
 /** 매장이 예약 1시간마다 가져가는 금액 (원). 고객이 내는 캐치걸 요금과는 별개다. */
-export const STORE_FEE_PER_HOUR = 100_000;
+export const STORE_FEE_PER_HOUR = 10_000;
 
 export const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
 /** 큰 금액을 KPI 카드에 넣기 위한 축약 — 1,240만원 / 32만원 */

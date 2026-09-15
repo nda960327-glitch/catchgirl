@@ -25,7 +25,7 @@ export type StaffFull = {
 export type StoreOptionLite = { id: string; name: string; price: number };
 
 const EMPTY: StaffFull = {
-  id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, hourlyPrice: 300000, adminMemo: "", loginId: "",
+  id: "", nickname: "", bio: "", tags: [], photos: [], isActive: true, capacityPerSlot: 1, hourlyPrice: 30000, adminMemo: "", loginId: "",
   optionIds: [], profileValues: {},
   stats: { rating: null, reviewCount: 0, reservationCount: 0, completedCount: 0, noshowRate: 0, revisitRate: 0, upCount: 0, downCount: 0, customerCount: 0, repeatCustomers: 0, newCustomers30d: 0 },
 };
@@ -156,7 +156,7 @@ function StaffEditor({ slug, init, storeOptions, profileFields, onClose }: { slu
         <div className="grid grid-cols-2 gap-3">
           <Field label="닉네임 (고객 노출)" hint="실명은 저장하지 않아요"><Input value={f.nickname} onChange={(e) => setF({ ...f, nickname: e.target.value })} /></Field>
           <Field label="시간당 요금" hint={`${f.hourlyPrice.toLocaleString("ko-KR")}원`}>
-            <Input type="number" min={0} step={10000} value={f.hourlyPrice} onChange={(e) => setF({ ...f, hourlyPrice: Number(e.target.value) })} />
+            <Input type="number" min={0} step={1000} value={f.hourlyPrice} onChange={(e) => setF({ ...f, hourlyPrice: Number(e.target.value) })} />
           </Field>
         </div>
         <Field label="한 줄 소개"><Textarea rows={2} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} /></Field>

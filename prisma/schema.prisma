@@ -77,7 +77,7 @@ model Store {
   agentDidOnsite      Boolean   @default(false) // 방문 세팅을 담당직원이 직접 했는지 (+커미션)
   commissionPaidAt    DateTime? // 운영사가 커미션을 지급한 날
   // 앱 설치 환영 쿠폰 — 연결코드로 앱을 처음 시작한 손님에게 자동으로 한 장. 0 이면 안 준다.
-  signupCouponAmount  Int      @default(30000)
+  signupCouponAmount  Int      @default(3000)
   signupCouponName    String   @default("앱 설치 환영 쿠폰")
   signupCouponDays    Int      @default(60) // 발급 뒤 며칠 안에 써야 하는지 (0 = 기한 없음)
   noshowPolicy        String   @default("노쇼 3회 누적 시 예약이 제한될 수 있어요.")
@@ -240,7 +240,7 @@ model Staff {
   photos          String   @default("[]") // JSON string[] (url)
   isActive        Boolean  @default(true)
   capacityPerSlot Int      @default(1)
-  hourlyPrice     Int      @default(300000) // 시간당 요금 (원)
+  hourlyPrice     Int      @default(30000) // 시간당 요금 (원)
   // 프로필 — 손님이 고를 때 실제로 보는 값들.
   // 흡연은 대화 거리가 가까워서, 문신은 싫어하는 손님이 있어서 미리 밝힌다.
   heightCm        Int?

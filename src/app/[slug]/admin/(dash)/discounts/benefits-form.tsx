@@ -57,7 +57,7 @@ export function BenefitsForm({ slug, benefits }: { slug: string; benefits: Benef
                 <Input
                   type="number"
                   min={0}
-                  step={10000}
+                  step={1000}
                   value={r.amount}
                   onChange={(e) => set(r.grade, { amount: Number(e.target.value) })}
                   className="h-11"

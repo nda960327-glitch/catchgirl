@@ -12,7 +12,7 @@ import { won } from "@/lib/utils";
  */
 export function RevisitCalculator() {
   const [visits, setVisits] = useState(300);
-  const [unit, setUnit] = useState(200_000);
+  const [unit, setUnit] = useState(20_000);
   const [rate, setRate] = useState(30);
   const [gain, setGain] = useState(10);
 
@@ -39,7 +39,7 @@ export function RevisitCalculator() {
       <div className="flex flex-col gap-4">
         <div className="text-[13px] font-bold text-ink">우리 매장 숫자로 눌러 보세요</div>
         <Row label="한 달 방문 건수" value={visits} set={setVisits} min={50} max={1500} step={10} suffix="건" />
-        <Row label="방문 1건당 매장 몫" value={unit} set={setUnit} min={50_000} max={600_000} step={10_000} suffix="원" />
+        <Row label="방문 1건당 매장 몫" value={unit} set={setUnit} min={5_000} max={60_000} step={1_000} suffix="원" />
         <Row label="지금 재방문율" value={rate} set={setRate} min={5} max={80} step={1} suffix="%" />
         <Row label="앱으로 올릴 재방문율" value={gain} set={setGain} min={3} max={30} step={1} suffix="%p" />
         <div className="text-[10px] leading-[1.7] text-mute">새로 오는 손님 수는 그대로라고 보고, 재방문율만 올렸을 때예요. 가정 계산이니 매장 숫자로 바꿔서 보세요.</div>

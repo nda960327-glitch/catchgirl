@@ -11,13 +11,13 @@ type Promo = { id: string; name: string; amount: number; startDate: string; endD
 
 /** 오늘 하루만 거는 할인을 자주 쓰므로 바로 쓸 수 있는 문구를 준비해 둔다 */
 const PRESETS = [
-  { name: "비 오는 날 할인", amount: 30_000 },
-  { name: "평일 낮 할인", amount: 20_000 },
-  { name: "오픈 기념 할인", amount: 50_000 },
+  { name: "비 오는 날 할인", amount: 3_000 },
+  { name: "평일 낮 할인", amount: 2_000 },
+  { name: "오픈 기념 할인", amount: 5_000 },
 ];
 
 export function PromotionsManager({ slug, today, items }: { slug: string; today: string; items: Promo[] }) {
-  const blank = { id: "", name: "", amount: 30_000, startDate: today, endDate: today, isActive: true };
+  const blank = { id: "", name: "", amount: 3_000, startDate: today, endDate: today, isActive: true };
   const [form, setForm] = useState<Promo>(blank);
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
@@ -73,7 +73,7 @@ export function PromotionsManager({ slug, today, items }: { slug: string; today:
               <Input value={form.name} maxLength={30} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-11" />
             </Field>
             <Field label="할인 금액" hint={won(form.amount)}>
-              <Input type="number" min={1000} step={10000} value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} className="h-11" />
+              <Input type="number" min={1000} step={1000} value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} className="h-11" />
             </Field>
             <Field label="시작일">
               <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="h-11" />

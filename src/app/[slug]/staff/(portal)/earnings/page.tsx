@@ -55,7 +55,7 @@ export default async function StaffEarningsPage({
   const earning = thisMonth.filter((r) => EARNING.includes(r.status));
   const done = earning.filter((r) => r.status === "COMPLETED");
   // 할인은 매장이 부담하므로 정가 기준으로 보고, 거기서 매장 수수료를 뺀 것이 내 몫이다.
-  // 45만원짜리 1시간이면 수수료 10만원을 빼고 35만원이 남는다.
+  // 4만 5천원짜리 1시간이면 수수료 1만원을 빼고 3만 5천원이 남는다.
   const listOf = (r: { totalPrice: number; discountAmount: number }) => r.totalPrice + r.discountAmount;
   const netOf = (r: { totalPrice: number; discountAmount: number; hours: number }) =>
     listOf(r) - r.hours * STORE_FEE_PER_HOUR;
